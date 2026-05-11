@@ -35,7 +35,7 @@ export function Dock() {
 }
 
 function DockIcon({ app, mouseX, isOpen, onClick }: { app: AppDef; mouseX: MotionValue<number | null>; isOpen: boolean; onClick: () => void }) {
-  const ref = useRef<HTMLButtonElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
   const distance = useTransform(mouseX, (mx) => {
     if (mx === null || !ref.current) return 9999;
     const rect = ref.current.getBoundingClientRect();
