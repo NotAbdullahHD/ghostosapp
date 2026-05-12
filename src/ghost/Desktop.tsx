@@ -17,6 +17,8 @@ import { ChatApp } from "./apps/ChatApp";
 import { StoreApp } from "./apps/StoreApp";
 import { NotesApp } from "./apps/NotesApp";
 import { TerminalApp } from "./apps/TerminalApp";
+import { DiscoverApp } from "./apps/DiscoverApp";
+import { SocialApp } from "./apps/SocialApp";
 import type { AppId } from "./apps";
 
 const APP_RENDER: Record<AppId, () => React.ReactElement> = {
@@ -25,6 +27,10 @@ const APP_RENDER: Record<AppId, () => React.ReactElement> = {
   music: () => <MusicApp />,
   ghostai: () => <GhostAIApp />,
   browser: () => <BrowserApp />,
+  discover: () => <DiscoverApp />,
+  x: () => <SocialApp kind="x" />,
+  tiktok: () => <SocialApp kind="tiktok" />,
+  pinterest: () => <SocialApp kind="pinterest" />,
   chat: () => <ChatApp />,
   store: () => <StoreApp />,
   settings: () => <SettingsApp />,
