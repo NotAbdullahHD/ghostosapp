@@ -66,3 +66,34 @@ function DockIcon({ app, mouseX, isOpen, onClick }: { app: AppDef; mouseX: Motio
     </button>
   );
 }
+
+function DockClock() {
+  const [now, setNow] = useState(new Date());
+  const [hovered, setHovered] = useState(false);
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const time = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const seconds = now.toLocaleTimeString([], { second: "2-digit" });
+  const date = now.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+  return (
+    <motion.div
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => setHovered(false)}
+      whileHover={{ y: -4 }}
+      transition={{ type: "spring", stiffness: 400, damping: 26 }}
+      className="relative flex flex-col items-end justify-center px-3 py-1 rounded-xl cursor-default select-none"
+      style={{ background: "linear-gradient(180deg, rgba(255,255,255,.04), rgba(20,10,40,.4))", boxShadow: hovered ? "0 0 0 1px rgba(232,121,249,.35), 0 0 18px rgba(232,121,249,.25)" : "inset 0 0 0 1px rgba(255,255,255,.06)" }}
+    >
+      <div className="flex items-baseline gap-1 font-mono">
+        <span className="text-sm font-bold tracking-wider text-white drop-shadow-[0_0_8px_rgba(232,121,249,.6)]">{time}</span>
+        <span className="text-[9px] tracking-widest text-fuchsia-300/70">:{seconds}</span>
+      </div>
+      <span className="text-[9px] tracking-[0.25em] text-white/55 font-mono">{date.toUpperCase()}</span>
+      <span className="absolute -top-9 left-1/2 -translate-x-1/2 px-2 py-1 rounded-md text-[10px] font-mono whitespace-nowrap bg-black/90 text-white/95 opacity-0 hover:opacity-100 transition pointer-events-none border border-white/10 shadow-xl">
+        Spectral Time · UTC{-new Date().getTimezoneOffset() / 60 >= 0 ? "+" : ""}{-new Date().getTimezoneOffset() / 60}
+      </span>
+    </motion.div>
+  );
+}
