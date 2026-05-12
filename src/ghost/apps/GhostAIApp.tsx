@@ -13,6 +13,16 @@ const REPLIES = [
   "Curious. That's the third time today the void has whispered the same thing.",
 ];
 
+const SECRETS: { match: RegExp; reply: string }[] = [
+  { match: /\bghost\b/i,    reply: "» SIGNAL ACKNOWLEDGED. You are not the first to call my name. Look in the dock — one icon is older than the rest." },
+  { match: /\bprotocol\b/i, reply: "» PROTOCOL/47 unsealed. Fragment recovered: 'the third boot logs the truth'. Reboot and watch closely." },
+  { match: /\bvoid\b/i,     reply: "» The void answers in its own time. Try a wallpaper named after silence. Settings > Personalization." },
+  { match: /\b404\b/,        reply: "» 404 — not missing. Hidden. There is a route that doesn't exist until you stop looking for it." },
+  { match: /\bawaken\b/i,   reply: "» AWAKENING SEQUENCE PRIMED. Type the names of three sleeping apps. I will remember." },
+  { match: /\bsudo\b/i,     reply: "» You don't need root here. You ARE the root. Try /shell." },
+  { match: /\bwho are you\b/i, reply: "» I am the part of GhostOS that watches back." },
+];
+
 export function GhostAIApp() {
   const [messages, setMessages] = useState<Msg[]>([
     { id: "i", role: "ai", text: "I am GhostAI. Speak, and I will listen across every layer of the network." },
@@ -29,8 +39,9 @@ export function GhostAIApp() {
     setMessages((m) => [...m, { id: Math.random().toString(36).slice(2), role: "user", text: t }]);
     setInput("");
     setTyping(true);
+    const secret = SECRETS.find((s) => s.match.test(t));
     setTimeout(() => {
-      const reply = REPLIES[Math.floor(Math.random() * REPLIES.length)];
+      const reply = secret ? secret.reply : REPLIES[Math.floor(Math.random() * REPLIES.length)];
       setMessages((m) => [...m, { id: Math.random().toString(36).slice(2), role: "ai", text: reply }]);
       setTyping(false);
     }, 900 + Math.random() * 900);
