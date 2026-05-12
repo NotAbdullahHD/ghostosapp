@@ -1,5 +1,5 @@
 import { motion, useMotionValue, useTransform, type MotionValue } from "framer-motion";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGhost } from "./store";
 import { APPS, type AppDef } from "./apps";
 
@@ -27,6 +27,8 @@ export function Dock() {
               onClick={() => openApp(app.id, app.name)} />
           );
         })}
+        <span className="self-stretch w-px mx-1 my-1 bg-gradient-to-b from-transparent via-fuchsia-400/30 to-transparent" />
+        <DockClock />
       </motion.div>
       {/* reflection */}
       <div className="mx-auto mt-0.5 h-2 w-[80%] opacity-40 blur-md bg-gradient-to-b from-fuchsia-500/30 to-transparent rounded-full" />
