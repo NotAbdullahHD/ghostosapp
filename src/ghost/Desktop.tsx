@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useMotionValue } from "framer-motion";
 import { useEffect } from "react";
-import { useGhost } from "./store";
+import { useGhost, WALLPAPERS } from "./store";
+import { AnimatedWallpaperLayer } from "./AnimatedWallpaperLayer";
 import { MenuBar } from "./MenuBar";
 import { Dock } from "./Dock";
 import { Window } from "./Window";
