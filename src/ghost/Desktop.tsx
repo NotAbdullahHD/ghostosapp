@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useMotionValue } from "framer-motion";
 import { useEffect } from "react";
-import { useGhost } from "./store";
+import { useGhost, WALLPAPERS } from "./store";
+import { AnimatedWallpaperLayer } from "./AnimatedWallpaperLayer";
 import { MenuBar } from "./MenuBar";
 import { Dock } from "./Dock";
 import { Window } from "./Window";
@@ -40,7 +41,8 @@ const APP_RENDER: Record<AppId, () => React.ReactElement> = {
 };
 
 export function Desktop() {
-  const { windows, wallpaper } = useGhost();
+  const { windows, wallpaper, wallpaperId } = useGhost();
+  const activeWallpaper = WALLPAPERS.find((w) => w.id === wallpaperId);
   const px = useMotionValue(0);
   const py = useMotionValue(0);
 
@@ -57,6 +59,7 @@ export function Desktop() {
 
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ background: wallpaper }}>
+      <AnimatedWallpaperLayer wallpaper={activeWallpaper} />
       {/* parallax aurora layers */}
       <motion.div className="pointer-events-none absolute -inset-20"
         style={{ x: px, y: py, background: "radial-gradient(ellipse 40% 35% at 20% 30%, rgba(168,85,247,.45), transparent 60%), radial-gradient(ellipse 35% 30% at 80% 70%, rgba(59,130,246,.35), transparent 60%)" }} />
