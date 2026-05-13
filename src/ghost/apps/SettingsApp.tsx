@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { useGhost, WALLPAPERS } from "../store";
-import { Volume2, Palette, Image as ImageIcon, Bell, Monitor } from "lucide-react";
+import { Volume2, Palette, Image as ImageIcon, Bell, Monitor, Lock, Sparkles } from "lucide-react";
+
+const RARITY_STYLE: Record<string, string> = {
+  common:    "text-white/50 ring-white/10",
+  rare:      "text-cyan-300 ring-cyan-400/40 shadow-[0_0_18px_rgba(34,211,238,.25)]",
+  epic:      "text-fuchsia-300 ring-fuchsia-400/40 shadow-[0_0_22px_rgba(232,121,249,.3)]",
+  legendary: "text-amber-300 ring-amber-400/50 shadow-[0_0_28px_rgba(251,191,36,.35)]",
+  mythic:    "text-rose-300 ring-rose-400/60 shadow-[0_0_36px_rgba(244,63,94,.45)]",
+};
 
 const SECTIONS = [
   { id: "wallpaper", name: "Wallpaper", icon: ImageIcon },
