@@ -72,14 +72,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "GhostOS" },
+      { name: "description", content: "GhostOS is a cinematic, browser-based operating system with a futuristic, cyberpunk aesthetic." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "GhostOS" },
+      { property: "og:description", content: "GhostOS is a cinematic, browser-based operating system with a futuristic, cyberpunk aesthetic." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "GhostOS" },
+      { name: "twitter:description", content: "GhostOS is a cinematic, browser-based operating system with a futuristic, cyberpunk aesthetic." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/ClA7NYhCIYeHgdb5aGfH579sb9M2/social-images/social-1778765007394-Screenshot_2026-05-14_15.23.14.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/ClA7NYhCIYeHgdb5aGfH579sb9M2/social-images/social-1778765007394-Screenshot_2026-05-14_15.23.14.webp" },
     ],
     links: [
       {
