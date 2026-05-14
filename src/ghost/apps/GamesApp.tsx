@@ -181,6 +181,38 @@ export function GamesApp() {
               </div>
             </div>
 
+            {/* ARCADE — instantly playable in-browser */}
+            <Section icon={<Joystick className="h-3 w-3 text-fuchsia-300" />} label="ARCADE · INSTANT PLAY">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {ARCADE.map((g, i) => (
+                  <motion.button key={g.id}
+                    initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+                    whileHover={{ scale: 1.03, y: -3 }} whileTap={{ scale: 0.98 }}
+                    onClick={() => { setArcadeLoaded(false); setArcadeGame(g); }}
+                    className="relative aspect-video rounded-xl overflow-hidden ring-1 ring-white/10 group">
+                    <div className={`absolute inset-0 bg-gradient-to-br ${g.color}`} />
+                    <div className="absolute inset-0 opacity-30 mix-blend-overlay" style={{ backgroundImage: "radial-gradient(circle at 30% 30%, white, transparent 60%)" }} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                    <Zap className="absolute top-2 right-2 h-3.5 w-3.5 text-amber-300/80" />
+                    <div className="absolute inset-x-0 bottom-0 p-3">
+                      <div className="text-[10px] text-fuchsia-300 font-mono">{g.tag}</div>
+                      <div className="text-sm font-bold leading-tight">{g.name}</div>
+                    </div>
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition flex items-center justify-center bg-black/40">
+                      <div className="h-12 w-12 rounded-full gradient-neon flex items-center justify-center shadow-xl">
+                        <Play className="h-5 w-5 fill-white text-white" />
+                      </div>
+                    </div>
+                    {/* shimmer */}
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                      <motion.div className="absolute -inset-y-2 w-1/3 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12"
+                        initial={{ x: "-150%" }} animate={{ x: "300%" }} transition={{ duration: 4, repeat: Infinity, repeatDelay: 2 + i * 0.5 }} />
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </Section>
+
             {/* TRENDING */}
             <Section icon={<Flame className="h-3 w-3 text-orange-400" />} label="TRENDING NOW">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
