@@ -1,8 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Star, Flame, Trophy, Gamepad2, Heart, Clock, ChevronRight, ArrowLeft, Maximize2, Loader2, Wifi } from "lucide-react";
+import { Play, Star, Flame, Trophy, Gamepad2, Heart, Clock, ChevronRight, ArrowLeft, Maximize2, Loader2, Wifi, Joystick, Zap } from "lucide-react";
+import { useGhost } from "../store";
 
 const CINESTREAM_URL = "https://cinesteam.cine-softwares.workers.dev/";
+
+// Online arcade games (free embeddable HTML5)
+const ARCADE = [
+  { id: "ark",      name: "Ark Defender",     tag: "ACTION",   url: "https://zv1y2i8p.play.gamezop.com/g/SkhljT2fdgb",    color: "from-fuchsia-600 via-purple-700 to-indigo-900" },
+  { id: "knife",    name: "Knife Up",         tag: "ARCADE",   url: "https://zv1y2i8p.play.gamezop.com/g/r1qDQYcQS",       color: "from-rose-500 via-red-700 to-black" },
+  { id: "bubble",   name: "Bubble Shooter",   tag: "PUZZLE",   url: "https://zv1y2i8p.play.gamezop.com/g/B1YKHqA9rb",      color: "from-cyan-500 via-blue-700 to-indigo-900" },
+  { id: "tennis",   name: "Stickman Tennis",  tag: "SPORTS",   url: "https://zv1y2i8p.play.gamezop.com/g/HJzVLqRcrW",      color: "from-emerald-500 via-teal-700 to-blue-900" },
+  { id: "chess",    name: "Chess",            tag: "STRATEGY", url: "https://zv1y2i8p.play.gamezop.com/g/B1YphhMjr-",      color: "from-amber-500 via-orange-700 to-red-900" },
+  { id: "ludo",     name: "Mini Ludo",        tag: "CLASSIC",  url: "https://zv1y2i8p.play.gamezop.com/g/H17_5pgesb",      color: "from-violet-500 via-fuchsia-700 to-purple-900" },
+];
 
 const featured = [
   { title: "CINESTREAM ARCADE",  tagline: "The hidden gaming universe. Discovered.", rating: 4.9, hero: "from-fuchsia-700 via-purple-900 to-black", cine: true },
