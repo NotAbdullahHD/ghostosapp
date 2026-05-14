@@ -35,15 +35,31 @@ const games = [
 const cats = ["All", "Action", "RPG", "Strategy", "Shooter", "Sandbox", "Stealth", "Racing", "Indie"];
 
 export function GamesApp() {
+  const { windows, toggleFullscreen } = useGhost();
   const [hero, setHero] = useState(0);
   const [launching, setLaunching] = useState(false);
   const [inGame, setInGame] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [arcadeGame, setArcadeGame] = useState<typeof ARCADE[number] | null>(null);
+  const [arcadeLoaded, setArcadeLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!arcadeGame) return;
+    const me = windows.find((w) => w.appId === "games");
+    if (me && !me.fullscreen) toggleFullscreen(me.id);
+  }, [arcadeGame, windows, toggleFullscreen]);
 
   const launchCine = () => {
     setLaunching(true);
     setIframeLoaded(false);
     setTimeout(() => { setInGame(true); setLaunching(false); }, 1600);
+  };
+
+  const exitArcade = () => {
+    const me = windows.find((w) => w.appId === "games");
+    if (me?.fullscreen) toggleFullscreen(me.id);
+    setArcadeGame(null);
+    setArcadeLoaded(false);
   };
 
   return (
