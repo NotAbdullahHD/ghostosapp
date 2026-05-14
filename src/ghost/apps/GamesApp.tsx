@@ -274,6 +274,45 @@ export function GamesApp() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ARCADE FULLSCREEN OVERLAY */}
+      <AnimatePresence>
+        {arcadeGame && (
+          <motion.div key={arcadeGame.id} initial={{ opacity: 0, scale: 1.04, filter: "blur(8px)" }} animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }} exit={{ opacity: 0, scale: 1.02, filter: "blur(6px)" }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute inset-0 z-30 flex flex-col bg-black">
+            <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-fuchsia-950/80 via-black to-purple-950/80 border-b border-fuchsia-500/20">
+              <button onClick={exitArcade} className="flex items-center gap-2 text-xs font-mono text-white/70 hover:text-white transition">
+                <ArrowLeft className="h-3.5 w-3.5" /> EXIT ARCADE
+              </button>
+              <div className="flex items-center gap-2 text-[10px] font-mono tracking-[0.3em] text-fuchsia-300">
+                <Joystick className="h-3 w-3" />
+                {arcadeGame.name.toUpperCase()} · LIVE
+              </div>
+              <div className="flex items-center gap-2 text-[10px] font-mono text-emerald-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,.9)]" />
+                ARCADE ONLINE
+              </div>
+            </div>
+            <div className="relative flex-1 bg-black">
+              {!arcadeLoaded && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-black">
+                  <Loader2 className="h-8 w-8 animate-spin text-fuchsia-400" />
+                  <div className="text-[10px] tracking-[0.5em] font-mono text-fuchsia-300">LOADING {arcadeGame.name.toUpperCase()}…</div>
+                </div>
+              )}
+              <iframe
+                src={arcadeGame.url}
+                title={arcadeGame.name}
+                onLoad={() => setArcadeLoaded(true)}
+                className="w-full h-full bg-black"
+                allow="autoplay; fullscreen; gamepad; clipboard-write"
+              />
+              <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-fuchsia-500/10" />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
