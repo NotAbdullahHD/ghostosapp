@@ -1,8 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Star, Flame, Trophy, Gamepad2, Heart, Clock, ChevronRight, ArrowLeft, Maximize2, Loader2, Wifi } from "lucide-react";
+import { Play, Star, Flame, Trophy, Gamepad2, Heart, Clock, ChevronRight, ArrowLeft, Maximize2, Loader2, Wifi, Joystick, Zap } from "lucide-react";
+import { useGhost } from "../store";
 
 const CINESTREAM_URL = "https://cinesteam.cine-softwares.workers.dev/";
+
+// Online arcade games (free embeddable HTML5)
+const ARCADE = [
+  { id: "ark",      name: "Ark Defender",     tag: "ACTION",   url: "https://zv1y2i8p.play.gamezop.com/g/SkhljT2fdgb",    color: "from-fuchsia-600 via-purple-700 to-indigo-900" },
+  { id: "knife",    name: "Knife Up",         tag: "ARCADE",   url: "https://zv1y2i8p.play.gamezop.com/g/r1qDQYcQS",       color: "from-rose-500 via-red-700 to-black" },
+  { id: "bubble",   name: "Bubble Shooter",   tag: "PUZZLE",   url: "https://zv1y2i8p.play.gamezop.com/g/B1YKHqA9rb",      color: "from-cyan-500 via-blue-700 to-indigo-900" },
+  { id: "tennis",   name: "Stickman Tennis",  tag: "SPORTS",   url: "https://zv1y2i8p.play.gamezop.com/g/HJzVLqRcrW",      color: "from-emerald-500 via-teal-700 to-blue-900" },
+  { id: "chess",    name: "Chess",            tag: "STRATEGY", url: "https://zv1y2i8p.play.gamezop.com/g/B1YphhMjr-",      color: "from-amber-500 via-orange-700 to-red-900" },
+  { id: "ludo",     name: "Mini Ludo",        tag: "CLASSIC",  url: "https://zv1y2i8p.play.gamezop.com/g/H17_5pgesb",      color: "from-violet-500 via-fuchsia-700 to-purple-900" },
+];
 
 const featured = [
   { title: "CINESTREAM ARCADE",  tagline: "The hidden gaming universe. Discovered.", rating: 4.9, hero: "from-fuchsia-700 via-purple-900 to-black", cine: true },
@@ -24,15 +35,31 @@ const games = [
 const cats = ["All", "Action", "RPG", "Strategy", "Shooter", "Sandbox", "Stealth", "Racing", "Indie"];
 
 export function GamesApp() {
+  const { windows, toggleFullscreen } = useGhost();
   const [hero, setHero] = useState(0);
   const [launching, setLaunching] = useState(false);
   const [inGame, setInGame] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [arcadeGame, setArcadeGame] = useState<typeof ARCADE[number] | null>(null);
+  const [arcadeLoaded, setArcadeLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!arcadeGame) return;
+    const me = windows.find((w) => w.appId === "games");
+    if (me && !me.fullscreen) toggleFullscreen(me.id);
+  }, [arcadeGame, windows, toggleFullscreen]);
 
   const launchCine = () => {
     setLaunching(true);
     setIframeLoaded(false);
     setTimeout(() => { setInGame(true); setLaunching(false); }, 1600);
+  };
+
+  const exitArcade = () => {
+    const me = windows.find((w) => w.appId === "games");
+    if (me?.fullscreen) toggleFullscreen(me.id);
+    setArcadeGame(null);
+    setArcadeLoaded(false);
   };
 
   return (
@@ -154,6 +181,38 @@ export function GamesApp() {
               </div>
             </div>
 
+            {/* ARCADE — instantly playable in-browser */}
+            <Section icon={<Joystick className="h-3 w-3 text-fuchsia-300" />} label="ARCADE · INSTANT PLAY">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {ARCADE.map((g, i) => (
+                  <motion.button key={g.id}
+                    initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+                    whileHover={{ scale: 1.03, y: -3 }} whileTap={{ scale: 0.98 }}
+                    onClick={() => { setArcadeLoaded(false); setArcadeGame(g); }}
+                    className="relative aspect-video rounded-xl overflow-hidden ring-1 ring-white/10 group">
+                    <div className={`absolute inset-0 bg-gradient-to-br ${g.color}`} />
+                    <div className="absolute inset-0 opacity-30 mix-blend-overlay" style={{ backgroundImage: "radial-gradient(circle at 30% 30%, white, transparent 60%)" }} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                    <Zap className="absolute top-2 right-2 h-3.5 w-3.5 text-amber-300/80" />
+                    <div className="absolute inset-x-0 bottom-0 p-3">
+                      <div className="text-[10px] text-fuchsia-300 font-mono">{g.tag}</div>
+                      <div className="text-sm font-bold leading-tight">{g.name}</div>
+                    </div>
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition flex items-center justify-center bg-black/40">
+                      <div className="h-12 w-12 rounded-full gradient-neon flex items-center justify-center shadow-xl">
+                        <Play className="h-5 w-5 fill-white text-white" />
+                      </div>
+                    </div>
+                    {/* shimmer */}
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                      <motion.div className="absolute -inset-y-2 w-1/3 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12"
+                        initial={{ x: "-150%" }} animate={{ x: "300%" }} transition={{ duration: 4, repeat: Infinity, repeatDelay: 2 + i * 0.5 }} />
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </Section>
+
             {/* TRENDING */}
             <Section icon={<Flame className="h-3 w-3 text-orange-400" />} label="TRENDING NOW">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -211,6 +270,45 @@ export function GamesApp() {
             <div className="mt-2 text-[10px] tracking-[0.5em] text-fuchsia-300/70 font-mono">ESTABLISHING SECURE TUNNEL…</div>
             <div className="mt-6 w-64 h-[3px] bg-white/10 rounded-full overflow-hidden">
               <motion.div initial={{ x: "-100%" }} animate={{ x: "100%" }} transition={{ duration: 1.4, ease: "easeInOut" }} className="h-full w-1/2 gradient-neon" />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ARCADE FULLSCREEN OVERLAY */}
+      <AnimatePresence>
+        {arcadeGame && (
+          <motion.div key={arcadeGame.id} initial={{ opacity: 0, scale: 1.04, filter: "blur(8px)" }} animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }} exit={{ opacity: 0, scale: 1.02, filter: "blur(6px)" }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute inset-0 z-30 flex flex-col bg-black">
+            <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-fuchsia-950/80 via-black to-purple-950/80 border-b border-fuchsia-500/20">
+              <button onClick={exitArcade} className="flex items-center gap-2 text-xs font-mono text-white/70 hover:text-white transition">
+                <ArrowLeft className="h-3.5 w-3.5" /> EXIT ARCADE
+              </button>
+              <div className="flex items-center gap-2 text-[10px] font-mono tracking-[0.3em] text-fuchsia-300">
+                <Joystick className="h-3 w-3" />
+                {arcadeGame.name.toUpperCase()} · LIVE
+              </div>
+              <div className="flex items-center gap-2 text-[10px] font-mono text-emerald-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,.9)]" />
+                ARCADE ONLINE
+              </div>
+            </div>
+            <div className="relative flex-1 bg-black">
+              {!arcadeLoaded && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-black">
+                  <Loader2 className="h-8 w-8 animate-spin text-fuchsia-400" />
+                  <div className="text-[10px] tracking-[0.5em] font-mono text-fuchsia-300">LOADING {arcadeGame.name.toUpperCase()}…</div>
+                </div>
+              )}
+              <iframe
+                src={arcadeGame.url}
+                title={arcadeGame.name}
+                onLoad={() => setArcadeLoaded(true)}
+                className="w-full h-full bg-black"
+                allow="autoplay; fullscreen; gamepad; clipboard-write"
+              />
+              <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-fuchsia-500/10" />
             </div>
           </motion.div>
         )}
