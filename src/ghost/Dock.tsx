@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { useGhost } from "./store";
 import { APPS, type AppDef } from "./apps";
 
+const DISCORD_URL = "https://discord.gg/AyT6Mu8c5f";
+
 export function Dock() {
   const { openApp, windows } = useGhost();
   const mouseX = useMotionValue<number | null>(null);
@@ -28,9 +30,10 @@ export function Dock() {
           );
         })}
         <span className="self-stretch w-px mx-1 my-1 bg-gradient-to-b from-transparent via-fuchsia-400/30 to-transparent" />
+        <DiscordDockIcon mouseX={mouseX} />
+        <span className="self-stretch w-px mx-1 my-1 bg-gradient-to-b from-transparent via-fuchsia-400/30 to-transparent" />
         <DockClock />
       </motion.div>
-      {/* reflection */}
       <div className="mx-auto mt-0.5 h-2 w-[80%] opacity-40 blur-md bg-gradient-to-b from-fuchsia-500/30 to-transparent rounded-full" />
     </motion.div>
   );
@@ -57,13 +60,59 @@ function DockIcon({ app, mouseX, isOpen, onClick }: { app: AppDef; mouseX: Motio
       >
         <span className="absolute inset-0 rounded-2xl bg-gradient-to-t from-transparent to-white/15" />
         <span className="relative drop-shadow-[0_2px_3px_rgba(0,0,0,.6)]">{app.icon}</span>
-        {/* tooltip */}
         <span className="absolute -top-9 left-1/2 -translate-x-1/2 px-2 py-1 rounded-md text-[10px] font-mono whitespace-nowrap bg-black/90 text-white/95 opacity-0 group-hover:opacity-100 transition pointer-events-none border border-white/10 shadow-xl">
           {app.name}
         </span>
       </motion.div>
       <span className={`mt-0.5 h-1 w-1 rounded-full transition-all ${isOpen ? "bg-fuchsia-300 shadow-[0_0_8px_rgba(232,121,249,1)]" : "bg-transparent"}`} />
     </button>
+  );
+}
+
+function DiscordDockIcon({ mouseX }: { mouseX: MotionValue<number | null> }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const distance = useTransform(mouseX, (mx) => {
+    if (mx === null || !ref.current) return 9999;
+    const rect = ref.current.getBoundingClientRect();
+    return mx - (rect.left + rect.width / 2);
+  });
+  const size = useTransform(distance, [-120, 0, 120], [44, 64, 44]);
+  const lift = useTransform(distance, [-120, 0, 120], [0, -10, 0]);
+
+  return (
+    <a href={DISCORD_URL} target="_blank" rel="noreferrer" className="group relative flex flex-col items-center" title="GhostOS Discord">
+      <motion.div
+        ref={ref}
+        style={{ width: size, height: size, y: lift }}
+        transition={{ type: "spring", stiffness: 400, damping: 26, mass: 0.4 }}
+        whileTap={{ scale: 0.88 }}
+        className="relative rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-600 to-fuchsia-600 flex items-center justify-center text-white shadow-lg shadow-indigo-900/60 ring-1 ring-white/25"
+      >
+        <span className="absolute inset-0 rounded-2xl bg-gradient-to-t from-transparent to-white/15" />
+        {/* Discord glyph */}
+        <svg viewBox="0 0 24 24" className="relative h-7 w-7 drop-shadow-[0_2px_3px_rgba(0,0,0,.6)]" fill="currentColor">
+          <path d="M19.27 5.33A19.4 19.4 0 0 0 14.4 4l-.21.4a17.7 17.7 0 0 1 4.41 1.4 14.4 14.4 0 0 0-12.2 0 17.7 17.7 0 0 1 4.4-1.4L10.6 4a19.4 19.4 0 0 0-4.87 1.33A20.6 20.6 0 0 0 2.5 16.5a19.4 19.4 0 0 0 5.92 3l.46-.66a13 13 0 0 1-2.96-1.42c.25-.18.5-.37.74-.57a13 13 0 0 0 11.7 0c.24.2.49.39.74.57a13 13 0 0 1-2.97 1.43l.46.66a19.4 19.4 0 0 0 5.93-3 20.6 20.6 0 0 0-3.25-11.18ZM9.5 14.3c-.96 0-1.75-.9-1.75-2s.78-2 1.75-2 1.76.9 1.75 2c0 1.1-.78 2-1.75 2Zm5 0c-.96 0-1.75-.9-1.75-2s.78-2 1.75-2 1.76.9 1.75 2c0 1.1-.78 2-1.75 2Z"/>
+        </svg>
+        {/* pulsing notification dot */}
+        <motion.span
+          className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-black"
+          animate={{ scale: [1, 1.25, 1], boxShadow: ["0 0 0 0 rgba(74,222,128,.55)", "0 0 0 8px rgba(74,222,128,0)", "0 0 0 0 rgba(74,222,128,0)"] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+        <span className="absolute -top-9 left-1/2 -translate-x-1/2 px-2 py-1 rounded-md text-[10px] font-mono whitespace-nowrap bg-black/90 text-emerald-300 opacity-0 group-hover:opacity-100 transition pointer-events-none border border-emerald-400/20 shadow-xl">
+          DISCORD · NEW CODE
+        </span>
+        {/* shimmer */}
+        <span className="absolute inset-0 rounded-2xl overflow-hidden">
+          <motion.span
+            className="absolute -inset-y-2 w-1/3 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"
+            animate={{ x: ["-150%", "250%"] }}
+            transition={{ duration: 3.2, repeat: Infinity, repeatDelay: 1.4, ease: "easeInOut" }}
+          />
+        </span>
+      </motion.div>
+      <span className="mt-0.5 h-1 w-1 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(74,222,128,.9)]" />
+    </a>
   );
 }
 
@@ -91,9 +140,6 @@ function DockClock() {
         <span className="text-[9px] tracking-widest text-fuchsia-300/70">:{seconds}</span>
       </div>
       <span className="text-[9px] tracking-[0.25em] text-white/55 font-mono">{date.toUpperCase()}</span>
-      <span className="absolute -top-9 left-1/2 -translate-x-1/2 px-2 py-1 rounded-md text-[10px] font-mono whitespace-nowrap bg-black/90 text-white/95 opacity-0 hover:opacity-100 transition pointer-events-none border border-white/10 shadow-xl">
-        Spectral Time · UTC{-new Date().getTimezoneOffset() / 60 >= 0 ? "+" : ""}{-new Date().getTimezoneOffset() / 60}
-      </span>
     </motion.div>
   );
 }
