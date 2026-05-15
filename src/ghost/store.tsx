@@ -27,33 +27,64 @@ export interface Wallpaper {
   name: string;
   rarity: "common" | "rare" | "epic" | "legendary" | "mythic";
   css: string;
-  /** optional video file (in /public) used as live wallpaper */
   video?: string;
-  /** poster shown over video while loading */
   poster?: string;
-  /** optional animated overlay layer */
   animated?: "city" | "rain" | "grid" | "aurora" | "glitch";
-  /** if set, requires this redeem code to unlock */
+  /** redeem code required to unlock (shown only as "REQUIRES CODE", never revealed in UI). */
   code?: string;
+  /** exclusive wallpapers cannot be redeemed via codes; unlocked only by hidden actions. */
+  exclusive?: boolean;
+  exclusiveHint?: string;
 }
 
 export const WALLPAPERS: Wallpaper[] = [
-  { id: "nebula",  name: "NEBULA",  rarity: "common", css: "radial-gradient(ellipse 80% 60% at 20% 0%, rgba(168,85,247,0.45), transparent 60%), radial-gradient(ellipse 70% 60% at 80% 100%, rgba(59,130,246,0.45), transparent 60%), linear-gradient(180deg,#0a0612,#070510)", animated: "aurora" },
-  { id: "void",    name: "VOID",    rarity: "common", css: "radial-gradient(ellipse at center, #1a1030 0%, #050308 70%)" },
-  { id: "matrix",  name: "MATRIX",  rarity: "common", css: "linear-gradient(180deg,#000 0%,#031a08 100%)", animated: "grid" },
+  // FREE defaults — animated video
+  { id: "celestial-veil", name: "CELESTIAL VEIL", rarity: "common",
+    css: "linear-gradient(180deg,#02030a 0%,#0a0820 100%)", video: "/wallpapers/celestial-veil.mp4" },
+  { id: "silver-silence", name: "SILVER SILENCE", rarity: "common",
+    css: "linear-gradient(180deg,#000 0%,#0a0a14 100%)", video: "/wallpapers/silver-silence.mp4" },
   { id: "carbon",  name: "CARBON",  rarity: "common", css: "linear-gradient(180deg,#0a0a0f 0%,#16161f 100%)" },
+  { id: "matrix",  name: "MATRIX",  rarity: "common", css: "linear-gradient(180deg,#000 0%,#031a08 100%)", animated: "grid" },
 
-  // unlockable LIVE video wallpapers
+  // FREE animated/video — promoted to no-code (codes leaked)
   { id: "northern-light", name: "NORTHERN LIGHT", rarity: "rare",
-    css: "linear-gradient(180deg,#02050a 0%,#0a1a30 100%)",
-    video: "/wallpapers/northern-light.mp4", code: "#aur0r4x" },
+    css: "linear-gradient(180deg,#02050a 0%,#0a1a30 100%)", video: "/wallpapers/northern-light.mp4" },
   { id: "crimson", name: "CRIMSON BLIND FAITH", rarity: "legendary",
-    css: "linear-gradient(180deg,#0a0000 0%,#1a0008 100%)",
-    video: "/wallpapers/crimson.mp4", code: "#bl00df41th" },
+    css: "linear-gradient(180deg,#0a0000 0%,#1a0008 100%)", video: "/wallpapers/crimson.mp4" },
   { id: "midnight-core", name: "MIDNIGHT CORE", rarity: "mythic",
-    css: "linear-gradient(180deg,#000 0%,#0a0420 100%)",
-    video: "/wallpapers/midnight-core.mp4", code: "#m1dn1tefuel" },
+    css: "linear-gradient(180deg,#000 0%,#0a0420 100%)", video: "/wallpapers/midnight-core.mp4" },
+
+  // NEW redeem-only — codes shared on Discord
+  { id: "rapi-red-hood", name: "RAPI · RED HOOD", rarity: "epic",
+    css: "linear-gradient(180deg,#0c0007 0%,#1a000a 100%)",
+    video: "/wallpapers/rapi-red-hood.mp4", code: "#r3dh00d" },
+  { id: "sukuna", name: "SUKUNA · KING OF CURSES", rarity: "legendary",
+    css: "linear-gradient(180deg,#100000 0%,#2a0500 100%)",
+    video: "/wallpapers/sukuna.mp4", code: "#k1ngofcurses" },
+  { id: "gojo", name: "GOJO · INFINITY", rarity: "legendary",
+    css: "linear-gradient(180deg,#000510 0%,#001a30 100%)",
+    video: "/wallpapers/gojo.mp4", code: "#s1xeyes" },
+
+  // EXCLUSIVE — no code, hidden unlock only
+  { id: "yuta", name: "YUTA · CURSED KING", rarity: "mythic",
+    css: "linear-gradient(180deg,#000 0%,#10001a 100%)",
+    video: "/wallpapers/yuta.mp4", exclusive: true,
+    exclusiveHint: "Whisper to the Ghost. Click the GhostOS logo six times." },
 ];
+
+export interface SystemSettings {
+  idleLockMinutes: number;       // 0 = off
+  redirectConfirm: boolean;
+  tabCloak: string;              // preset id, "off" = no cloak
+  panicKey: string;              // single key to trigger panic
+}
+
+const DEFAULT_SETTINGS: SystemSettings = {
+  idleLockMinutes: 0,
+  redirectConfirm: false,
+  tabCloak: "off",
+  panicKey: "`",
+};
 
 interface GhostCtx {
   booted: boolean;
@@ -64,6 +95,7 @@ interface GhostCtx {
   setWallpaperById: (id: string) => boolean;
   unlocked: Record<string, boolean>;
   redeemCode: (code: string) => { ok: boolean; wallpaper?: Wallpaper; reason?: string };
+  unlockExclusive: (id: string) => boolean;
   notifications: Notification[];
   showNotifCenter: boolean;
   toggleNotifCenter: () => void;
@@ -78,16 +110,33 @@ interface GhostCtx {
   toggleFullscreen: (id: string) => void;
   setWallpaper: (w: string) => void;
   hasFullscreen: boolean;
+  showLauncher: boolean;
+  toggleLauncher: () => void;
+  settings: SystemSettings;
+  updateSettings: (patch: Partial<SystemSettings>) => void;
+  triggerPanic: () => void;
+  locked: boolean;
+  setLocked: (b: boolean) => void;
 }
 
 const Ctx = createContext<GhostCtx | null>(null);
 
 const LS_UNLOCKED = "ghost.unlocked";
 const LS_WALL = "ghost.wallpaperId";
+const LS_WINDOWS = "ghost.windows";
+const LS_SETTINGS = "ghost.settings";
 
 export function GhostProvider({ children }: { children: ReactNode }) {
   const [booted, setBooted] = useState(false);
-  const [windows, setWindows] = useState<WindowState[]>([]);
+  const [windows, setWindows] = useState<WindowState[]>(() => {
+    try {
+      const raw = localStorage.getItem(LS_WINDOWS);
+      if (!raw) return [];
+      const arr = JSON.parse(raw) as WindowState[];
+      // restore but never start fullscreen on load
+      return arr.map((w) => ({ ...w, fullscreen: false }));
+    } catch { return []; }
+  });
   const [unlocked, setUnlocked] = useState<Record<string, boolean>>(() => {
     try { return JSON.parse(localStorage.getItem(LS_UNLOCKED) || "{}"); } catch { return {}; }
   });
@@ -97,18 +146,29 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     return (WALLPAPERS.find((w) => w.id === id) || WALLPAPERS[0]).css;
   });
   const [notifications, setNotifications] = useState<Notification[]>([
-    { id: "welcome", title: "GhostOS v3.2.0", body: "System online. All modules operational.", time: Date.now() },
+    { id: "welcome", title: "GhostOS v3.4.0", body: "Persistent sessions enabled. Multitask freely.", time: Date.now() },
   ]);
   const [showNotifCenter, setShowNotifCenter] = useState(false);
+  const [showLauncher, setShowLauncher] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const [settings, setSettings] = useState<SystemSettings>(() => {
+    try { return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem(LS_SETTINGS) || "{}") }; }
+    catch { return DEFAULT_SETTINGS; }
+  });
   const zRef = useRef(10);
 
   useEffect(() => { localStorage.setItem(LS_UNLOCKED, JSON.stringify(unlocked)); }, [unlocked]);
   useEffect(() => { localStorage.setItem(LS_WALL, wallpaperId); }, [wallpaperId]);
+  useEffect(() => { localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); }, [settings]);
+  useEffect(() => {
+    const id = setTimeout(() => localStorage.setItem(LS_WINDOWS, JSON.stringify(windows)), 200);
+    return () => clearTimeout(id);
+  }, [windows]);
 
   const setWallpaperById = useCallback((id: string) => {
     const wp = WALLPAPERS.find((w) => w.id === id);
     if (!wp) return false;
-    if (wp.code && !unlocked[wp.id]) return false;
+    if ((wp.code || wp.exclusive) && !unlocked[wp.id]) return false;
     setWallpaperId(wp.id);
     setWallpaper(wp.css);
     return true;
@@ -141,6 +201,7 @@ export function GhostProvider({ children }: { children: ReactNode }) {
         },
       ];
     });
+    setShowLauncher(false);
   }, []);
 
   const closeWindow = useCallback((id: string) => setWindows((ws) => ws.filter((w) => w.id !== id)), []);
@@ -153,6 +214,7 @@ export function GhostProvider({ children }: { children: ReactNode }) {
   const toggleFullscreen = useCallback((id: string) =>
     setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, fullscreen: !w.fullscreen } : w))), []);
   const toggleNotifCenter = useCallback(() => setShowNotifCenter((s) => !s), []);
+  const toggleLauncher = useCallback(() => setShowLauncher((s) => !s), []);
   const pushNotification = useCallback((n: { title: string; body: string }) =>
     setNotifications((arr) => [{ ...n, id: Math.random().toString(36).slice(2), time: Date.now() }, ...arr].slice(0, 20)), []);
   const dismissNotification = useCallback((id: string) =>
@@ -169,19 +231,98 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     return { ok: true, wallpaper: wp };
   }, [unlocked, pushNotification]);
 
+  const unlockExclusive = useCallback((id: string) => {
+    const wp = WALLPAPERS.find((w) => w.id === id && w.exclusive);
+    if (!wp) return false;
+    if (unlocked[id]) return false;
+    setUnlocked((u) => ({ ...u, [id]: true }));
+    pushNotification({ title: `EXCLUSIVE UNLOCKED: ${wp.name}`, body: `Hidden cinematic wallpaper revealed.` });
+    return true;
+  }, [unlocked, pushNotification]);
+
+  const updateSettings = useCallback((patch: Partial<SystemSettings>) =>
+    setSettings((s) => ({ ...s, ...patch })), []);
+
+  const triggerPanic = useCallback(() => {
+    setWindows((ws) => ws.map((w) => ({ ...w, minimized: true, fullscreen: false })));
+    pushNotification({ title: "PANIC MODE", body: "All windows minimized. Tab cloaked." });
+  }, [pushNotification]);
+
+  // Apply tab cloak
+  useEffect(() => {
+    const cloaks: Record<string, { title: string; favicon: string }> = {
+      off:           { title: "GhostOS — Spectral Desktop Environment", favicon: "/favicon.ico" },
+      google:        { title: "Google", favicon: "https://www.google.com/favicon.ico" },
+      classroom:     { title: "Home", favicon: "https://ssl.gstatic.com/classroom/favicon.png" },
+      docs:          { title: "Google Docs", favicon: "https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico" },
+      drive:         { title: "My Drive - Google Drive", favicon: "https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png" },
+      canvas:        { title: "Dashboard", favicon: "https://du11hjcvx0uqb.cloudfront.net/dist/images/favicon-e10d657a73.ico" },
+      classlink:     { title: "ClassLink", favicon: "https://launchpad.classlink.com/launchpad/static/favicon.ico" },
+    };
+    const c = cloaks[settings.tabCloak] || cloaks.off;
+    document.title = c.title;
+    let link = document.querySelector("link[rel='icon']") as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.head.appendChild(link);
+    }
+    link.href = c.favicon;
+  }, [settings.tabCloak]);
+
+  // Panic key listener
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const k = settings.panicKey;
+      if (!k) return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === k) {
+        e.preventDefault();
+        triggerPanic();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [settings.panicKey, triggerPanic]);
+
+  // Idle lock
+  useEffect(() => {
+    if (!settings.idleLockMinutes) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const reset = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => setLocked(true), settings.idleLockMinutes * 60 * 1000);
+    };
+    const events = ["mousemove", "keydown", "click", "touchstart"];
+    events.forEach((e) => window.addEventListener(e, reset));
+    reset();
+    return () => { clearTimeout(timer); events.forEach((e) => window.removeEventListener(e, reset)); };
+  }, [settings.idleLockMinutes]);
+
+  // Redirect confirmation
+  useEffect(() => {
+    if (!settings.redirectConfirm) return;
+    const onBefore = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", onBefore);
+    return () => window.removeEventListener("beforeunload", onBefore);
+  }, [settings.redirectConfirm]);
+
   const hasFullscreen = windows.some((w) => w.fullscreen && !w.minimized);
 
   const value = useMemo<GhostCtx>(() => ({
     booted, setBooted, windows, wallpaper, wallpaperId, setWallpaperById,
-    unlocked, redeemCode,
+    unlocked, redeemCode, unlockExclusive,
     notifications, showNotifCenter,
     toggleNotifCenter, pushNotification, dismissNotification,
     openApp, closeWindow, focusWindow, updateWindow, toggleMinimize, toggleMaximize, toggleFullscreen, setWallpaper,
-    hasFullscreen,
-  }), [booted, windows, wallpaper, wallpaperId, setWallpaperById, unlocked, redeemCode,
+    hasFullscreen, showLauncher, toggleLauncher,
+    settings, updateSettings, triggerPanic, locked, setLocked,
+  }), [booted, windows, wallpaper, wallpaperId, setWallpaperById, unlocked, redeemCode, unlockExclusive,
     notifications, showNotifCenter,
     toggleNotifCenter, pushNotification, dismissNotification,
-    openApp, closeWindow, focusWindow, updateWindow, toggleMinimize, toggleMaximize, toggleFullscreen, hasFullscreen]);
+    openApp, closeWindow, focusWindow, updateWindow, toggleMinimize, toggleMaximize, toggleFullscreen,
+    hasFullscreen, showLauncher, toggleLauncher, settings, updateSettings, triggerPanic, locked]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
