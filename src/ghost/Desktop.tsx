@@ -9,6 +9,8 @@ import { DesktopIcons } from "./DesktopIcons";
 import { NotificationCenter } from "./NotificationCenter";
 import { FpsMonitor } from "./FpsMonitor";
 import { OnlineStatus } from "./OnlineStatus";
+import { AppLauncher } from "./AppLauncher";
+import { LockScreen } from "./LockScreen";
 import { GamesApp } from "./apps/GamesApp";
 import { MoviesApp } from "./apps/MoviesApp";
 import { GhostAIApp } from "./apps/GhostAIApp";
@@ -64,7 +66,6 @@ export function Desktop() {
     <div className="fixed inset-0 overflow-hidden" style={{ background: wallpaper }}>
       <AnimatedWallpaperLayer wallpaper={activeWallpaper} />
 
-      {/* desktop ambient FX — hidden when an app is fully immersive */}
       <AnimatePresence>
         {!hasFullscreen && (
           <motion.div key="ambient" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="absolute inset-0 pointer-events-none">
@@ -73,13 +74,6 @@ export function Desktop() {
             <motion.div className="absolute -inset-10 mix-blend-screen"
               style={{ x: px, y: py, scale: 1.05, background: "radial-gradient(ellipse 30% 25% at 70% 20%, rgba(236,72,153,.25), transparent 60%)" }}
               animate={{ opacity: [0.6, 0.9, 0.6] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} />
-            {[...Array(18)].map((_, i) => (
-              <motion.span key={i}
-                className="absolute h-1 w-1 rounded-full bg-fuchsia-300/60 shadow-[0_0_8px_rgba(232,121,249,.9)]"
-                initial={{ x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight, opacity: 0 }}
-                animate={{ y: [null, -40 - Math.random() * 80], opacity: [0, 0.7, 0] }}
-                transition={{ duration: 8 + Math.random() * 6, repeat: Infinity, delay: Math.random() * 6, ease: "linear" }} />
-            ))}
             <div className="absolute inset-0 opacity-[0.04]"
               style={{ backgroundImage: "linear-gradient(rgba(192,132,252,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(192,132,252,.5) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
             <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 120%, rgba(168,85,247,.25), transparent 60%)" }} />
@@ -88,7 +82,6 @@ export function Desktop() {
         )}
       </AnimatePresence>
 
-      {/* SYSTEM CHROME — hidden in immersive fullscreen */}
       <AnimatePresence>
         {!hasFullscreen && (
           <motion.div key="chrome" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.25 } }} transition={{ duration: 0.4 }}>
@@ -107,6 +100,9 @@ export function Desktop() {
           <Window key={w.id} win={w}>{APP_RENDER[w.appId]()}</Window>
         ))}
       </AnimatePresence>
+
+      <AppLauncher />
+      <LockScreen />
     </div>
   );
 }

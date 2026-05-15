@@ -1,10 +1,27 @@
 import { motion } from "framer-motion";
+import { useGhost } from "./store";
 
-export function GhostLogo({ size = 80, glow = true }: { size?: number; glow?: boolean }) {
+export function GhostLogo({ size = 80, glow = true, interactive = false }: { size?: number; glow?: boolean; interactive?: boolean }) {
+  const { unlockExclusive, unlocked, pushNotification } = useGhost();
+  const handleClick = () => {
+    if (!interactive) return;
+    const KEY = "ghost.logoClicks";
+    const next = (parseInt(sessionStorage.getItem(KEY) || "0", 10) || 0) + 1;
+    sessionStorage.setItem(KEY, String(next));
+    if (next >= 6 && !unlocked["yuta"]) {
+      unlockExclusive("yuta");
+      sessionStorage.setItem(KEY, "0");
+    } else if (next >= 3 && next < 6 && !unlocked["yuta"]) {
+      pushNotification({ title: "GHOST WHISPERS", body: `${6 - next} more taps until something awakens…` });
+    }
+  };
   return (
     <motion.div
-      className="relative inline-flex items-center justify-center"
+      onClick={handleClick}
+      className={`relative inline-flex items-center justify-center ${interactive ? "cursor-pointer" : ""}`}
       style={{ width: size, height: size }}
+      whileHover={interactive ? { scale: 1.08 } : undefined}
+      whileTap={interactive ? { scale: 0.92 } : undefined}
       animate={glow ? { filter: ["drop-shadow(0 0 18px rgba(192,132,252,.6))", "drop-shadow(0 0 32px rgba(192,132,252,.9))", "drop-shadow(0 0 18px rgba(192,132,252,.6))"] } : undefined}
       transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
     >
