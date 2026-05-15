@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { useGhost, WALLPAPERS } from "../store";
-import { Volume2, Palette, Image as ImageIcon, Bell, Monitor, Lock, Sparkles } from "lucide-react";
+import { Volume2, Palette, Image as ImageIcon, Bell, Monitor, Lock, Sparkles, Shield, EyeOff, AlertTriangle, KeyRound, Clock } from "lucide-react";
 
 const RARITY_STYLE: Record<string, string> = {
   common:    "text-white/50 ring-white/10",
@@ -12,14 +13,25 @@ const RARITY_STYLE: Record<string, string> = {
 
 const SECTIONS = [
   { id: "wallpaper", name: "Wallpaper", icon: ImageIcon },
+  { id: "privacy",   name: "Privacy",   icon: Shield },
   { id: "appearance", name: "Appearance", icon: Palette },
   { id: "sound", name: "Sound", icon: Volume2 },
   { id: "notifications", name: "Notifications", icon: Bell },
   { id: "display", name: "Display", icon: Monitor },
 ];
 
+const CLOAK_PRESETS = [
+  { id: "off",       name: "Off · GhostOS" },
+  { id: "google",    name: "Google" },
+  { id: "classroom", name: "Google Classroom" },
+  { id: "docs",      name: "Google Docs" },
+  { id: "drive",     name: "Google Drive" },
+  { id: "canvas",    name: "Canvas" },
+  { id: "classlink", name: "ClassLink" },
+];
+
 export function SettingsApp() {
-  const { wallpaperId, setWallpaperById, unlocked, redeemCode, pushNotification } = useGhost();
+  const { wallpaperId, setWallpaperById, unlocked, redeemCode, pushNotification, settings, updateSettings, triggerPanic } = useGhost();
   const [section, setSection] = useState("wallpaper");
   const [code, setCode] = useState("");
   const [redeemMsg, setRedeemMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -52,10 +64,10 @@ export function SettingsApp() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-xl font-bold">Wallpaper Library</h2>
-                <p className="text-xs text-white/50 mt-1">Animated, cinematic, and unlockable backdrops.</p>
+                <p className="text-xs text-white/50 mt-1">Animated cinematic backdrops. Codes are dropped on Discord.</p>
               </div>
               <div className="text-[10px] font-mono tracking-widest text-white/40">
-                {Object.values(unlocked).filter(Boolean).length} / {WALLPAPERS.filter((w) => w.code).length} HIDDEN UNLOCKED
+                {Object.values(unlocked).filter(Boolean).length} / {WALLPAPERS.filter((w) => w.code || w.exclusive).length} HIDDEN UNLOCKED
               </div>
             </div>
 
@@ -63,7 +75,7 @@ export function SettingsApp() {
               <Sparkles className="h-4 w-4 text-fuchsia-300" />
               <input value={code} onChange={(e) => setCode(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleRedeem()}
-                placeholder="Redeem code  (e.g. #845yc8r)"
+                placeholder="Redeem code  (drops on Discord)"
                 className="flex-1 bg-transparent outline-none text-sm font-mono placeholder:text-white/30" />
               <button onClick={handleRedeem} className="px-3 py-1.5 rounded-lg gradient-neon text-xs font-bold">REDEEM</button>
             </div>
@@ -75,11 +87,13 @@ export function SettingsApp() {
 
             <div className="grid grid-cols-3 gap-3">
               {WALLPAPERS.map((w) => {
-                const locked = w.code && !unlocked[w.id];
+                const lockedByCode = !!w.code && !unlocked[w.id];
+                const lockedExclusive = !!w.exclusive && !unlocked[w.id];
+                const locked = lockedByCode || lockedExclusive;
                 const active = wallpaperId === w.id;
                 return (
                   <button key={w.id}
-                    disabled={!!locked}
+                    disabled={locked}
                     onClick={() => {
                       const ok = setWallpaperById(w.id);
                       if (ok) pushNotification({ title: "Wallpaper updated", body: w.name });
@@ -88,11 +102,23 @@ export function SettingsApp() {
                       active ? "ring-fuchsia-400 shadow-[0_0_24px_rgba(232,121,249,.5)]" : `ring-1 ${RARITY_STYLE[w.rarity]}`
                     } ${locked ? "cursor-not-allowed" : "hover:scale-[1.02]"}`}
                     style={{ background: w.css }}>
+                    {w.video && !locked && (
+                      <video src={w.video} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover opacity-90" />
+                    )}
                     {locked && (
-                      <div className="absolute inset-0 backdrop-blur-md bg-black/60 flex flex-col items-center justify-center text-center">
+                      <div className="absolute inset-0 backdrop-blur-md bg-black/65 flex flex-col items-center justify-center text-center px-2">
                         <Lock className="h-5 w-5 text-white/70 mb-1" />
-                        <div className="text-[10px] font-mono text-white/60 tracking-widest">REDEEM CODE</div>
-                        <div className="text-[10px] font-mono text-fuchsia-300 mt-0.5">{w.code}</div>
+                        {lockedExclusive ? (
+                          <>
+                            <div className="text-[10px] font-mono text-rose-300 tracking-widest">EXCLUSIVE</div>
+                            <div className="text-[9px] font-mono text-white/50 mt-1 leading-snug">{w.exclusiveHint}</div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-[10px] font-mono text-white/60 tracking-widest">REQUIRES CODE</div>
+                            <div className="text-[9px] font-mono text-fuchsia-300/80 mt-1">CHECK DISCORD</div>
+                          </>
+                        )}
                       </div>
                     )}
                     <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/90 to-transparent">
@@ -105,9 +131,62 @@ export function SettingsApp() {
                 );
               })}
             </div>
-            <p className="text-[10px] font-mono text-white/30 mt-5 tracking-widest">TIP: open Terminal and try <span className="text-fuchsia-300">redeem #m1dn1te</span></p>
+            <p className="text-[10px] font-mono text-white/30 mt-5 tracking-widest">Drop a code in the Terminal too: <span className="text-fuchsia-300">redeem &lt;#code&gt;</span></p>
           </div>
         )}
+
+        {section === "privacy" && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-bold">Privacy &amp; Stealth</h2>
+              <p className="text-xs text-white/50 mt-1">Tools to keep GhostOS hidden in plain sight.</p>
+            </div>
+
+            <Card icon={<EyeOff className="h-4 w-4 text-cyan-300" />} title="Tab Cloaking" subtitle="Disguise the browser tab title and favicon.">
+              <div className="grid grid-cols-2 gap-2">
+                {CLOAK_PRESETS.map((p) => (
+                  <button key={p.id} onClick={() => updateSettings({ tabCloak: p.id })}
+                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs transition ring-1 ${
+                      settings.tabCloak === p.id ? "ring-fuchsia-400/60 bg-fuchsia-500/15 text-white" : "ring-white/10 text-white/60 hover:bg-white/5"
+                    }`}>
+                    <span>{p.name}</span>
+                    {settings.tabCloak === p.id && <span className="text-[9px] font-mono tracking-widest text-fuchsia-300">ACTIVE</span>}
+                  </button>
+                ))}
+              </div>
+            </Card>
+
+            <Card icon={<AlertTriangle className="h-4 w-4 text-amber-300" />} title="Panic Key" subtitle="Press to instantly minimize everything &amp; cloak the tab.">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-[11px] text-white/50 font-mono">Trigger key</div>
+                  <input value={settings.panicKey} maxLength={1} onChange={(e) => updateSettings({ panicKey: e.target.value })}
+                    className="mt-1 w-16 px-2 py-1 rounded-md text-center font-mono text-lg text-white bg-black/60 ring-1 ring-fuchsia-400/30 outline-none" />
+                </div>
+                <button onClick={triggerPanic}
+                  className="px-4 py-2 rounded-lg text-xs font-mono tracking-widest bg-rose-500/15 text-rose-200 ring-1 ring-rose-400/40 hover:bg-rose-500/25">
+                  TEST PANIC
+                </button>
+              </div>
+            </Card>
+
+            <Card icon={<Clock className="h-4 w-4 text-violet-300" />} title="Idle Lock Screen" subtitle="Auto-lock the OS after inactivity.">
+              <div className="flex items-center gap-2 flex-wrap">
+                {[0, 1, 5, 10, 30].map((m) => (
+                  <button key={m} onClick={() => updateSettings({ idleLockMinutes: m })}
+                    className={`px-3 py-1.5 rounded-full text-xs font-mono ring-1 transition ${
+                      settings.idleLockMinutes === m ? "ring-fuchsia-400/60 bg-fuchsia-500/20 text-white" : "ring-white/10 text-white/55 hover:bg-white/5"
+                    }`}>{m === 0 ? "Off" : `${m} min`}</button>
+                ))}
+              </div>
+            </Card>
+
+            <Card icon={<KeyRound className="h-4 w-4 text-emerald-300" />} title="Redirect Confirmation" subtitle="Warn before the page navigates away.">
+              <Toggle on={settings.redirectConfirm} onChange={(v) => updateSettings({ redirectConfirm: v })} />
+            </Card>
+          </div>
+        )}
+
         {section === "appearance" && (
           <div>
             <h2 className="text-xl font-bold mb-1">Appearance</h2>
@@ -153,6 +232,29 @@ export function SettingsApp() {
         )}
       </main>
     </div>
+  );
+}
+
+function Card({ icon, title, subtitle, children }: { icon: React.ReactNode; title: string; subtitle: string; children: React.ReactNode }) {
+  return (
+    <div className="glass rounded-xl p-4 ring-1 ring-white/5 hover:ring-fuchsia-400/20 transition">
+      <div className="flex items-center gap-2 mb-1">
+        {icon}
+        <div className="text-sm font-bold tracking-wide">{title}</div>
+      </div>
+      <div className="text-[11px] text-white/50 mb-3" dangerouslySetInnerHTML={{ __html: subtitle }} />
+      {children}
+    </div>
+  );
+}
+
+function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button onClick={() => onChange(!on)}
+      className={`relative h-7 w-12 rounded-full transition ring-1 ${on ? "bg-fuchsia-500/40 ring-fuchsia-400/60 shadow-[0_0_18px_rgba(232,121,249,.5)]" : "bg-white/5 ring-white/10"}`}>
+      <motion.span layout className={`absolute top-1 h-5 w-5 rounded-full ${on ? "bg-white shadow-[0_0_12px_rgba(255,255,255,.6)]" : "bg-white/60"}`}
+        style={{ left: on ? 24 : 4 }} transition={{ type: "spring", stiffness: 500, damping: 30 }} />
+    </button>
   );
 }
 

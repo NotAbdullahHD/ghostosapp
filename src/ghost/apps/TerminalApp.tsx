@@ -7,19 +7,22 @@ const HELP = [
   "  whoami               — current spectral identity",
   "  ls                   — list current directory",
   "  neofetch             — system info",
-  "  wallpapers           — list all wallpapers + lock state",
+  "  wallpapers           — list wallpapers + lock state (codes hidden)",
   "  redeem <#code>       — unlock hidden wallpaper / theme",
   "  unlock <#code>       — alias of redeem",
   "  apply <wallpaper-id> — switch to an unlocked wallpaper",
+  "  panic                — minimize everything · trigger panic",
+  "  cloak <preset>       — set tab cloak (off|google|classroom|docs|drive|canvas|classlink)",
+  "  lock                 — lock the OS",
   "  ghost                — ???",
   "  clear                — clear terminal",
 ];
 
 export function TerminalApp() {
-  const { redeemCode, unlocked, setWallpaperById } = useGhost();
+  const { redeemCode, unlocked, setWallpaperById, triggerPanic, updateSettings, setLocked } = useGhost();
   const [lines, setLines] = useState<string[]>([
-    "GhostOS Spectral Shell v3.1.4",
-    "type 'help' for commands. try `redeem #845yc8r` to unlock something.",
+    "GhostOS Spectral Shell v3.2.0",
+    "type 'help' for commands. codes drop on Discord.",
     "",
   ]);
   const [input, setInput] = useState("");
@@ -40,22 +43,31 @@ export function TerminalApp() {
     else if (lower === "ls") out.push("vault/  arcade/  cinema/  notes/  wallpapers/  README.ghost");
     else if (lower === "neofetch") {
       out.push(
-        "          ▲▲▲          OS:     GhostOS v3.1.4",
-        "        ▲▲   ▲▲        kernel: spectral-9.2",
+        "          ▲▲▲          OS:     GhostOS v3.2.0",
+        "        ▲▲   ▲▲        kernel: spectral-9.4",
         "       ▲   ✦   ▲       shell:  spec-sh",
         "        ▲▲   ▲▲        cpu:    Phantom M3 (12c)",
         "          ▼▼▼          mem:    13.7G / 32G",
       );
     }
     else if (lower === "ghost") out.push("👻  boo.");
+    else if (lower === "panic") { triggerPanic(); out.push("✓ panic triggered"); }
+    else if (lower === "lock") { setLocked(true); out.push("✓ system locked"); }
+    else if (lower.startsWith("cloak ")) {
+      const preset = cmd.slice(6).trim().toLowerCase();
+      const valid = ["off","google","classroom","docs","drive","canvas","classlink"];
+      if (!valid.includes(preset)) out.push(`✗ unknown preset. one of: ${valid.join(", ")}`);
+      else { updateSettings({ tabCloak: preset }); out.push(`✓ tab cloak: ${preset}`); }
+    }
     else if (lower === "wallpapers") {
       out.push("[ wallpaper library ]");
       WALLPAPERS.forEach((w) => {
-        const locked = w.code && !unlocked[w.id];
-        const status = !w.code ? "OWNED" : locked ? "LOCKED" : "UNLOCKED";
-        const code = w.code ? `  code: ${w.code}` : "";
-        out.push(`  ${w.id.padEnd(18)} ${w.rarity.toUpperCase().padEnd(10)} ${status}${code}`);
+        const lockedByCode = !!w.code && !unlocked[w.id];
+        const lockedExclusive = !!w.exclusive && !unlocked[w.id];
+        const status = lockedExclusive ? "EXCLUSIVE·LOCKED" : lockedByCode ? "LOCKED" : (w.code || w.exclusive ? "UNLOCKED" : "OWNED");
+        out.push(`  ${w.id.padEnd(18)} ${w.rarity.toUpperCase().padEnd(10)} ${status}`);
       });
+      out.push("", "(codes are not printed — drops on Discord)");
     }
     else if (lower.startsWith("apply ")) {
       const id = cmd.slice(6).trim();
