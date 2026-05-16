@@ -45,11 +45,6 @@ export function SocialApp({ kind }: { kind: "x" | "tiktok" | "pinterest" }) {
 
   const retry = () => { setLoaded(false); setFailed(false); setReloadKey((k) => k + 1); };
 
-  // timeout watchdog
-  useState(() => {
-    return undefined;
-  });
-
   return (
     <div className="h-full flex flex-col bg-black text-white relative overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 glass-strong border-b border-white/10 relative">
