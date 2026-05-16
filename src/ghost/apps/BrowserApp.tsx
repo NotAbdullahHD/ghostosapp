@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, RotateCw, Lock, Plus, X, Star, Shield, Loader2, GraduationCap, Globe } from "lucide-react";
+import { ArrowLeft, ArrowRight, RotateCw, Lock, Plus, X, Star, Shield, Loader2, GraduationCap, Globe, AlertTriangle } from "lucide-react";
+import { proxify, resolveInput, toSearchUrl, isUrlLike, type EngineId } from "../proxy";
 
-interface Tab { id: string; title: string; url: string; loading?: boolean; }
+interface Tab { id: string; title: string; url: string; loading?: boolean; failed?: boolean; }
 
-const ENGINES = {
-  duckduckgo: { name: "DuckDuckGo", color: "from-orange-500 to-red-600", url: (q: string) => `https://duckduckgo.com/?q=${encodeURIComponent(q)}` },
-  google:     { name: "Google",     color: "from-blue-500 to-cyan-500",  url: (q: string) => `https://www.google.com/search?q=${encodeURIComponent(q)}` },
-  brave:      { name: "Brave",      color: "from-orange-600 to-amber-700", url: (q: string) => `https://search.brave.com/search?q=${encodeURIComponent(q)}` },
-} as const;
-type EngineId = keyof typeof ENGINES;
+const ENGINES: Record<EngineId, { name: string; color: string }> = {
+  duckduckgo: { name: "DuckDuckGo", color: "from-orange-500 to-red-600" },
+  google:     { name: "Google",     color: "from-blue-500 to-cyan-500" },
+  brave:      { name: "Brave",      color: "from-orange-600 to-amber-700" },
+};
 
 const SCHOOL_PRESETS = [
   { id: "classroom", name: "Google Classroom", title: "Classroom", url: "https://classroom.google.com", color: "from-emerald-500 to-green-700" },
@@ -36,7 +36,7 @@ export function BrowserApp() {
   ]);
   const [active, setActive] = useState("1");
   const [url, setUrl] = useState("spectre://home");
-  const [engine, setEngine] = useState<EngineId>("duckduckgo");
+  const [engine, setEngine] = useState<EngineId>("google");
   const [enginePickerOpen, setEnginePickerOpen] = useState(false);
   const [presetsOpen, setPresetsOpen] = useState(false);
 
@@ -70,27 +70,22 @@ export function BrowserApp() {
   };
 
   const navigate = (raw: string) => {
-    let target = raw.trim();
-    if (!target) return;
-    if (target.startsWith("spectre://")) {
-      setTabs((arr) => arr.map((t) => t.id === active ? { ...t, url: target, title: "Spectre Start", loading: false } : t));
-      setUrl(target);
+    const input = raw.trim();
+    if (!input) return;
+    if (input.startsWith("spectre://")) {
+      setTabs((arr) => arr.map((t) => t.id === active ? { ...t, url: input, title: "Spectre Start", loading: false, failed: false } : t));
+      setUrl(input);
       return;
     }
-    const looksLikeUrl = /^(https?:\/\/|www\.)/i.test(target) || /\.[a-z]{2,}(\/|$)/i.test(target);
-    if (looksLikeUrl) {
-      if (!/^https?:\/\//i.test(target)) target = "https://" + target;
-    } else {
-      target = ENGINES[engine].url(target);
-    }
-    setTabs((arr) => arr.map((t) => t.id === active ? { ...t, url: target, title: hostnameOf(target), loading: true } : t));
+    const target = resolveInput(input, engine);
+    setTabs((arr) => arr.map((t) => t.id === active ? { ...t, url: target, title: titleOf(target, input), loading: true, failed: false } : t));
     setUrl(target);
   };
 
   const applyPreset = (p: typeof SCHOOL_PRESETS[number]) => {
     setPresetsOpen(false);
     if (activeTab) {
-      setTabs((arr) => arr.map((t) => t.id === active ? { ...t, url: p.url, title: p.title, loading: true } : t));
+      setTabs((arr) => arr.map((t) => t.id === active ? { ...t, url: p.url, title: p.title, loading: true, failed: false } : t));
       setUrl(p.url);
     } else {
       addTab({ url: p.url, title: p.title });
@@ -200,12 +195,18 @@ export function BrowserApp() {
       <div className="flex-1 relative bg-gradient-to-b from-transparent via-purple-950/10 to-transparent">
         {activeTab && activeTab.url.startsWith("spectre://") ? (
           <SpectreHome
-            engine={ENGINES[engine]}
+            engineId={engine}
+            engineMeta={ENGINES[engine]}
             onSearch={(q) => navigate(q)}
             onShortcut={(s) => navigate(s.url)}
           />
         ) : activeTab ? (
-          <TabFrame tab={activeTab} onLoaded={() => setTabs((arr) => arr.map((t) => t.id === activeTab.id ? { ...t, loading: false } : t))} />
+          <TabFrame
+            tab={activeTab}
+            onLoaded={() => setTabs((arr) => arr.map((t) => t.id === activeTab.id ? { ...t, loading: false, failed: false } : t))}
+            onFailed={() => setTabs((arr) => arr.map((t) => t.id === activeTab.id ? { ...t, loading: false, failed: true } : t))}
+            onRetry={() => navigate(activeTab.url)}
+          />
         ) : null}
       </div>
     </div>
@@ -215,20 +216,27 @@ export function BrowserApp() {
 function hostnameOf(u: string) {
   try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return u; }
 }
+function titleOf(targetUrl: string, originalInput: string) {
+  if (isUrlLike(originalInput) || /^https?:\/\//i.test(originalInput)) return hostnameOf(targetUrl);
+  return originalInput.length > 28 ? originalInput.slice(0, 28) + "…" : originalInput;
+}
 
-function TabFrame({ tab, onLoaded }: { tab: Tab; onLoaded: () => void }) {
+function TabFrame({ tab, onLoaded, onFailed, onRetry }: { tab: Tab; onLoaded: () => void; onFailed: () => void; onRetry: () => void }) {
   const ref = useRef<HTMLIFrameElement>(null);
-  const [blocked, setBlocked] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
   useEffect(() => {
-    setBlocked(false);
-    const t = setTimeout(() => { if (tab.loading) setBlocked(true); }, 6000);
+    if (!tab.loading) return;
+    const t = setTimeout(() => { onFailed(); }, 12000);
     return () => clearTimeout(t);
-  }, [tab.url, tab.loading]);
+  }, [tab.url, tab.loading, reloadKey, onFailed]);
+
+  const iframeSrc = proxify(tab.url);
 
   return (
     <div className="absolute inset-0">
       <AnimatePresence>
-        {tab.loading && (
+        {tab.loading && !tab.failed && (
           <motion.div key="load" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#070410]/95 backdrop-blur">
             <div className="relative h-20 w-20">
@@ -244,25 +252,44 @@ function TabFrame({ tab, onLoaded }: { tab: Tab; onLoaded: () => void }) {
         )}
       </AnimatePresence>
       <iframe
+        key={tab.url + ":" + reloadKey}
         ref={ref}
-        src={tab.url}
+        src={iframeSrc}
         title={tab.title}
         onLoad={onLoaded}
-        className="w-full h-full bg-white"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+        className="w-full h-full bg-black"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation allow-downloads"
+        allow="autoplay; fullscreen; clipboard-write; encrypted-media; geolocation; camera; microphone"
+        referrerPolicy="no-referrer"
       />
-      {blocked && tab.loading && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#070410]/95 text-center px-6">
-          <div className="text-xl font-bold neon-text">SIGNAL REFUSED</div>
-          <div className="mt-2 text-xs text-white/60 max-w-sm">This site refuses to load inside the spectral frame. Open it in a real tab from your home browser.</div>
-          <a href={tab.url} target="_blank" rel="noreferrer" className="mt-4 px-4 py-1.5 rounded-full gradient-neon text-xs font-mono">Open externally</a>
-        </div>
+      {tab.failed && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#050208]/95 text-center px-6">
+          <div className="relative">
+            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-fuchsia-700 to-rose-700 flex items-center justify-center ring-1 ring-fuchsia-400/40 shadow-[0_0_40px_rgba(232,121,249,.5)]">
+              <AlertTriangle className="h-9 w-9 text-white" />
+            </div>
+            <motion.div animate={{ scale: [1, 1.35], opacity: [0.5, 0] }} transition={{ duration: 1.6, repeat: Infinity }}
+              className="absolute inset-0 rounded-2xl ring-2 ring-fuchsia-400" />
+          </div>
+          <div className="mt-6 text-2xl font-black neon-text tracking-[0.3em]">SIGNAL REFUSED</div>
+          <div className="mt-2 text-[10px] tracking-[0.4em] font-mono text-white/50">GHOSTNET · UPSTREAM REJECTED FRAME</div>
+          <div className="mt-3 text-xs text-white/60 max-w-sm">The remote node refused the spectral handshake. Retry through the proxy or open externally.</div>
+          <div className="mt-5 flex items-center gap-2">
+            <button onClick={() => { setReloadKey((k) => k + 1); onRetry(); }}
+              className="px-4 py-1.5 rounded-full gradient-neon text-xs font-mono flex items-center gap-1.5">
+              <RotateCw className="h-3 w-3" /> RETRY
+            </button>
+            <a href={tab.url} target="_blank" rel="noreferrer"
+              className="px-4 py-1.5 rounded-full glass text-xs font-mono hover:bg-white/10">Open externally</a>
+          </div>
+        </motion.div>
       )}
     </div>
   );
 }
 
-function SpectreHome({ engine, onSearch, onShortcut }: { engine: typeof ENGINES[EngineId]; onSearch: (q: string) => void; onShortcut: (s: { url: string }) => void }) {
+function SpectreHome({ engineId, engineMeta, onSearch, onShortcut }: { engineId: EngineId; engineMeta: { name: string; color: string }; onSearch: (q: string) => void; onShortcut: (s: { url: string }) => void }) {
   const [q, setQ] = useState("");
   return (
     <div className="absolute inset-0 overflow-y-auto scrollbar-hide flex flex-col items-center pt-14 px-6">
@@ -277,9 +304,9 @@ function SpectreHome({ engine, onSearch, onShortcut }: { engine: typeof ENGINES[
           <input
             value={q} onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && onSearch(q)}
-            placeholder={`Search the spectral web with ${engine.name}…`}
+            placeholder={`Search the spectral web with ${engineMeta.name}…`}
             className="flex-1 bg-transparent outline-none text-sm" />
-          <button onClick={() => onSearch(q)} className={`px-3 py-1 rounded-full text-[10px] font-mono bg-gradient-to-r ${engine.color}`}>GO</button>
+          <button onClick={() => onSearch(q || toSearchUrl("", engineId))} className={`px-3 py-1 rounded-full text-[10px] font-mono bg-gradient-to-r ${engineMeta.color}`}>GO</button>
         </div>
       </motion.div>
       <div className="mt-10 grid grid-cols-4 gap-3 w-full max-w-xl">
