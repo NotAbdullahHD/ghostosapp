@@ -305,11 +305,13 @@ export function GamesApp() {
                 </div>
               )}
               <iframe
-                src={arcadeGame.url}
+                src={proxify(arcadeGame.url)}
                 title={arcadeGame.name}
                 onLoad={() => setArcadeLoaded(true)}
                 className="w-full h-full bg-black"
-                allow="autoplay; fullscreen; gamepad; clipboard-write"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation allow-downloads"
+                allow="autoplay; fullscreen; gamepad; clipboard-write; encrypted-media"
+                referrerPolicy="no-referrer"
               />
               <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-fuchsia-500/10" />
             </div>
