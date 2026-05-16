@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, Plus, Info, Search, Maximize2, X, Loader2, ArrowLeft, RotateCw } from "lucide-react";
+import { proxify } from "../proxy";
 
 const SOURCE = "https://net22.cc/home";
 
@@ -169,11 +170,12 @@ function GhostFlixPlayer({ phase, onExit }: { phase: "idle" | "boot" | "live"; o
         <iframe
           key={reloadKey}
           ref={ref}
-          src={SOURCE}
+          src={proxify(SOURCE)}
           title="GhostFlix"
           className="absolute inset-0 w-full h-full bg-black"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
-          allow="autoplay; fullscreen; encrypted-media"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation allow-downloads"
+          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+          referrerPolicy="no-referrer"
         />
 
         {/* ambient glow overlay */}

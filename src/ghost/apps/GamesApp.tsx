@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, Star, Flame, Trophy, Gamepad2, Heart, Clock, ChevronRight, ArrowLeft, Maximize2, Loader2, Wifi, Joystick, Zap } from "lucide-react";
 import { useGhost } from "../store";
+import { proxify } from "../proxy";
 
 const CINESTREAM_URL = "https://cinesteam.cine-softwares.workers.dev/";
 
@@ -97,11 +98,13 @@ export function GamesApp() {
                 </div>
               )}
               <iframe
-                src={CINESTREAM_URL}
+                src={proxify(CINESTREAM_URL)}
                 title="CineStream Arcade"
                 onLoad={() => setIframeLoaded(true)}
                 className="w-full h-full bg-black"
-                allow="autoplay; fullscreen; clipboard-write"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation allow-downloads"
+                allow="autoplay; fullscreen; clipboard-write; gamepad; encrypted-media"
+                referrerPolicy="no-referrer"
               />
               {/* subtle overlay */}
               <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-fuchsia-500/10" />
@@ -302,11 +305,13 @@ export function GamesApp() {
                 </div>
               )}
               <iframe
-                src={arcadeGame.url}
+                src={proxify(arcadeGame.url)}
                 title={arcadeGame.name}
                 onLoad={() => setArcadeLoaded(true)}
                 className="w-full h-full bg-black"
-                allow="autoplay; fullscreen; gamepad; clipboard-write"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation allow-downloads"
+                allow="autoplay; fullscreen; gamepad; clipboard-write; encrypted-media"
+                referrerPolicy="no-referrer"
               />
               <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-fuchsia-500/10" />
             </div>
