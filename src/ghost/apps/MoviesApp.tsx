@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, Plus, Info, Search, Maximize2, X, Loader2, ArrowLeft, RotateCw } from "lucide-react";
+import { proxify } from "../proxy";
 
 const SOURCE = "https://net22.cc/home";
 
