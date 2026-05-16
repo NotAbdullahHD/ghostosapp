@@ -170,11 +170,12 @@ function GhostFlixPlayer({ phase, onExit }: { phase: "idle" | "boot" | "live"; o
         <iframe
           key={reloadKey}
           ref={ref}
-          src={SOURCE}
+          src={proxify(SOURCE)}
           title="GhostFlix"
           className="absolute inset-0 w-full h-full bg-black"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
-          allow="autoplay; fullscreen; encrypted-media"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation allow-downloads"
+          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+          referrerPolicy="no-referrer"
         />
 
         {/* ambient glow overlay */}
