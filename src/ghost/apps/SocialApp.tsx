@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ExternalLink, Loader2, Maximize2, RotateCw, Wifi } from "lucide-react";
+import { AlertTriangle, ExternalLink, Loader2, Maximize2, RotateCw, Wifi } from "lucide-react";
+import { proxify } from "../proxy";
 
 interface SocialConfig {
   id: string;
