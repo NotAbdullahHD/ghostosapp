@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Star, Flame, Trophy, Gamepad2, Heart, Clock, ChevronRight, ArrowLeft, Maximize2, Loader2, Wifi, Joystick, Zap } from "lucide-react";
+import { Play, Star, Flame, Trophy, Gamepad2, Heart, Clock, ChevronRight, ArrowLeft, Maximize2, Loader2, Wifi, Joystick, Zap, AlertTriangle, RotateCw } from "lucide-react";
 import { useGhost } from "../store";
+import { proxify } from "../proxy";
 
 const CINESTREAM_URL = "https://cinesteam.cine-softwares.workers.dev/";
 
