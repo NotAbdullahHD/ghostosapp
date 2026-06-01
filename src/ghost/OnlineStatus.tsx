@@ -1,17 +1,67 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Gamepad2, Cloud, MessageCircle, Activity, X } from "lucide-react";
+import { Users, Activity, X, Wifi, WifiOff, Monitor } from "lucide-react";
+
+// Real local-presence counter using BroadcastChannel: counts how many GhostOS
+// tabs/windows are currently open in this browser. Falls back to 1.
+const CH_NAME = "ghostos.presence.v1";
 
 export function OnlineStatus() {
-  const [count, setCount] = useState(2431);
+  const [count, setCount] = useState(1);
   const [open, setOpen] = useState(false);
+  const [online, setOnline] = useState<boolean>(navigator.onLine);
   const ref = useRef<HTMLDivElement>(null);
+  const idRef = useRef<string>(Math.random().toString(36).slice(2));
+  const peersRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
-    const id = setInterval(() => {
-      setCount((c) => Math.max(1500, Math.min(4200, c + Math.round((Math.random() - 0.45) * 12))));
-    }, 1800);
-    return () => clearInterval(id);
+    let bc: BroadcastChannel | null = null;
+    try { bc = new BroadcastChannel(CH_NAME); } catch { bc = null; }
+    const myId = idRef.current;
+    const peers = peersRef.current;
+    peers.set(myId, Date.now());
+
+    const recompute = () => {
+      const now = Date.now();
+      // expire peers older than 8s
+      for (const [k, v] of peers) if (now - v > 8000) peers.delete(k);
+      setCount(peers.size || 1);
+    };
+
+    const announce = () => {
+      bc?.postMessage({ t: "ping", id: myId });
+      peers.set(myId, Date.now());
+      recompute();
+    };
+
+    if (bc) {
+      bc.onmessage = (ev) => {
+        const { t, id } = ev.data || {};
+        if (!id || id === myId) return;
+        peers.set(id, Date.now());
+        if (t === "ping") bc?.postMessage({ t: "pong", id: myId });
+        recompute();
+      };
+    }
+    announce();
+    const interval = setInterval(announce, 3000);
+    const sweep = setInterval(recompute, 2000);
+
+    const goingOff = () => { bc?.postMessage({ t: "bye", id: myId }); };
+    const onOnline = () => setOnline(true);
+    const onOffline = () => setOnline(false);
+    window.addEventListener("beforeunload", goingOff);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+
+    return () => {
+      clearInterval(interval); clearInterval(sweep);
+      window.removeEventListener("beforeunload", goingOff);
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+      bc?.postMessage({ t: "bye", id: myId });
+      bc?.close();
+    };
   }, []);
 
   useEffect(() => {
@@ -22,51 +72,56 @@ export function OnlineStatus() {
     return () => window.removeEventListener("mousedown", onClick);
   }, []);
 
+  const dotColor = online ? "bg-emerald-400" : "bg-rose-500";
+  const ringColor = online ? "ring-emerald-400/25" : "ring-rose-400/25";
+
   return (
     <div ref={ref} className="fixed top-12 right-3 z-[450]">
       <motion.button
         initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
         whileHover={{ y: -2 }}
         onClick={() => setOpen((s) => !s)}
-        className="glass-strong rounded-full pl-2.5 pr-3 py-1.5 ring-1 ring-emerald-400/25 flex items-center gap-2 shadow-[0_0_24px_rgba(16,185,129,.18)] hover:ring-emerald-400/60 transition"
+        className={`glass-strong rounded-full pl-2.5 pr-3 py-1.5 ring-1 ${ringColor} flex items-center gap-2 shadow-[0_0_18px_rgba(16,185,129,.12)] transition`}
         style={{ background: "linear-gradient(180deg, rgba(255,255,255,.06), rgba(10,20,15,.55))" }}
       >
         <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-70 animate-ping" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(74,222,128,.9)]" />
+          {online && <span className={`absolute inline-flex h-full w-full rounded-full ${dotColor} opacity-70 animate-ping`} />}
+          <span className={`relative inline-flex h-2 w-2 rounded-full ${dotColor} shadow-[0_0_8px_rgba(74,222,128,.9)]`} />
         </span>
-        <span className="font-mono text-xs text-white tracking-wider">{count.toLocaleString()}</span>
-        <span className="text-[9px] font-mono tracking-[0.3em] text-emerald-300/80">ONLINE</span>
+        <span className="font-mono text-xs text-white tracking-wider">{count}</span>
+        <span className={`text-[9px] font-mono tracking-[0.3em] ${online ? "text-emerald-300/80" : "text-rose-300/80"}`}>
+          {online ? "ONLINE" : "OFFLINE"}
+        </span>
       </motion.button>
 
       <AnimatePresence>
         {open && (
           <motion.div
             initial={{ opacity: 0, y: -8, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8, scale: 0.96 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.18 }}
             className="absolute right-0 mt-2 w-72 glass-strong rounded-2xl ring-1 ring-emerald-400/20 p-4 shadow-[0_30px_60px_-20px_rgba(0,0,0,.8)]"
             style={{ background: "linear-gradient(180deg, rgba(20,25,30,.85), rgba(8,10,15,.85))" }}
           >
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-[10px] tracking-[0.4em] font-mono text-emerald-300/80">SPECTRAL NETWORK</div>
-                <div className="text-2xl font-black text-white">{count.toLocaleString()}<span className="text-[10px] font-mono text-white/40 tracking-widest ml-1">SOULS</span></div>
+                <div className="text-[10px] tracking-[0.4em] font-mono text-emerald-300/80">LOCAL PRESENCE</div>
+                <div className="text-2xl font-black text-white">{count}<span className="text-[10px] font-mono text-white/40 tracking-widest ml-1">{count === 1 ? "SESSION" : "SESSIONS"}</span></div>
               </div>
               <button onClick={() => setOpen(false)} className="text-white/40 hover:text-white"><X className="h-3.5 w-3.5" /></button>
             </div>
 
-            <div className="mt-4 space-y-2">
-              <Stat icon={<Gamepad2 className="h-3 w-3 text-fuchsia-300" />} label="In arcade" value={847} accent="text-fuchsia-200" />
-              <Stat icon={<Cloud className="h-3 w-3 text-violet-300" />} label="GhostCloud streams" value={312} accent="text-violet-200" />
-              <Stat icon={<MessageCircle className="h-3 w-3 text-sky-300" />} label="Discord active" value={1284} accent="text-sky-200" />
-              <Stat icon={<Users className="h-3 w-3 text-amber-300" />} label="Browsing" value={1102} accent="text-amber-200" />
+            <div className="mt-4 space-y-2 text-xs">
+              <Row icon={online ? <Wifi className="h-3 w-3 text-emerald-300" /> : <WifiOff className="h-3 w-3 text-rose-400" />}
+                label="Network" value={online ? "Connected" : "Offline"} accent={online ? "text-emerald-200" : "text-rose-300"} />
+              <Row icon={<Monitor className="h-3 w-3 text-violet-300" />} label="This device" value={navigator.platform || "Unknown"} accent="text-violet-200" />
+              <Row icon={<Users className="h-3 w-3 text-fuchsia-300" />} label="GhostOS tabs" value={`${count}`} accent="text-fuchsia-200" />
               <div className="h-px bg-white/5 my-2" />
               <div className="flex items-center justify-between text-[11px]">
                 <div className="flex items-center gap-1.5 text-emerald-300 font-mono">
-                  <Activity className="h-3 w-3" /> ALL SYSTEMS NOMINAL
+                  <Activity className="h-3 w-3" /> LIVE · LOCAL BROADCAST
                 </div>
-                <span className="text-white/40 font-mono">18 ms</span>
               </div>
+              <div className="text-[9px] text-white/35 font-mono">Open GhostOS in another tab to see live presence sync.</div>
             </div>
           </motion.div>
         )}
@@ -75,11 +130,11 @@ export function OnlineStatus() {
   );
 }
 
-function Stat({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: number; accent: string }) {
+function Row({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent: string }) {
   return (
-    <div className="flex items-center justify-between text-xs">
+    <div className="flex items-center justify-between">
       <div className="flex items-center gap-2 text-white/65">{icon}{label}</div>
-      <span className={`font-mono ${accent}`}>{value.toLocaleString()}</span>
+      <span className={`font-mono ${accent}`}>{value}</span>
     </div>
   );
 }
