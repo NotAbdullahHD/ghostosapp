@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Plus, Info, Search, Maximize2, X, Loader2, ArrowLeft, RotateCw } from "lucide-react";
+import { Play, Plus, Info, Search, Maximize2, X, Loader2, ArrowLeft, RotateCw, Shield } from "lucide-react";
 import { proxify } from "../proxy";
 
-const SOURCE = "https://net22.cc/home";
+// Switched to flixvo.live as the GhostFlix source.
+const SOURCE = "https://flixvo.live/";
 
 const FEATURED = {
   title: "SPECTRAL",
