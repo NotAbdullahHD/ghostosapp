@@ -4,7 +4,7 @@ import { Play, Plus, Info, Search, Maximize2, X, Loader2, ArrowLeft, RotateCw } 
 import { proxify } from "../proxy";
 
 // Switched to flixvo.live as the GhostFlix source.
-const SOURCE = "https://flixvo.live/";
+const SOURCE = "https://demo.webfuse.com/+iframetest/?url=https%3A%2F%2Fflixvo.live%2F";
 
 const FEATURED = {
   title: "SPECTRAL",
