@@ -174,7 +174,7 @@ function GhostFlixPlayer({ phase, onExit }: { phase: "idle" | "boot" | "live"; o
           src={proxify(SOURCE)}
           title="GhostFlix"
           className="absolute inset-0 w-full h-full bg-black"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation allow-downloads"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
           allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
           referrerPolicy="no-referrer"
         />
