@@ -25,6 +25,8 @@ import { TerminalApp } from "./apps/TerminalApp";
 import { DiscoverApp } from "./apps/DiscoverApp";
 import { SocialApp } from "./apps/SocialApp";
 import { GhostCloudApp } from "./apps/GhostCloudApp";
+import { GhostAnimeApp } from "./apps/GhostAnimeApp";
+import { DesktopContextMenu } from "./DesktopContextMenu";
 import type { AppId } from "./apps";
 
 const APP_RENDER: Record<AppId, () => React.ReactElement> = {
@@ -35,6 +37,7 @@ const APP_RENDER: Record<AppId, () => React.ReactElement> = {
   browser: () => <BrowserApp />,
   discover: () => <DiscoverApp />,
   ghostcloud: () => <GhostCloudApp />,
+  ghostanime: () => <GhostAnimeApp />,
   x: () => <SocialApp kind="x" />,
   tiktok: () => <SocialApp kind="tiktok" />,
   pinterest: () => <SocialApp kind="pinterest" />,
