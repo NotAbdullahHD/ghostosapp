@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useGhost } from "../store";
-import { Cloud, Mail, Gamepad2, Loader2, RotateCw, Maximize, Star, Flame, Wifi, Copy, RefreshCw } from "lucide-react";
+import { Cloud, Mail, Gamepad2, Loader2, RotateCw, Maximize, Star, Flame, Wifi, Copy, RefreshCw, Film, ChevronRight, ArrowLeft } from "lucide-react";
+import { proxify } from "../proxy";
 
 const RACCOON = "https://www.raccoongame.com/#/platform/cloudgame";
+const CINESTREAM = "https://cinesteam.cine-softwares.workers.dev/";
 const TEMPMAIL = "https://tempmail.ing/";
 
 const FEATURED_GAMES = [
@@ -18,23 +20,31 @@ const FEATURED_GAMES = [
 ];
 
 type Tab = "cloud" | "mail";
+type CloudSource = "raccoon" | "cinestream";
 
 export function GhostCloudApp() {
   const { windows, toggleFullscreen } = useGhost();
   const [tab, setTab] = useState<Tab>("cloud");
+  const [source, setSource] = useState<CloudSource | null>(null);
+  const [showPicker, setShowPicker] = useState(true);
   const [phase, setPhase] = useState<"intro" | "loading" | "live">("intro");
-  const [cloudLoaded, setCloudLoaded] = useState(false);
+  const [raccoonLoaded, setRaccoonLoaded] = useState(false);
+  const [cineLoaded, setCineLoaded] = useState(false);
   const [mailLoaded, setMailLoaded] = useState(false);
-  const [cloudReload, setCloudReload] = useState(0);
+  const [raccoonReload, setRaccoonReload] = useState(0);
+  const [cineReload, setCineReload] = useState(0);
   const [mailReload, setMailReload] = useState(0);
 
-  const launchCloud = () => {
+  const launchCloud = (s: CloudSource) => {
+    setSource(s);
+    setShowPicker(false);
     setPhase("loading");
-    setTimeout(() => setPhase("live"), 1800);
+    setTimeout(() => setPhase("live"), 1600);
   };
 
   const me = windows.find((w) => w.appId === "ghostcloud");
   const requestFullscreen = () => { if (me) toggleFullscreen(me.id); };
+  const backToPicker = () => { setShowPicker(true); setPhase("intro"); setSource(null); };
 
   return (
     <div className="h-full flex flex-col bg-black text-white relative overflow-hidden">
@@ -45,19 +55,21 @@ export function GhostCloudApp() {
           </div>
           <div>
             <div className="text-sm font-black tracking-widest bg-gradient-to-r from-fuchsia-300 to-violet-300 bg-clip-text text-transparent">GHOSTCLOUD</div>
-            <div className="text-[9px] tracking-[0.4em] text-white/40 font-mono">RACCOON RELAY · ENCRYPTED · PERSISTENT</div>
+            <div className="text-[9px] tracking-[0.4em] text-white/40 font-mono">DUAL RELAY · PERSISTENT SESSION</div>
           </div>
         </div>
 
         <div className="flex items-center gap-1 p-1 rounded-full bg-black/50 ring-1 ring-white/10">
-          <TabButton active={tab === "cloud"} onClick={() => setTab("cloud")} icon={<Gamepad2 className="h-3 w-3" />} label="Cloud Games" />
+          <TabButton active={tab === "cloud"} onClick={() => setTab("cloud")} icon={<Gamepad2 className="h-3 w-3" />} label="Cloud" />
           <TabButton active={tab === "mail"} onClick={() => setTab("mail")} icon={<Mail className="h-3 w-3" />} label="TempMail" />
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="hidden sm:flex items-center gap-1 text-[10px] font-mono text-emerald-300">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,.9)]" /> 18 ms · OPTIMAL
-          </span>
+          {!showPicker && tab === "cloud" && (
+            <button onClick={backToPicker} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-mono tracking-widest text-white/70 ring-1 ring-white/15 hover:bg-white/10">
+              <ArrowLeft className="h-3 w-3" /> SWITCH
+            </button>
+          )}
           <button onClick={requestFullscreen} title="Immersive fullscreen"
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-mono tracking-widest text-fuchsia-200 ring-1 ring-fuchsia-400/30 hover:bg-fuchsia-500/15 transition">
             <Maximize className="h-3 w-3" /> IMMERSE
@@ -65,14 +77,20 @@ export function GhostCloudApp() {
         </div>
       </div>
 
-      {/* Both panels stay mounted — switching tabs no longer destroys iframe state */}
       <div className="flex-1 relative">
         <div className="absolute inset-0" style={{ visibility: tab === "cloud" ? "visible" : "hidden", pointerEvents: tab === "cloud" ? "auto" : "none" }}>
-          {phase === "intro" && <CloudIntro onLaunch={launchCloud} />}
-          {phase === "loading" && <CloudLoader />}
-          <div style={{ display: phase === "live" ? "block" : "none", position: "absolute", inset: 0 }}>
-            <CloudLive loaded={cloudLoaded} onLoad={() => setCloudLoaded(true)}
-              reload={cloudReload} onReload={() => { setCloudLoaded(false); setCloudReload((r) => r + 1); }} />
+          <AnimatePresence mode="wait">
+            {showPicker && <SourcePicker key="picker" onPick={launchCloud} />}
+            {!showPicker && phase === "loading" && <CloudLoader key="loader" source={source!} />}
+          </AnimatePresence>
+          {/* keep both iframes mounted once launched */}
+          <div style={{ display: !showPicker && phase === "live" && source === "raccoon" ? "block" : "none", position: "absolute", inset: 0 }}>
+            <CloudFrame label="RACCOON RELAY" url={RACCOON} loaded={raccoonLoaded} onLoad={() => setRaccoonLoaded(true)}
+              reload={raccoonReload} onReload={() => { setRaccoonLoaded(false); setRaccoonReload((r) => r + 1); }} accent="fuchsia" />
+          </div>
+          <div style={{ display: !showPicker && phase === "live" && source === "cinestream" ? "block" : "none", position: "absolute", inset: 0 }}>
+            <CloudFrame label="CINECLOUD · CINESTREAM" url={proxify(CINESTREAM)} loaded={cineLoaded} onLoad={() => setCineLoaded(true)}
+              reload={cineReload} onReload={() => { setCineLoaded(false); setCineReload((r) => r + 1); }} accent="rose" />
           </div>
         </div>
         <div className="absolute inset-0" style={{ visibility: tab === "mail" ? "visible" : "hidden", pointerEvents: tab === "mail" ? "auto" : "none" }}>
@@ -94,45 +112,50 @@ function TabButton({ active, onClick, icon, label }: { active: boolean; onClick:
   );
 }
 
-function CloudIntro({ onLaunch }: { onLaunch: () => void }) {
+function SourcePicker({ onPick }: { onPick: (s: CloudSource) => void }) {
   return (
-    <div className="absolute inset-0 overflow-y-auto scrollbar-hide bg-gradient-to-br from-black via-purple-950/30 to-black">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="absolute inset-0 overflow-y-auto scrollbar-hide bg-gradient-to-br from-black via-purple-950/30 to-black">
       <div className="pointer-events-none absolute inset-0 opacity-[0.05]"
         style={{ backgroundImage: "linear-gradient(rgba(232,121,249,.6) 1px, transparent 1px), linear-gradient(90deg, rgba(232,121,249,.6) 1px, transparent 1px)", backgroundSize: "44px 44px" }} />
-      <div className="pointer-events-none absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-fuchsia-400/40 to-transparent animate-scan" />
 
-      <div className="relative h-72 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-700 via-purple-900 to-black" />
-        <div className="absolute inset-0 opacity-30 mix-blend-overlay" style={{ backgroundImage: "radial-gradient(circle at 70% 40%, white, transparent 50%)" }} />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-        <div className="relative h-full flex flex-col justify-end p-7">
-          <span className="text-[10px] tracking-[0.4em] font-mono text-fuchsia-300">FEATURED · CLOUD POWERED BY RACCOON</span>
-          <h1 className="text-5xl font-black mt-2 neon-text">GHOSTCLOUD GAMING</h1>
-          <p className="text-sm text-white/70 mt-2 max-w-md">Stream AAA mobile titles in 4K from anywhere. No downloads. No installs. Just pure ghost-fast cloud play.</p>
-          <div className="flex items-center gap-3 mt-5">
-            <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} onClick={onLaunch}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-full gradient-neon text-white font-bold text-sm shadow-[0_0_30px_rgba(232,121,249,.5)]">
-              <Gamepad2 className="h-4 w-4" /> Launch GhostCloud
-            </motion.button>
-            <div className="text-[10px] font-mono text-white/40 tracking-widest flex items-center gap-2">
-              <Wifi className="h-3 w-3 text-emerald-400" /> 18 MS · 4K HDR · 120 FPS
-            </div>
-          </div>
-        </div>
+      <div className="relative px-6 pt-8 pb-4 text-center">
+        <div className="text-[10px] tracking-[0.5em] font-mono text-fuchsia-300/70">CHOOSE YOUR CLOUD</div>
+        <h1 className="text-4xl font-black mt-2 neon-text">WHAT DO YOU WANT TO PLAY?</h1>
+        <p className="text-sm text-white/50 mt-2">Pick a relay. Switch any time. Sessions stay alive.</p>
       </div>
 
-      <div className="px-6 pt-6">
-        <div className="flex items-center gap-2 mb-3 text-[11px] font-mono tracking-widest text-white/60">
+      <div className="px-6 pt-2 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+        <PickerCard
+          onClick={() => onPick("raccoon")}
+          title="GHOSTCLOUD"
+          subtitle="RACCOON · AAA mobile"
+          desc="Stream Genshin, Honkai, PUBG, Wuthering Waves and more in 4K HDR."
+          icon={<Cloud className="h-8 w-8 text-white" />}
+          gradient="from-violet-600 via-fuchsia-700 to-purple-900"
+          tags={["4K", "120 FPS", "MOBILE AAA"]}
+        />
+        <PickerCard
+          onClick={() => onPick("cinestream")}
+          title="CINECLOUD"
+          subtitle="CINESTREAM · Arcade universe"
+          desc="The hidden student arcade. Hundreds of pick-up-and-play titles."
+          icon={<Film className="h-8 w-8 text-white" />}
+          gradient="from-rose-600 via-fuchsia-700 to-indigo-900"
+          tags={["INSTANT", "STUDENT", "EXCLUSIVE"]}
+        />
+      </div>
+
+      <div className="px-6 pt-8">
+        <div className="flex items-center gap-2 mb-3 text-[11px] font-mono tracking-widest text-white/55 max-w-3xl mx-auto">
           <Flame className="h-3 w-3 text-orange-400" /> TRENDING ON GHOSTCLOUD
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-3xl mx-auto">
           {FEATURED_GAMES.map((g, i) => (
             <motion.button key={g.name} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-              whileHover={{ scale: 1.04, y: -4 }}
-              onClick={onLaunch}
+              whileHover={{ scale: 1.04, y: -4 }} onClick={() => onPick("raccoon")}
               className="relative aspect-[4/5] rounded-xl overflow-hidden ring-1 ring-white/10 group">
               <div className={`absolute inset-0 bg-gradient-to-br ${g.color}`} />
-              <div className="absolute inset-0 opacity-30 mix-blend-overlay" style={{ backgroundImage: "radial-gradient(circle at 30% 30%, white, transparent 60%)" }} />
               <Gamepad2 className="absolute top-3 right-3 h-4 w-4 text-white/40" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-3">
@@ -144,51 +167,84 @@ function CloudIntro({ onLaunch }: { onLaunch: () => void }) {
           ))}
         </div>
       </div>
-
-      <div className="px-6 py-7 text-center">
-        <div className="text-[10px] tracking-[0.4em] text-white/30 font-mono">RACCOON CLOUD · GHOSTOS CERTIFIED RELAY</div>
-      </div>
-    </div>
+      <div className="h-8" />
+    </motion.div>
   );
 }
 
-function CloudLoader() {
-  const STEPS = ["INITIALIZING SECURE TUNNEL", "AUTHENTICATING WITH RACCOON RELAY", "SPINNING UP GPU INSTANCE", "STREAMING FRAMES…"];
+function PickerCard({ onClick, title, subtitle, desc, icon, gradient, tags }: { onClick: () => void; title: string; subtitle: string; desc: string; icon: React.ReactNode; gradient: string; tags: string[] }) {
+  return (
+    <motion.button whileHover={{ y: -4, scale: 1.01 }} whileTap={{ scale: 0.99 }} onClick={onClick}
+      className="group relative overflow-hidden rounded-2xl text-left ring-1 ring-white/15 shadow-[0_20px_40px_-10px_rgba(0,0,0,.7)]">
+      <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(255,255,255,.25),transparent_55%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_35%,rgba(255,255,255,.18)_50%,transparent_65%)] -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+      <div className="relative p-5 flex flex-col gap-3 h-full">
+        <div className="flex items-center gap-3">
+          <div className="h-14 w-14 rounded-xl bg-black/40 ring-1 ring-white/20 flex items-center justify-center">{icon}</div>
+          <div className="flex-1">
+            <div className="text-[10px] font-mono tracking-[0.3em] text-white/70">{subtitle}</div>
+            <div className="text-2xl font-black tracking-tight">{title}</div>
+          </div>
+          <ChevronRight className="h-6 w-6 text-white/80" />
+        </div>
+        <p className="text-sm text-white/85">{desc}</p>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {tags.map((t) => (
+            <span key={t} className="text-[9px] font-mono tracking-wider px-2 py-0.5 rounded-full bg-black/30 ring-1 ring-white/20">{t}</span>
+          ))}
+          <span className="ml-auto flex items-center gap-1 text-[10px] font-mono text-emerald-300">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> ONLINE
+          </span>
+        </div>
+      </div>
+    </motion.button>
+  );
+}
+
+function CloudLoader({ source }: { source: CloudSource }) {
+  const STEPS = source === "raccoon"
+    ? ["INITIALIZING SECURE TUNNEL", "AUTHENTICATING WITH RACCOON", "SPINNING UP GPU INSTANCE", "STREAMING FRAMES…"]
+    : ["RESOLVING CINECLOUD RELAY", "WARMING ARCADE CACHE", "MOUNTING GAME VAULT", "STREAMING ARCADE…"];
   const [idx, setIdx] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setIdx((i) => Math.min(i + 1, STEPS.length - 1)), 400);
     return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black overflow-hidden">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="absolute inset-0 flex flex-col items-center justify-center bg-black overflow-hidden">
       <div className="pointer-events-none absolute inset-0 opacity-[0.06]"
         style={{ backgroundImage: "linear-gradient(rgba(232,121,249,.6) 1px, transparent 1px), linear-gradient(90deg, rgba(232,121,249,.6) 1px, transparent 1px)", backgroundSize: "44px 44px" }} />
-      <motion.div initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }} className="relative">
-        <div className="h-28 w-28 rounded-3xl bg-gradient-to-br from-fuchsia-500 to-violet-700 flex items-center justify-center shadow-[0_0_60px_rgba(232,121,249,.6)]">
-          <Cloud className="h-12 w-12 text-white" />
+      <motion.div initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative">
+        <div className={`h-28 w-28 rounded-3xl flex items-center justify-center shadow-[0_0_60px_rgba(232,121,249,.6)] ${source === "raccoon" ? "bg-gradient-to-br from-fuchsia-500 to-violet-700" : "bg-gradient-to-br from-rose-500 to-fuchsia-700"}`}>
+          {source === "raccoon" ? <Cloud className="h-12 w-12 text-white" /> : <Film className="h-12 w-12 text-white" />}
         </div>
         <motion.div animate={{ scale: [1, 1.4], opacity: [0.6, 0] }} transition={{ duration: 1.4, repeat: Infinity }}
           className="absolute inset-0 rounded-3xl ring-2 ring-fuchsia-400" />
       </motion.div>
-      <div className="mt-8 text-2xl font-black neon-text tracking-[0.3em]">GHOSTCLOUD</div>
+      <div className="mt-8 text-2xl font-black neon-text tracking-[0.3em]">{source === "raccoon" ? "GHOSTCLOUD" : "CINECLOUD"}</div>
       <div className="mt-2 text-[10px] tracking-[0.5em] text-fuchsia-300/70 font-mono">{STEPS[idx]}</div>
       <div className="mt-6 w-72 h-[3px] bg-white/10 rounded-full overflow-hidden">
-        <motion.div initial={{ width: "0%" }} animate={{ width: "100%" }} transition={{ duration: 1.6, ease: "easeInOut" }} className="h-full gradient-neon" />
+        <motion.div initial={{ width: "0%" }} animate={{ width: "100%" }} transition={{ duration: 1.4, ease: "easeInOut" }} className="h-full gradient-neon" />
       </div>
-    </div>
+    </motion.div>
   );
 }
 
-function CloudLive({ loaded, onLoad, reload, onReload }: { loaded: boolean; onLoad: () => void; reload: number; onReload: () => void }) {
+function CloudFrame({ label, url, loaded, onLoad, reload, onReload, accent }: { label: string; url: string; loaded: boolean; onLoad: () => void; reload: number; onReload: () => void; accent: "fuchsia" | "rose" }) {
   const ref = useRef<HTMLIFrameElement>(null);
+  const border = accent === "fuchsia" ? "border-fuchsia-500/15" : "border-rose-500/20";
   return (
     <div className="absolute inset-0 flex flex-col bg-black">
-      <div className="flex items-center justify-between px-3 py-1.5 bg-gradient-to-r from-violet-950/60 via-black to-fuchsia-950/60 border-b border-fuchsia-500/15">
+      <div className={`flex items-center justify-between px-3 py-1.5 bg-gradient-to-r from-violet-950/60 via-black to-fuchsia-950/60 border-b ${border}`}>
         <div className="flex items-center gap-2 text-[10px] font-mono tracking-widest text-fuchsia-300">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,.9)]" />
-          RACCOON RELAY · LIVE · SESSION PERSISTED
+          {label} · LIVE · SESSION PERSISTED
         </div>
         <div className="flex items-center gap-1">
+          <span className="hidden sm:flex items-center gap-1 text-[10px] font-mono text-emerald-300/80"><Wifi className="h-3 w-3" /> 18ms</span>
           <button onClick={onReload} className="p-1.5 rounded hover:bg-white/10 text-white/60"><RotateCw className="h-3.5 w-3.5" /></button>
         </div>
       </div>
@@ -196,13 +252,15 @@ function CloudLive({ loaded, onLoad, reload, onReload }: { loaded: boolean; onLo
         {!loaded && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black">
             <Loader2 className="h-7 w-7 animate-spin text-fuchsia-400" />
-            <div className="text-[10px] tracking-[0.5em] font-mono text-fuchsia-300">SYNCING CLOUD FRAME…</div>
+            <div className="text-[10px] tracking-[0.5em] font-mono text-fuchsia-300">SYNCING…</div>
           </div>
         )}
-        <iframe key={reload} ref={ref} src={RACCOON} title="GhostCloud · Raccoon"
+        <iframe key={reload} ref={ref} src={url} title={label}
           onLoad={onLoad}
           className="w-full h-full bg-black"
-          allow="autoplay; fullscreen; encrypted-media; clipboard-write" />
+          allow="autoplay; fullscreen; encrypted-media; clipboard-write; gamepad"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
+          referrerPolicy="no-referrer" />
         <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-fuchsia-500/10" />
       </div>
     </div>
@@ -217,7 +275,6 @@ function TempMailView({ loaded, onLoad, reload, onReload }: { loaded: boolean; o
           <div>
             <div className="text-[10px] tracking-[0.4em] font-mono text-cyan-300">DISPOSABLE INBOX · PERSISTENT</div>
             <h2 className="text-2xl font-black tracking-tight bg-gradient-to-r from-cyan-300 via-white to-fuchsia-300 bg-clip-text text-transparent">GHOST TEMPMAIL</h2>
-            <p className="text-[11px] text-white/50 mt-1 max-w-md">Burn-on-read inbox. Switch tabs freely — your address sticks until you reload it.</p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={onReload} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full ring-1 ring-cyan-400/30 text-[11px] font-mono tracking-wider text-cyan-200 hover:bg-cyan-500/15">
@@ -229,7 +286,6 @@ function TempMailView({ loaded, onLoad, reload, onReload }: { loaded: boolean; o
           </div>
         </div>
       </div>
-
       <div className="relative flex-1 bg-black">
         {!loaded && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black">
