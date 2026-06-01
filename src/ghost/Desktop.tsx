@@ -106,6 +106,7 @@ export function Desktop() {
 
       <AppLauncher />
       <LockScreen />
+      <DesktopContextMenu />
     </div>
   );
 }
