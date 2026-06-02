@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Loader2, Play, Search, Star, Heart, Clock, Flame, Sparkles, Joystick, Zap, X, Shuffle } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Loader2, Play, RotateCw, Search, Star, Heart, Clock, Flame, Sparkles, Joystick, Zap, X, Shuffle } from "lucide-react";
 import { useGhost } from "../store";
 import { proxify } from "../proxy";
 import catalogRaw from "../data/onlineGames.json";
@@ -29,20 +29,35 @@ const CATEGORY_DEFS: { id: string; label: string; match: (g: CatalogGame) => boo
 
 const RP_KEY = "ghost.arcade.recent.v1";
 const FAV_KEY = "ghost.arcade.favs.v1";
+const LOAD_TIMEOUT_MS = 10_000;
 
 function loadKeys(key: string): string[] {
   try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch { return []; }
 }
+
+function isValidEmbed(url: string | undefined | null): boolean {
+  if (!url) return false;
+  try {
+    const u = new URL(url, window.location.href);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch { return false; }
+}
+
+type LaunchStatus = "loading" | "ready" | "error";
 
 export function ArcadeVault() {
   const { windows, toggleFullscreen } = useGhost();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("featured");
   const [active, setActive] = useState<CatalogGame | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [status, setStatus] = useState<LaunchStatus>("loading");
   const [progress, setProgress] = useState(0);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [diagnostics, setDiagnostics] = useState<string[]>([]);
   const [recent, setRecent] = useState<string[]>(() => loadKeys(RP_KEY));
   const [favs, setFavs] = useState<string[]>(() => loadKeys(FAV_KEY));
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const launchStartRef = useRef<number>(0);
 
   const filtered = useMemo(() => {
     const def = CATEGORY_DEFS.find((c) => c.id === category) ?? CATEGORY_DEFS[0];
@@ -65,22 +80,54 @@ export function ArcadeVault() {
     [favs]
   );
 
-  // simulated cinematic load progress
+  const pushDiag = (line: string) => {
+    const stamp = new Date().toLocaleTimeString();
+    setDiagnostics((d) => [...d.slice(-20), `[${stamp}] ${line}`]);
+  };
+
+  // Progress + timeout fallback. Progress is driven by status, never gets stuck.
   useEffect(() => {
     if (!active) return;
-    setLoaded(false);
+    if (status !== "loading") return;
+
+    launchStartRef.current = Date.now();
     setProgress(0);
-    const t = setInterval(() => {
-      setProgress((p) => (loaded ? 100 : Math.min(p + Math.random() * 14, 92)));
-    }, 180);
-    return () => clearInterval(t);
-  }, [active, loaded]);
+    pushDiag(`Launching "${active.title}"…`);
+
+    const tick = setInterval(() => {
+      setProgress((p) => {
+        const elapsed = Date.now() - launchStartRef.current;
+        // ease toward 90% over ~8s; never exceed 90% while still loading
+        const target = Math.min(90, (elapsed / 8000) * 90);
+        return p < target ? Math.min(p + Math.random() * 4 + 1, target) : p;
+      });
+    }, 160);
+
+    const timeout = setTimeout(() => {
+      // If still loading, treat as failure but let user continue.
+      setStatus((s) => {
+        if (s === "loading") {
+          pushDiag("Timeout: iframe did not signal ready within 10s.");
+          setErrorMsg("Game took too long to respond.");
+          return "error";
+        }
+        return s;
+      });
+    }, LOAD_TIMEOUT_MS);
+
+    return () => { clearInterval(tick); clearTimeout(timeout); };
+  }, [active, status]);
+
+  // Animate progress to 100% on ready
+  useEffect(() => {
+    if (status !== "ready") return;
+    setProgress(100);
+  }, [status]);
 
   useEffect(() => {
     if (!active) return;
     const me = windows.find((w) => w.appId === "games");
     if (me && !me.fullscreen) toggleFullscreen(me.id);
-    // push to recent
     setRecent((r) => {
       const next = [active.title, ...r.filter((t) => t !== active.title)].slice(0, 8);
       localStorage.setItem(RP_KEY, JSON.stringify(next));
@@ -88,11 +135,52 @@ export function ArcadeVault() {
     });
   }, [active, windows, toggleFullscreen]);
 
-  const launch = (g: CatalogGame) => { setActive(g); };
+  // Global error listener while a game is active (catches script errors that bubble)
+  useEffect(() => {
+    if (!active) return;
+    const onErr = (e: ErrorEvent) => pushDiag(`window error: ${e.message}`);
+    const onRej = (e: PromiseRejectionEvent) => pushDiag(`unhandled: ${String(e.reason).slice(0, 80)}`);
+    window.addEventListener("error", onErr);
+    window.addEventListener("unhandledrejection", onRej);
+    return () => {
+      window.removeEventListener("error", onErr);
+      window.removeEventListener("unhandledrejection", onRej);
+    };
+  }, [active]);
+
+  const launch = (g: CatalogGame) => {
+    if (!isValidEmbed(g.embed)) {
+      setActive(g);
+      setStatus("error");
+      setErrorMsg("Invalid game URL — provider failed validation.");
+      pushDiag(`Validation failed for ${g.embed}`);
+      return;
+    }
+    setErrorMsg(null);
+    setDiagnostics([]);
+    setStatus("loading");
+    setActive(g);
+  };
+  const retry = () => {
+    if (!active) return;
+    setErrorMsg(null);
+    setStatus("loading");
+    setProgress(0);
+    // force iframe reload
+    if (iframeRef.current) {
+      const src = iframeRef.current.src;
+      iframeRef.current.src = "about:blank";
+      requestAnimationFrame(() => { if (iframeRef.current) iframeRef.current.src = src; });
+    }
+    pushDiag("Retrying launch…");
+  };
+  const continueAnyway = () => { setStatus("ready"); pushDiag("User continued past error."); };
   const exit = () => {
     const me = windows.find((w) => w.appId === "games");
     if (me?.fullscreen) toggleFullscreen(me.id);
     setActive(null);
+    setStatus("loading");
+    setErrorMsg(null);
   };
   const toggleFav = (title: string) => {
     setFavs((f) => {
@@ -101,6 +189,17 @@ export function ArcadeVault() {
       return next;
     });
   };
+
+  const handleIframeLoad = () => {
+    pushDiag(`Iframe load event in ${Date.now() - launchStartRef.current}ms.`);
+    setStatus((s) => (s === "loading" ? "ready" : s));
+  };
+  const handleIframeError = () => {
+    pushDiag("Iframe error event fired.");
+    setErrorMsg("Game frame failed to load.");
+    setStatus("error");
+  };
+
 
   return (
     <div className="absolute inset-0 overflow-y-auto scrollbar-hide bg-black">
@@ -221,7 +320,7 @@ export function ArcadeVault() {
 
             {/* Game frame */}
             <div className="relative flex-1 bg-black">
-              {!loaded && (
+              {status === "loading" && (
                 <motion.div
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-6 bg-black">
@@ -256,10 +355,50 @@ export function ArcadeVault() {
                   </div>
                 </motion.div>
               )}
+              {status === "error" && (
+                <motion.div
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-5 bg-black/95">
+                  <div className="flex flex-col items-center gap-3 max-w-md text-center px-6">
+                    <div className="h-12 w-12 rounded-full bg-rose-500/15 ring-1 ring-rose-400/40 flex items-center justify-center">
+                      <AlertTriangle className="h-6 w-6 text-rose-300" />
+                    </div>
+                    <div className="text-[10px] tracking-[0.4em] text-rose-300 font-mono">LAUNCH FAULT</div>
+                    <div className="text-sm font-bold text-white">{errorMsg ?? "Game failed to launch."}</div>
+                    <div className="text-[10px] font-mono text-white/40 leading-relaxed">
+                      The arcade stream timed out or the provider rejected the connection.
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <button onClick={retry}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg gradient-neon text-white font-bold text-[10px] tracking-widest">
+                        <RotateCw className="h-3 w-3" /> RETRY
+                      </button>
+                      <button onClick={continueAnyway}
+                        className="px-4 py-2 rounded-lg ring-1 ring-white/20 text-white/80 text-[10px] font-mono tracking-widest hover:bg-white/5">
+                        CONTINUE ANYWAY
+                      </button>
+                      <button onClick={exit}
+                        className="px-4 py-2 rounded-lg ring-1 ring-white/10 text-white/60 text-[10px] font-mono tracking-widest hover:bg-white/5">
+                        EXIT
+                      </button>
+                    </div>
+                    {diagnostics.length > 0 && (
+                      <details className="mt-3 w-full text-left">
+                        <summary className="text-[9px] font-mono text-white/40 cursor-pointer hover:text-white/60">DIAGNOSTICS</summary>
+                        <pre className="mt-2 text-[9px] font-mono text-white/40 bg-white/5 rounded p-2 max-h-32 overflow-auto whitespace-pre-wrap">
+{diagnostics.join("\n")}
+                        </pre>
+                      </details>
+                    )}
+                  </div>
+                </motion.div>
+              )}
               <iframe
+                ref={iframeRef}
                 src={proxify(active.embed)}
                 title={active.title}
-                onLoad={() => { setProgress(100); setTimeout(() => setLoaded(true), 350); }}
+                onLoad={handleIframeLoad}
+                onError={handleIframeError}
                 className="w-full h-full bg-black"
                 sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock"
                 allow="autoplay; fullscreen; gamepad; clipboard-write; encrypted-media; accelerometer; gyroscope"
