@@ -50,10 +50,14 @@ export function ArcadeVault() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("featured");
   const [active, setActive] = useState<CatalogGame | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [status, setStatus] = useState<LaunchStatus>("loading");
   const [progress, setProgress] = useState(0);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [diagnostics, setDiagnostics] = useState<string[]>([]);
   const [recent, setRecent] = useState<string[]>(() => loadKeys(RP_KEY));
   const [favs, setFavs] = useState<string[]>(() => loadKeys(FAV_KEY));
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const launchStartRef = useRef<number>(0);
 
   const filtered = useMemo(() => {
     const def = CATEGORY_DEFS.find((c) => c.id === category) ?? CATEGORY_DEFS[0];
@@ -76,22 +80,54 @@ export function ArcadeVault() {
     [favs]
   );
 
-  // simulated cinematic load progress
+  const pushDiag = (line: string) => {
+    const stamp = new Date().toLocaleTimeString();
+    setDiagnostics((d) => [...d.slice(-20), `[${stamp}] ${line}`]);
+  };
+
+  // Progress + timeout fallback. Progress is driven by status, never gets stuck.
   useEffect(() => {
     if (!active) return;
-    setLoaded(false);
+    if (status !== "loading") return;
+
+    launchStartRef.current = Date.now();
     setProgress(0);
-    const t = setInterval(() => {
-      setProgress((p) => (loaded ? 100 : Math.min(p + Math.random() * 14, 92)));
-    }, 180);
-    return () => clearInterval(t);
-  }, [active, loaded]);
+    pushDiag(`Launching "${active.title}"…`);
+
+    const tick = setInterval(() => {
+      setProgress((p) => {
+        const elapsed = Date.now() - launchStartRef.current;
+        // ease toward 90% over ~8s; never exceed 90% while still loading
+        const target = Math.min(90, (elapsed / 8000) * 90);
+        return p < target ? Math.min(p + Math.random() * 4 + 1, target) : p;
+      });
+    }, 160);
+
+    const timeout = setTimeout(() => {
+      // If still loading, treat as failure but let user continue.
+      setStatus((s) => {
+        if (s === "loading") {
+          pushDiag("Timeout: iframe did not signal ready within 10s.");
+          setErrorMsg("Game took too long to respond.");
+          return "error";
+        }
+        return s;
+      });
+    }, LOAD_TIMEOUT_MS);
+
+    return () => { clearInterval(tick); clearTimeout(timeout); };
+  }, [active, status]);
+
+  // Animate progress to 100% on ready
+  useEffect(() => {
+    if (status !== "ready") return;
+    setProgress(100);
+  }, [status]);
 
   useEffect(() => {
     if (!active) return;
     const me = windows.find((w) => w.appId === "games");
     if (me && !me.fullscreen) toggleFullscreen(me.id);
-    // push to recent
     setRecent((r) => {
       const next = [active.title, ...r.filter((t) => t !== active.title)].slice(0, 8);
       localStorage.setItem(RP_KEY, JSON.stringify(next));
@@ -99,11 +135,52 @@ export function ArcadeVault() {
     });
   }, [active, windows, toggleFullscreen]);
 
-  const launch = (g: CatalogGame) => { setActive(g); };
+  // Global error listener while a game is active (catches script errors that bubble)
+  useEffect(() => {
+    if (!active) return;
+    const onErr = (e: ErrorEvent) => pushDiag(`window error: ${e.message}`);
+    const onRej = (e: PromiseRejectionEvent) => pushDiag(`unhandled: ${String(e.reason).slice(0, 80)}`);
+    window.addEventListener("error", onErr);
+    window.addEventListener("unhandledrejection", onRej);
+    return () => {
+      window.removeEventListener("error", onErr);
+      window.removeEventListener("unhandledrejection", onRej);
+    };
+  }, [active]);
+
+  const launch = (g: CatalogGame) => {
+    if (!isValidEmbed(g.embed)) {
+      setActive(g);
+      setStatus("error");
+      setErrorMsg("Invalid game URL — provider failed validation.");
+      pushDiag(`Validation failed for ${g.embed}`);
+      return;
+    }
+    setErrorMsg(null);
+    setDiagnostics([]);
+    setStatus("loading");
+    setActive(g);
+  };
+  const retry = () => {
+    if (!active) return;
+    setErrorMsg(null);
+    setStatus("loading");
+    setProgress(0);
+    // force iframe reload
+    if (iframeRef.current) {
+      const src = iframeRef.current.src;
+      iframeRef.current.src = "about:blank";
+      requestAnimationFrame(() => { if (iframeRef.current) iframeRef.current.src = src; });
+    }
+    pushDiag("Retrying launch…");
+  };
+  const continueAnyway = () => { setStatus("ready"); pushDiag("User continued past error."); };
   const exit = () => {
     const me = windows.find((w) => w.appId === "games");
     if (me?.fullscreen) toggleFullscreen(me.id);
     setActive(null);
+    setStatus("loading");
+    setErrorMsg(null);
   };
   const toggleFav = (title: string) => {
     setFavs((f) => {
@@ -112,6 +189,17 @@ export function ArcadeVault() {
       return next;
     });
   };
+
+  const handleIframeLoad = () => {
+    pushDiag(`Iframe load event in ${Date.now() - launchStartRef.current}ms.`);
+    setStatus((s) => (s === "loading" ? "ready" : s));
+  };
+  const handleIframeError = () => {
+    pushDiag("Iframe error event fired.");
+    setErrorMsg("Game frame failed to load.");
+    setStatus("error");
+  };
+
 
   return (
     <div className="absolute inset-0 overflow-y-auto scrollbar-hide bg-black">
