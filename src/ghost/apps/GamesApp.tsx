@@ -44,7 +44,7 @@ const trending = [
 
 export function GamesApp() {
   const { windows, toggleFullscreen, openApp } = useGhost();
-  const [providerId, setProviderId] = useState<string>("gnmath");
+  const [providerId, setProviderId] = useState<string>("vault");
   const [arcadeGame, setArcadeGame] = useState<typeof ARCADE[number] | null>(null);
   const [arcadeLoaded, setArcadeLoaded] = useState(false);
   const [providerLoaded, setProviderLoaded] = useState(false);
