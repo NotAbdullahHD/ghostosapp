@@ -29,10 +29,21 @@ const CATEGORY_DEFS: { id: string; label: string; match: (g: CatalogGame) => boo
 
 const RP_KEY = "ghost.arcade.recent.v1";
 const FAV_KEY = "ghost.arcade.favs.v1";
+const LOAD_TIMEOUT_MS = 10_000;
 
 function loadKeys(key: string): string[] {
   try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch { return []; }
 }
+
+function isValidEmbed(url: string | undefined | null): boolean {
+  if (!url) return false;
+  try {
+    const u = new URL(url, window.location.href);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch { return false; }
+}
+
+type LaunchStatus = "loading" | "ready" | "error";
 
 export function ArcadeVault() {
   const { windows, toggleFullscreen } = useGhost();
