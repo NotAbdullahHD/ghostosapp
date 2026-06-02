@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Play, Flame, Trophy, Gamepad2, Heart, Clock, ArrowLeft, Loader2, Joystick, Zap, Star, Plus, Sparkles, Maximize } from "lucide-react";
 import { useGhost } from "../store";
 import { proxify } from "../proxy";
+import { ArcadeVault } from "./ArcadeVault";
 
 interface Provider {
   id: string;
@@ -13,13 +14,16 @@ interface Provider {
   accent: string;
   /** if set, this provider is a single embedded library URL */
   embedUrl?: string;
+  /** if set, renders a custom component instead of an embed */
+  custom?: "vault";
 }
 
 const PROVIDERS: Provider[] = [
-  { id: "gnmath",  name: "GN-Math",   tagline: "Unblocked math arcade", iconUrl: "https://cdn.jsdelivr.net/gh/snoopyeducation/securly.com@main/classlink.com/math.svg", accent: "from-fuchsia-500 to-violet-700", embedUrl: "https://gn-math.github.io/" },
-  { id: "gamezop", name: "Gamezop",   tagline: "Curated HTML5 arcade",  iconEmoji: "🎮", accent: "from-cyan-500 to-blue-700" },
-  { id: "html5",   name: "HTML5 Lab", tagline: "Coming soon · indie",   iconEmoji: "⚡",  accent: "from-emerald-500 to-teal-700" },
-  { id: "cloud",   name: "Cloud Vault", tagline: "Open GhostCloud",     iconEmoji: "☁",  accent: "from-violet-500 to-fuchsia-700" },
+  { id: "vault",   name: "Arcade Vault", tagline: "259 Ghost-curated games", iconEmoji: "▣", accent: "from-fuchsia-500 to-rose-700", custom: "vault" },
+  { id: "gamezop", name: "Gamezop",      tagline: "Instant HTML5 arcade",   iconEmoji: "🎮", accent: "from-cyan-500 to-blue-700" },
+  { id: "gnmath",  name: "GN-Math",      tagline: "Unblocked math arcade",  iconUrl: "https://cdn.jsdelivr.net/gh/snoopyeducation/securly.com@main/classlink.com/math.svg", accent: "from-violet-500 to-indigo-700", embedUrl: "https://gn-math.github.io/" },
+  { id: "quizizz", name: "Quizizz",      tagline: "Live learning arena",    iconEmoji: "🧠", accent: "from-emerald-500 to-teal-700", embedUrl: "https://quizizz.com/join" },
+  { id: "cloud",   name: "Cloud Vault",  tagline: "Open GhostCloud",        iconEmoji: "☁",  accent: "from-violet-500 to-fuchsia-700" },
 ];
 
 const ARCADE = [
