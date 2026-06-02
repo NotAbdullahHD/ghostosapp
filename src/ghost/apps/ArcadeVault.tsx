@@ -320,7 +320,7 @@ export function ArcadeVault() {
 
             {/* Game frame */}
             <div className="relative flex-1 bg-black">
-              {!loaded && (
+              {status === "loading" && (
                 <motion.div
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-6 bg-black">
@@ -355,10 +355,50 @@ export function ArcadeVault() {
                   </div>
                 </motion.div>
               )}
+              {status === "error" && (
+                <motion.div
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-5 bg-black/95">
+                  <div className="flex flex-col items-center gap-3 max-w-md text-center px-6">
+                    <div className="h-12 w-12 rounded-full bg-rose-500/15 ring-1 ring-rose-400/40 flex items-center justify-center">
+                      <AlertTriangle className="h-6 w-6 text-rose-300" />
+                    </div>
+                    <div className="text-[10px] tracking-[0.4em] text-rose-300 font-mono">LAUNCH FAULT</div>
+                    <div className="text-sm font-bold text-white">{errorMsg ?? "Game failed to launch."}</div>
+                    <div className="text-[10px] font-mono text-white/40 leading-relaxed">
+                      The arcade stream timed out or the provider rejected the connection.
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <button onClick={retry}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg gradient-neon text-white font-bold text-[10px] tracking-widest">
+                        <RotateCw className="h-3 w-3" /> RETRY
+                      </button>
+                      <button onClick={continueAnyway}
+                        className="px-4 py-2 rounded-lg ring-1 ring-white/20 text-white/80 text-[10px] font-mono tracking-widest hover:bg-white/5">
+                        CONTINUE ANYWAY
+                      </button>
+                      <button onClick={exit}
+                        className="px-4 py-2 rounded-lg ring-1 ring-white/10 text-white/60 text-[10px] font-mono tracking-widest hover:bg-white/5">
+                        EXIT
+                      </button>
+                    </div>
+                    {diagnostics.length > 0 && (
+                      <details className="mt-3 w-full text-left">
+                        <summary className="text-[9px] font-mono text-white/40 cursor-pointer hover:text-white/60">DIAGNOSTICS</summary>
+                        <pre className="mt-2 text-[9px] font-mono text-white/40 bg-white/5 rounded p-2 max-h-32 overflow-auto whitespace-pre-wrap">
+{diagnostics.join("\n")}
+                        </pre>
+                      </details>
+                    )}
+                  </div>
+                </motion.div>
+              )}
               <iframe
+                ref={iframeRef}
                 src={proxify(active.embed)}
                 title={active.title}
-                onLoad={() => { setProgress(100); setTimeout(() => setLoaded(true), 350); }}
+                onLoad={handleIframeLoad}
+                onError={handleIframeError}
                 className="w-full h-full bg-black"
                 sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock"
                 allow="autoplay; fullscreen; gamepad; clipboard-write; encrypted-media; accelerometer; gyroscope"
