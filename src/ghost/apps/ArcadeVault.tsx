@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Loader2, Play, Search, Star, Heart, Clock, Flame, Sparkles, Joystick, Zap, X, Shuffle } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Loader2, Play, RotateCw, Search, Star, Heart, Clock, Flame, Sparkles, Joystick, Zap, X, Shuffle } from "lucide-react";
 import { useGhost } from "../store";
 import { proxify } from "../proxy";
 import catalogRaw from "../data/onlineGames.json";
