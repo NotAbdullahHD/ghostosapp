@@ -147,9 +147,9 @@ export function SafeEmbed({
             className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm"
           >
             <div className="relative h-16 w-16">
-              <div className={`absolute inset-0 rounded-full border-2 border-white/10`} />
+              <div className="absolute inset-0 rounded-full border-2 border-white/10" />
               <motion.div
-                className={`absolute inset-0 rounded-full border-t-2 border-${accent}-400`}
+                className={`absolute inset-0 rounded-full border-t-2 ${accent === "red" ? "border-rose-400" : accent === "cyan" ? "border-cyan-400" : "border-fuchsia-400"}`}
                 animate={{ rotate: 360 }} transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}
               />
             </div>
