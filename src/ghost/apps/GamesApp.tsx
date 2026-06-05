@@ -303,5 +303,3 @@ function Section({ icon, label, children }: { icon: React.ReactNode; label: stri
   );
 }
 
-// silence unused warning for icons retained for future sections
-void Heart; void Clock; void Trophy;
