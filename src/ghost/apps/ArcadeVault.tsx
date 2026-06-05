@@ -422,23 +422,31 @@ export function ArcadeVault() {
                     <div className="text-[10px] font-mono text-white/40 leading-relaxed">
                       The arcade stream timed out or the provider rejected the connection.
                     </div>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
                       <button onClick={retry}
                         className="flex items-center gap-2 px-4 py-2 rounded-lg gradient-neon text-white font-bold text-[10px] tracking-widest">
                         <RotateCw className="h-3 w-3" /> RETRY
                       </button>
-                      <button onClick={continueAnyway}
-                        className="px-4 py-2 rounded-lg ring-1 ring-white/20 text-white/80 text-[10px] font-mono tracking-widest hover:bg-white/5">
-                        CONTINUE ANYWAY
+                      <button onClick={launchProxy}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg ring-1 ring-cyan-400/40 text-cyan-200 text-[10px] font-mono tracking-widest hover:bg-cyan-500/10">
+                        <Shield className="h-3 w-3" /> LAUNCH VIA PROXY
+                      </button>
+                      <button onClick={reportIssue}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg ring-1 ring-amber-400/30 text-amber-200 text-[10px] font-mono tracking-widest hover:bg-amber-500/10">
+                        <Flag className="h-3 w-3" /> REPORT ISSUE
                       </button>
                       <button onClick={exit}
-                        className="px-4 py-2 rounded-lg ring-1 ring-white/10 text-white/60 text-[10px] font-mono tracking-widest hover:bg-white/5">
-                        EXIT
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg ring-1 ring-white/10 text-white/60 text-[10px] font-mono tracking-widest hover:bg-white/5">
+                        <ArrowLeftCircle className="h-3 w-3" /> BACK TO LIBRARY
+                      </button>
+                      <button onClick={continueAnyway}
+                        className="px-3 py-2 rounded-lg text-white/40 text-[9px] font-mono tracking-widest hover:text-white/70">
+                        CONTINUE ANYWAY
                       </button>
                     </div>
                     {diagnostics.length > 0 && (
                       <details className="mt-3 w-full text-left">
-                        <summary className="text-[9px] font-mono text-white/40 cursor-pointer hover:text-white/60">DIAGNOSTICS</summary>
+                        <summary className="text-[9px] font-mono text-white/40 cursor-pointer hover:text-white/60">DIAGNOSTICS · MODE={mode.toUpperCase()}</summary>
                         <pre className="mt-2 text-[9px] font-mono text-white/40 bg-white/5 rounded p-2 max-h-32 overflow-auto whitespace-pre-wrap">
 {diagnostics.join("\n")}
                         </pre>
@@ -449,15 +457,17 @@ export function ArcadeVault() {
               )}
               <iframe
                 ref={iframeRef}
-                src={proxify(active.embed)}
+                key={`${active.title}::${mode}`}
+                src={buildSrc(active.embed, mode)}
                 title={active.title}
                 onLoad={handleIframeLoad}
                 onError={handleIframeError}
                 className="w-full h-full bg-black"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-popups"
                 allow="autoplay; fullscreen; gamepad; clipboard-write; encrypted-media; accelerometer; gyroscope"
                 referrerPolicy="no-referrer"
               />
+
               <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-fuchsia-500/10" />
             </div>
           </motion.div>
