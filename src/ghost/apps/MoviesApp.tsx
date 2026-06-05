@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, Plus, Info, Search, Maximize2, X, Loader2, ArrowLeft, RotateCw } from "lucide-react";
-import { proxify } from "../proxy";
+import { SafeEmbed, sanitizeUrl } from "../SafeEmbed";
 
-// Switched to flixvo.live as the GhostFlix source.
-const SOURCE = "flixvo.live";
+// Primary GhostFlix streaming source.
+const PRIMARY_SOURCE = "https://www.vidsrc.wtf/";
+const FALLBACK_SOURCE = "https://vidsrc.to/";
+
 
 const FEATURED = {
   title: "SPECTRAL",
@@ -119,15 +121,20 @@ export function MoviesApp() {
 }
 
 function GhostFlixPlayer({ phase, onExit }: { phase: "idle" | "boot" | "live"; onExit: () => void }) {
-  const ref = useRef<HTMLIFrameElement>(null);
   const [fullscreen, setFullscreen] = useState(false);
+  const [sourceIdx, setSourceIdx] = useState(0);
   const [reloadKey, setReloadKey] = useState(0);
+
+  const SOURCES = [PRIMARY_SOURCE, FALLBACK_SOURCE].map(sanitizeUrl).filter((u): u is string => !!u);
+  const currentSource = SOURCES[sourceIdx] ?? SOURCES[0];
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setFullscreen(false); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  const cycleSource = () => setSourceIdx((i) => (i + 1) % SOURCES.length);
 
   return (
     <div className={`${fullscreen ? "fixed inset-0 z-[9999]" : "h-full"} bg-black text-white flex flex-col`}>
@@ -142,6 +149,7 @@ function GhostFlixPlayer({ phase, onExit }: { phase: "idle" | "boot" | "live"; o
           </span>
         </div>
         <div className="flex items-center gap-1">
+          <button onClick={cycleSource} title="Switch source" className="px-2 py-1 rounded hover:bg-white/10 text-[9px] font-mono tracking-widest text-white/60">SRC {sourceIdx + 1}/{SOURCES.length}</button>
           <button onClick={() => setReloadKey((k) => k + 1)} className="p-1.5 rounded hover:bg-white/10 text-white/70"><RotateCw className="h-3.5 w-3.5" /></button>
           <button onClick={() => setFullscreen((f) => !f)} className="p-1.5 rounded hover:bg-white/10 text-white/70"><Maximize2 className="h-3.5 w-3.5" /></button>
           <button onClick={onExit} className="p-1.5 rounded hover:bg-red-500/20 text-red-300"><X className="h-3.5 w-3.5" /></button>
@@ -168,16 +176,17 @@ function GhostFlixPlayer({ phase, onExit }: { phase: "idle" | "boot" | "live"; o
           )}
         </AnimatePresence>
 
-        <iframe
-          key={reloadKey}
-          ref={ref}
-          src={proxify(SOURCE)}
-          title="GhostFlix"
-          className="absolute inset-0 w-full h-full bg-black"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
-          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-          referrerPolicy="no-referrer"
-        />
+        {phase === "live" && currentSource && (
+          <SafeEmbed
+            key={`${sourceIdx}-${reloadKey}`}
+            url={currentSource}
+            title="GhostFlix"
+            accent="red"
+            loadingLabel="STREAMING GHOSTFLIX…"
+            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+            onBack={onExit}
+          />
+        )}
 
         {/* ambient glow overlay */}
         <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-red-500/10" />
@@ -185,3 +194,4 @@ function GhostFlixPlayer({ phase, onExit }: { phase: "idle" | "boot" | "live"; o
     </div>
   );
 }
+
