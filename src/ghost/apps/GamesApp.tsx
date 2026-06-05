@@ -48,11 +48,9 @@ export function GamesApp() {
   const [providerId, setProviderId] = useState<string>("vault");
   const [arcadeGame, setArcadeGame] = useState<typeof ARCADE[number] | null>(null);
   const [arcadeLoaded, setArcadeLoaded] = useState(false);
-  const [providerLoaded, setProviderLoaded] = useState(false);
 
   const provider = PROVIDERS.find((p) => p.id === providerId)!;
 
-  useEffect(() => { setProviderLoaded(false); }, [providerId]);
 
   useEffect(() => {
     if (!arcadeGame) return;
