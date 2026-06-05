@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertTriangle, ArrowLeft, Loader2, Play, RotateCw, Search, Star, Heart, Clock, Flame, Sparkles, Joystick, Zap, X, Shuffle } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Loader2, Play, RotateCw, Search, Star, Heart, Clock, Flame, Sparkles, Joystick, Zap, X, Shuffle, Shield, Flag, ArrowLeftCircle } from "lucide-react";
 import { useGhost } from "../store";
-import { proxify } from "../proxy";
+import {
+  buildSrc, brokenTitles, clearStatus, getCachedStatus, isValidEmbed,
+  isMixedContent, LaunchMode, markBroken, markVerified, pickLaunchMode, probeReachable,
+} from "../gameCompat";
 import catalogRaw from "../data/onlineGames.json";
 
 export interface CatalogGame {
@@ -29,18 +32,11 @@ const CATEGORY_DEFS: { id: string; label: string; match: (g: CatalogGame) => boo
 
 const RP_KEY = "ghost.arcade.recent.v1";
 const FAV_KEY = "ghost.arcade.favs.v1";
-const LOAD_TIMEOUT_MS = 10_000;
+const DIRECT_TIMEOUT_MS = 8_000;
+const PROXY_TIMEOUT_MS  = 12_000;
 
 function loadKeys(key: string): string[] {
   try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch { return []; }
-}
-
-function isValidEmbed(url: string | undefined | null): boolean {
-  if (!url) return false;
-  try {
-    const u = new URL(url, window.location.href);
-    return u.protocol === "http:" || u.protocol === "https:";
-  } catch { return false; }
 }
 
 type LaunchStatus = "loading" | "ready" | "error";
@@ -50,14 +46,19 @@ export function ArcadeVault() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("featured");
   const [active, setActive] = useState<CatalogGame | null>(null);
+  const [mode, setMode] = useState<LaunchMode>("direct");
   const [status, setStatus] = useState<LaunchStatus>("loading");
   const [progress, setProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [diagnostics, setDiagnostics] = useState<string[]>([]);
   const [recent, setRecent] = useState<string[]>(() => loadKeys(RP_KEY));
   const [favs, setFavs] = useState<string[]>(() => loadKeys(FAV_KEY));
+  const [broken, setBroken] = useState<Set<string>>(() => brokenTitles());
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const launchStartRef = useRef<number>(0);
+  const triedProxyRef = useRef<boolean>(false);
+
+  const safeCatalog = useMemo(() => CATALOG.filter((g) => !broken.has(g.title)), [broken]);
 
   const filtered = useMemo(() => {
     const def = CATEGORY_DEFS.find((c) => c.id === category) ?? CATEGORY_DEFS[0];
@@ -69,8 +70,14 @@ export function ArcadeVault() {
     return list;
   }, [category, query]);
 
-  const featured = useMemo(() => CATALOG[Math.floor(Date.now() / 60000) % CATALOG.length], []);
-  const trending = useMemo(() => CATALOG.slice(0, 80).sort(() => Math.random() - 0.5).slice(0, 12), []);
+  const featured = useMemo(
+    () => safeCatalog[Math.floor(Date.now() / 60000) % Math.max(1, safeCatalog.length)] ?? CATALOG[0],
+    [safeCatalog]
+  );
+  const trending = useMemo(
+    () => safeCatalog.slice(0, 80).sort(() => Math.random() - 0.5).slice(0, 12),
+    [safeCatalog]
+  );
   const continuePlaying = useMemo(
     () => recent.map((t) => CATALOG.find((g) => g.title === t)).filter(Boolean) as CatalogGame[],
     [recent]
@@ -82,47 +89,56 @@ export function ArcadeVault() {
 
   const pushDiag = (line: string) => {
     const stamp = new Date().toLocaleTimeString();
-    setDiagnostics((d) => [...d.slice(-20), `[${stamp}] ${line}`]);
+    setDiagnostics((d) => [...d.slice(-30), `[${stamp}] ${line}`]);
   };
 
-  // Progress + timeout fallback. Progress is driven by status, never gets stuck.
+  // Progress + timeout fallback (auto-promote direct→proxy before erroring).
   useEffect(() => {
     if (!active) return;
     if (status !== "loading") return;
 
     launchStartRef.current = Date.now();
     setProgress(0);
-    pushDiag(`Launching "${active.title}"…`);
+    const limit = mode === "proxy" ? PROXY_TIMEOUT_MS : DIRECT_TIMEOUT_MS;
 
     const tick = setInterval(() => {
       setProgress((p) => {
         const elapsed = Date.now() - launchStartRef.current;
-        // ease toward 90% over ~8s; never exceed 90% while still loading
-        const target = Math.min(90, (elapsed / 8000) * 90);
+        const target = Math.min(90, (elapsed / (limit - 1000)) * 90);
         return p < target ? Math.min(p + Math.random() * 4 + 1, target) : p;
       });
     }, 160);
 
     const timeout = setTimeout(() => {
-      // If still loading, treat as failure but let user continue.
       setStatus((s) => {
-        if (s === "loading") {
-          pushDiag("Timeout: iframe did not signal ready within 10s.");
-          setErrorMsg("Game took too long to respond.");
-          return "error";
+        if (s !== "loading") return s;
+        if (mode === "direct" && !triedProxyRef.current) {
+          pushDiag(`Direct launch timed out after ${Math.round(limit / 1000)}s — switching to proxy.`);
+          triedProxyRef.current = true;
+          setMode("proxy");
+          setProgress(0);
+          return "loading";
         }
-        return s;
+        pushDiag(`Proxy launch timed out after ${Math.round(limit / 1000)}s.`);
+        if (active) markBroken(active, "timeout");
+        setBroken(brokenTitles());
+        setErrorMsg("Game took too long to respond — provider may be offline.");
+        return "error";
       });
-    }, LOAD_TIMEOUT_MS);
+    }, limit);
 
     return () => { clearInterval(tick); clearTimeout(timeout); };
-  }, [active, status]);
+  }, [active, status, mode]);
 
   // Animate progress to 100% on ready
   useEffect(() => {
     if (status !== "ready") return;
     setProgress(100);
-  }, [status]);
+    if (active) {
+      markVerified(active, mode);
+      pushDiag(`Ready (${mode}) in ${Date.now() - launchStartRef.current}ms.`);
+    }
+  }, [status, active, mode]);
 
   useEffect(() => {
     if (!active) return;
@@ -135,18 +151,21 @@ export function ArcadeVault() {
     });
   }, [active, windows, toggleFullscreen]);
 
-  // Global error listener while a game is active (catches script errors that bubble)
+  // Background reachability probe — runs once per launch, doesn't block UI.
   useEffect(() => {
     if (!active) return;
-    const onErr = (e: ErrorEvent) => pushDiag(`window error: ${e.message}`);
-    const onRej = (e: PromiseRejectionEvent) => pushDiag(`unhandled: ${String(e.reason).slice(0, 80)}`);
-    window.addEventListener("error", onErr);
-    window.addEventListener("unhandledrejection", onRej);
-    return () => {
-      window.removeEventListener("error", onErr);
-      window.removeEventListener("unhandledrejection", onRej);
-    };
-  }, [active]);
+    const controller = new AbortController();
+    probeReachable(active.embed, controller.signal).then((ok) => {
+      pushDiag(`Probe: ${ok ? "reachable" : "404/403/blocked"} (${active.embed})`);
+      if (!ok && status === "loading" && mode === "direct" && !triedProxyRef.current) {
+        triedProxyRef.current = true;
+        setMode("proxy");
+        setProgress(0);
+        pushDiag("Probe failed → switching to proxy preemptively.");
+      }
+    });
+    return () => controller.abort();
+  }, [active, status, mode]);
 
   const launch = (g: CatalogGame) => {
     if (!isValidEmbed(g.embed)) {
@@ -154,26 +173,50 @@ export function ArcadeVault() {
       setStatus("error");
       setErrorMsg("Invalid game URL — provider failed validation.");
       pushDiag(`Validation failed for ${g.embed}`);
+      markBroken(g, "invalid-url");
+      setBroken(brokenTitles());
       return;
     }
+    const initialMode = pickLaunchMode(g);
+    triedProxyRef.current = initialMode === "proxy";
+    if (isMixedContent(g.embed)) pushDiag("Mixed content detected — using proxy.");
     setErrorMsg(null);
-    setDiagnostics([]);
+    setDiagnostics([`[${new Date().toLocaleTimeString()}] Launching "${g.title}" via ${initialMode}.`]);
+    setMode(initialMode);
+    setProgress(0);
     setStatus("loading");
     setActive(g);
   };
+
   const retry = () => {
     if (!active) return;
+    triedProxyRef.current = false;
+    clearStatus(active);
+    setBroken(brokenTitles());
     setErrorMsg(null);
-    setStatus("loading");
+    setMode("direct");
     setProgress(0);
-    // force iframe reload
-    if (iframeRef.current) {
-      const src = iframeRef.current.src;
-      iframeRef.current.src = "about:blank";
-      requestAnimationFrame(() => { if (iframeRef.current) iframeRef.current.src = src; });
-    }
-    pushDiag("Retrying launch…");
+    setStatus("loading");
+    pushDiag("User retry — cleared cache, attempting direct.");
   };
+
+  const launchProxy = () => {
+    if (!active) return;
+    triedProxyRef.current = true;
+    setErrorMsg(null);
+    setMode("proxy");
+    setProgress(0);
+    setStatus("loading");
+    pushDiag("User forced proxy launch.");
+  };
+
+  const reportIssue = () => {
+    if (!active) return;
+    markBroken(active, "user-reported");
+    setBroken(brokenTitles());
+    pushDiag("User reported issue — game flagged as broken.");
+  };
+
   const continueAnyway = () => { setStatus("ready"); pushDiag("User continued past error."); };
   const exit = () => {
     const me = windows.find((w) => w.appId === "games");
@@ -181,6 +224,7 @@ export function ArcadeVault() {
     setActive(null);
     setStatus("loading");
     setErrorMsg(null);
+    triedProxyRef.current = false;
   };
   const toggleFav = (title: string) => {
     setFavs((f) => {
@@ -191,14 +235,24 @@ export function ArcadeVault() {
   };
 
   const handleIframeLoad = () => {
-    pushDiag(`Iframe load event in ${Date.now() - launchStartRef.current}ms.`);
+    pushDiag(`Iframe load (${mode}) in ${Date.now() - launchStartRef.current}ms.`);
     setStatus((s) => (s === "loading" ? "ready" : s));
   };
   const handleIframeError = () => {
-    pushDiag("Iframe error event fired.");
-    setErrorMsg("Game frame failed to load.");
+    pushDiag(`Iframe error (${mode}).`);
+    if (mode === "direct" && !triedProxyRef.current) {
+      triedProxyRef.current = true;
+      setMode("proxy");
+      setProgress(0);
+      pushDiag("Direct failed → falling back to proxy.");
+      return;
+    }
+    if (active) markBroken(active, "iframe-error");
+    setBroken(brokenTitles());
+    setErrorMsg("Game frame failed to load on both direct and proxy routes.");
     setStatus("error");
   };
+
 
 
   return (
@@ -368,23 +422,31 @@ export function ArcadeVault() {
                     <div className="text-[10px] font-mono text-white/40 leading-relaxed">
                       The arcade stream timed out or the provider rejected the connection.
                     </div>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
                       <button onClick={retry}
                         className="flex items-center gap-2 px-4 py-2 rounded-lg gradient-neon text-white font-bold text-[10px] tracking-widest">
                         <RotateCw className="h-3 w-3" /> RETRY
                       </button>
-                      <button onClick={continueAnyway}
-                        className="px-4 py-2 rounded-lg ring-1 ring-white/20 text-white/80 text-[10px] font-mono tracking-widest hover:bg-white/5">
-                        CONTINUE ANYWAY
+                      <button onClick={launchProxy}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg ring-1 ring-cyan-400/40 text-cyan-200 text-[10px] font-mono tracking-widest hover:bg-cyan-500/10">
+                        <Shield className="h-3 w-3" /> LAUNCH VIA PROXY
+                      </button>
+                      <button onClick={reportIssue}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg ring-1 ring-amber-400/30 text-amber-200 text-[10px] font-mono tracking-widest hover:bg-amber-500/10">
+                        <Flag className="h-3 w-3" /> REPORT ISSUE
                       </button>
                       <button onClick={exit}
-                        className="px-4 py-2 rounded-lg ring-1 ring-white/10 text-white/60 text-[10px] font-mono tracking-widest hover:bg-white/5">
-                        EXIT
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg ring-1 ring-white/10 text-white/60 text-[10px] font-mono tracking-widest hover:bg-white/5">
+                        <ArrowLeftCircle className="h-3 w-3" /> BACK TO LIBRARY
+                      </button>
+                      <button onClick={continueAnyway}
+                        className="px-3 py-2 rounded-lg text-white/40 text-[9px] font-mono tracking-widest hover:text-white/70">
+                        CONTINUE ANYWAY
                       </button>
                     </div>
                     {diagnostics.length > 0 && (
                       <details className="mt-3 w-full text-left">
-                        <summary className="text-[9px] font-mono text-white/40 cursor-pointer hover:text-white/60">DIAGNOSTICS</summary>
+                        <summary className="text-[9px] font-mono text-white/40 cursor-pointer hover:text-white/60">DIAGNOSTICS · MODE={mode.toUpperCase()}</summary>
                         <pre className="mt-2 text-[9px] font-mono text-white/40 bg-white/5 rounded p-2 max-h-32 overflow-auto whitespace-pre-wrap">
 {diagnostics.join("\n")}
                         </pre>
@@ -395,15 +457,17 @@ export function ArcadeVault() {
               )}
               <iframe
                 ref={iframeRef}
-                src={proxify(active.embed)}
+                key={`${active.title}::${mode}`}
+                src={buildSrc(active.embed, mode)}
                 title={active.title}
                 onLoad={handleIframeLoad}
                 onError={handleIframeError}
                 className="w-full h-full bg-black"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-popups"
                 allow="autoplay; fullscreen; gamepad; clipboard-write; encrypted-media; accelerometer; gyroscope"
                 referrerPolicy="no-referrer"
               />
+
               <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-fuchsia-500/10" />
             </div>
           </motion.div>
