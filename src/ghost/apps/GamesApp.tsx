@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Flame, Trophy, Gamepad2, Heart, Clock, ArrowLeft, Loader2, Joystick, Zap, Star, Plus, Sparkles, Maximize } from "lucide-react";
+import { Play, Flame, Gamepad2, ArrowLeft, Loader2, Joystick, Zap, Star, Plus, Sparkles, Maximize } from "lucide-react";
 import { useGhost } from "../store";
 import { proxify } from "../proxy";
+import { SafeEmbed } from "../SafeEmbed";
 import { ArcadeVault } from "./ArcadeVault";
 
 interface Provider {
@@ -21,7 +22,7 @@ interface Provider {
 const PROVIDERS: Provider[] = [
   { id: "vault",   name: "Arcade Vault", tagline: "259 Ghost-curated games", iconEmoji: "▣", accent: "from-fuchsia-500 to-rose-700", custom: "vault" },
   { id: "gamezop", name: "Gamezop",      tagline: "Instant HTML5 arcade",   iconEmoji: "🎮", accent: "from-cyan-500 to-blue-700" },
-  { id: "gnmath",  name: "GN-Math",      tagline: "Unblocked math arcade",  iconUrl: "https://cdn.jsdelivr.net/gh/snoopyeducation/securly.com@main/classlink.com/math.svg", accent: "from-violet-500 to-indigo-700", embedUrl: "https://gn-math.github.io/" },
+  { id: "gnmath",  name: "GN-Math",      tagline: "Unblocked math arcade",  iconEmoji: "∑", accent: "from-violet-500 to-indigo-700", embedUrl: "https://stocky.pythonanywhere.com/" },
   { id: "quizizz", name: "Quizizz",      tagline: "Live learning arena",    iconEmoji: "🧠", accent: "from-emerald-500 to-teal-700", embedUrl: "https://quizizz.com/join" },
   { id: "cloud",   name: "Cloud Vault",  tagline: "Open GhostCloud",        iconEmoji: "☁",  accent: "from-violet-500 to-fuchsia-700" },
 ];
@@ -199,24 +200,12 @@ function EmbeddedProvider({ provider, loaded, onLoad }: { provider: Provider; lo
         </button>
       </div>
       <div className="flex-1 relative bg-black">
-        {!loaded && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-black">
-            <div className="relative h-16 w-16">
-              <motion.div className="absolute inset-0 rounded-full border-2 border-fuchsia-400/30" />
-              <motion.div className="absolute inset-0 rounded-full border-t-2 border-fuchsia-400"
-                animate={{ rotate: 360 }} transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }} />
-            </div>
-            <div className="text-[10px] tracking-[0.5em] font-mono text-fuchsia-300">LOADING {provider.name.toUpperCase()}…</div>
-          </div>
-        )}
-        <iframe
-          src={provider.embedUrl}
+        <SafeEmbed
+          url={provider.embedUrl!}
           title={provider.name}
-          onLoad={onLoad}
-          className="w-full h-full bg-black"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
-          allow="autoplay; fullscreen; gamepad; clipboard-write; encrypted-media"
-          referrerPolicy="no-referrer"
+          accent="fuchsia"
+          loadingLabel={`LOADING ${provider.name.toUpperCase()}…`}
+          onBack={() => me && toggleFullscreen(me.id)}
         />
         <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-fuchsia-500/10" />
       </div>
