@@ -126,7 +126,7 @@ export function GamesApp() {
             {provider.custom === "vault"
               ? <ArcadeVault />
               : provider.embedUrl
-                ? <EmbeddedProvider provider={provider} loaded={providerLoaded} onLoad={() => setProviderLoaded(true)} />
+                ? <EmbeddedProvider provider={provider} />
                 : provider.id === "gamezop"
                   ? <GamezopHub onPlay={(g) => { setArcadeLoaded(false); setArcadeGame(g); }} />
                   : <ComingSoon provider={provider} />}
@@ -178,7 +178,7 @@ export function GamesApp() {
   );
 }
 
-function EmbeddedProvider({ provider, loaded, onLoad }: { provider: Provider; loaded: boolean; onLoad: () => void }) {
+function EmbeddedProvider({ provider }: { provider: Provider }) {
   const { windows, toggleFullscreen } = useGhost();
   const me = windows.find((w) => w.appId === "games");
 
