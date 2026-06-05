@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertTriangle, ArrowLeft, Loader2, Play, RotateCw, Search, Star, Heart, Clock, Flame, Sparkles, Joystick, Zap, X, Shuffle } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Loader2, Play, RotateCw, Search, Star, Heart, Clock, Flame, Sparkles, Joystick, Zap, X, Shuffle, Shield, Flag, ArrowLeftCircle } from "lucide-react";
 import { useGhost } from "../store";
-import { proxify } from "../proxy";
+import {
+  buildSrc, brokenTitles, clearStatus, getCachedStatus, isValidEmbed,
+  isMixedContent, LaunchMode, markBroken, markVerified, pickLaunchMode, probeReachable,
+} from "../gameCompat";
 import catalogRaw from "../data/onlineGames.json";
 
 export interface CatalogGame {
@@ -29,18 +32,11 @@ const CATEGORY_DEFS: { id: string; label: string; match: (g: CatalogGame) => boo
 
 const RP_KEY = "ghost.arcade.recent.v1";
 const FAV_KEY = "ghost.arcade.favs.v1";
-const LOAD_TIMEOUT_MS = 10_000;
+const DIRECT_TIMEOUT_MS = 8_000;
+const PROXY_TIMEOUT_MS  = 12_000;
 
 function loadKeys(key: string): string[] {
   try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch { return []; }
-}
-
-function isValidEmbed(url: string | undefined | null): boolean {
-  if (!url) return false;
-  try {
-    const u = new URL(url, window.location.href);
-    return u.protocol === "http:" || u.protocol === "https:";
-  } catch { return false; }
 }
 
 type LaunchStatus = "loading" | "ready" | "error";
