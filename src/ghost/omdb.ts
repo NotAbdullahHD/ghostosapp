@@ -115,6 +115,15 @@ export function isValidImdbId(id?: string | null): id is string {
   return !!id && /^tt\d{6,10}$/.test(id);
 }
 
-export function buildVidsrcUrl(imdbId: string): string {
-  return `https://www.vidsrc.wtf/embed/movie?imdb=${encodeURIComponent(imdbId)}`;
+/** Ordered list of stream providers. Each accepts a raw IMDb id. */
+export const STREAM_SOURCES: { id: string; label: string; build: (imdb: string) => string }[] = [
+  { id: "vidsrc-to",  label: "VidSrc.to",  build: (i) => `https://vidsrc.to/embed/movie/${encodeURIComponent(i)}` },
+  { id: "vidsrc-xyz", label: "VidSrc.xyz", build: (i) => `https://vidsrc.xyz/embed/movie/${encodeURIComponent(i)}` },
+  { id: "vidsrc-cc",  label: "VidSrc.cc",  build: (i) => `https://vidsrc.cc/v2/embed/movie/${encodeURIComponent(i)}` },
+  { id: "2embed",     label: "2Embed",     build: (i) => `https://www.2embed.cc/embed/${encodeURIComponent(i)}` },
+];
+
+export function buildVidsrcUrl(imdbId: string, sourceIndex = 0): string {
+  const src = STREAM_SOURCES[sourceIndex] ?? STREAM_SOURCES[0];
+  return src.build(imdbId);
 }
