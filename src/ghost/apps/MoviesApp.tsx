@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Plus, Info, Search, Maximize2, X, Loader2, ArrowLeft, RotateCw, Star } from "lucide-react";
+import { Play, Plus, Info, Search, Maximize2, X, Loader2, ArrowLeft, RotateCw, Star, Activity } from "lucide-react";
 import { SafeEmbed } from "../SafeEmbed";
 import {
   CATEGORIES, FEATURED_ID, type OmdbMovie, fetchMovie, fetchMovies,
-  searchMovies, isValidImdbId, buildVidsrcUrl,
+  searchMovies, isValidImdbId, buildVidsrcUrl, STREAM_SOURCES,
 } from "../omdb";
 
 const COLORS = [
