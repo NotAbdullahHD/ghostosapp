@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Plus, Info, Search, Maximize2, X, Loader2, ArrowLeft, RotateCw, Star } from "lucide-react";
+import { Play, Plus, Info, Search, Maximize2, X, Loader2, ArrowLeft, RotateCw, Star, Activity } from "lucide-react";
 import { SafeEmbed } from "../SafeEmbed";
 import {
   CATEGORIES, FEATURED_ID, type OmdbMovie, fetchMovie, fetchMovies,
-  searchMovies, isValidImdbId, buildVidsrcUrl,
+  searchMovies, isValidImdbId, buildVidsrcUrl, STREAM_SOURCES,
 } from "../omdb";
 
 const COLORS = [
@@ -244,9 +244,31 @@ function SkeletonCard({ idx }: { idx: number }) {
 function GhostFlixPlayer({ movie, phase, onExit }: { movie: OmdbMovie; phase: "idle" | "boot" | "live"; onExit: () => void }) {
   const [fullscreen, setFullscreen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [sourceIdx, setSourceIdx] = useState(0);
+  const [showDiag, setShowDiag] = useState(false);
+  const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("loading");
 
   const playable = isValidImdbId(movie.imdbID);
-  const streamUrl = useMemo(() => (playable ? buildVidsrcUrl(movie.imdbID) : null), [movie.imdbID, playable]);
+  const streamUrl = useMemo(
+    () => (playable ? buildVidsrcUrl(movie.imdbID, sourceIdx) : null),
+    [movie.imdbID, playable, sourceIdx]
+  );
+
+  useEffect(() => {
+    if (streamUrl) {
+      // eslint-disable-next-line no-console
+      console.info("[GhostFlix] Playback URL:", {
+        title: movie.Title, imdbID: movie.imdbID,
+        source: STREAM_SOURCES[sourceIdx]?.label, url: streamUrl,
+      });
+      setStatus("loading");
+    }
+  }, [streamUrl, movie.Title, movie.imdbID, sourceIdx]);
+
+  const cycleSource = () => {
+    setSourceIdx((i) => (i + 1) % STREAM_SOURCES.length);
+    setReloadKey((k) => k + 1);
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setFullscreen(false); };
@@ -268,11 +290,25 @@ function GhostFlixPlayer({ movie, phase, onExit }: { movie: OmdbMovie; phase: "i
           </span>
         </div>
         <div className="flex items-center gap-1">
+          <button onClick={cycleSource} title={`Source: ${STREAM_SOURCES[sourceIdx]?.label}`} className="px-2 py-1 rounded hover:bg-white/10 text-[10px] font-mono text-white/60 tracking-widest">
+            SRC {sourceIdx + 1}/{STREAM_SOURCES.length}
+          </button>
+          <button onClick={() => setShowDiag((s) => !s)} title="Diagnostics" className={`p-1.5 rounded hover:bg-white/10 ${showDiag ? "text-emerald-300" : "text-white/70"}`}><Activity className="h-3.5 w-3.5" /></button>
           <button onClick={() => setReloadKey((k) => k + 1)} className="p-1.5 rounded hover:bg-white/10 text-white/70"><RotateCw className="h-3.5 w-3.5" /></button>
           <button onClick={() => setFullscreen((f) => !f)} className="p-1.5 rounded hover:bg-white/10 text-white/70"><Maximize2 className="h-3.5 w-3.5" /></button>
           <button onClick={onExit} className="p-1.5 rounded hover:bg-red-500/20 text-red-300"><X className="h-3.5 w-3.5" /></button>
         </div>
       </div>
+
+      {showDiag && (
+        <div className="px-3 py-2 bg-black/80 border-b border-emerald-500/20 text-[10px] font-mono text-white/70 space-y-0.5">
+          <div><span className="text-emerald-300">TITLE</span> <span className="text-white">{movie.Title}</span></div>
+          <div><span className="text-emerald-300">IMDB </span> <span className="text-white">{movie.imdbID || "—"}</span> <span className="text-white/40">· valid: {String(playable)}</span></div>
+          <div><span className="text-emerald-300">SRC  </span> <span className="text-white">{STREAM_SOURCES[sourceIdx]?.label}</span> <span className="text-white/40">(#{sourceIdx + 1}/{STREAM_SOURCES.length})</span></div>
+          <div className="break-all"><span className="text-emerald-300">URL  </span> {streamUrl ? <a href={streamUrl} target="_blank" rel="noreferrer" className="text-sky-300 underline">{streamUrl}</a> : <span className="text-rose-300">none</span>}</div>
+          <div><span className="text-emerald-300">STAT </span> <span className={status === "error" ? "text-rose-300" : status === "ready" ? "text-emerald-300" : "text-amber-300"}>{status.toUpperCase()}</span></div>
+        </div>
+      )}
 
       <div className="flex-1 relative bg-black">
         <AnimatePresence>
