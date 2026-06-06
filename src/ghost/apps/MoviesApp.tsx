@@ -290,11 +290,25 @@ function GhostFlixPlayer({ movie, phase, onExit }: { movie: OmdbMovie; phase: "i
           </span>
         </div>
         <div className="flex items-center gap-1">
+          <button onClick={cycleSource} title={`Source: ${STREAM_SOURCES[sourceIdx]?.label}`} className="px-2 py-1 rounded hover:bg-white/10 text-[10px] font-mono text-white/60 tracking-widest">
+            SRC {sourceIdx + 1}/{STREAM_SOURCES.length}
+          </button>
+          <button onClick={() => setShowDiag((s) => !s)} title="Diagnostics" className={`p-1.5 rounded hover:bg-white/10 ${showDiag ? "text-emerald-300" : "text-white/70"}`}><Activity className="h-3.5 w-3.5" /></button>
           <button onClick={() => setReloadKey((k) => k + 1)} className="p-1.5 rounded hover:bg-white/10 text-white/70"><RotateCw className="h-3.5 w-3.5" /></button>
           <button onClick={() => setFullscreen((f) => !f)} className="p-1.5 rounded hover:bg-white/10 text-white/70"><Maximize2 className="h-3.5 w-3.5" /></button>
           <button onClick={onExit} className="p-1.5 rounded hover:bg-red-500/20 text-red-300"><X className="h-3.5 w-3.5" /></button>
         </div>
       </div>
+
+      {showDiag && (
+        <div className="px-3 py-2 bg-black/80 border-b border-emerald-500/20 text-[10px] font-mono text-white/70 space-y-0.5">
+          <div><span className="text-emerald-300">TITLE</span> <span className="text-white">{movie.Title}</span></div>
+          <div><span className="text-emerald-300">IMDB </span> <span className="text-white">{movie.imdbID || "—"}</span> <span className="text-white/40">· valid: {String(playable)}</span></div>
+          <div><span className="text-emerald-300">SRC  </span> <span className="text-white">{STREAM_SOURCES[sourceIdx]?.label}</span> <span className="text-white/40">(#{sourceIdx + 1}/{STREAM_SOURCES.length})</span></div>
+          <div className="break-all"><span className="text-emerald-300">URL  </span> {streamUrl ? <a href={streamUrl} target="_blank" rel="noreferrer" className="text-sky-300 underline">{streamUrl}</a> : <span className="text-rose-300">none</span>}</div>
+          <div><span className="text-emerald-300">STAT </span> <span className={status === "error" ? "text-rose-300" : status === "ready" ? "text-emerald-300" : "text-amber-300"}>{status.toUpperCase()}</span></div>
+        </div>
+      )}
 
       <div className="flex-1 relative bg-black">
         <AnimatePresence>
