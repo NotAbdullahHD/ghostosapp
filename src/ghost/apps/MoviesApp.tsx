@@ -244,9 +244,31 @@ function SkeletonCard({ idx }: { idx: number }) {
 function GhostFlixPlayer({ movie, phase, onExit }: { movie: OmdbMovie; phase: "idle" | "boot" | "live"; onExit: () => void }) {
   const [fullscreen, setFullscreen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [sourceIdx, setSourceIdx] = useState(0);
+  const [showDiag, setShowDiag] = useState(false);
+  const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("loading");
 
   const playable = isValidImdbId(movie.imdbID);
-  const streamUrl = useMemo(() => (playable ? buildVidsrcUrl(movie.imdbID) : null), [movie.imdbID, playable]);
+  const streamUrl = useMemo(
+    () => (playable ? buildVidsrcUrl(movie.imdbID, sourceIdx) : null),
+    [movie.imdbID, playable, sourceIdx]
+  );
+
+  useEffect(() => {
+    if (streamUrl) {
+      // eslint-disable-next-line no-console
+      console.info("[GhostFlix] Playback URL:", {
+        title: movie.Title, imdbID: movie.imdbID,
+        source: STREAM_SOURCES[sourceIdx]?.label, url: streamUrl,
+      });
+      setStatus("loading");
+    }
+  }, [streamUrl, movie.Title, movie.imdbID, sourceIdx]);
+
+  const cycleSource = () => {
+    setSourceIdx((i) => (i + 1) % STREAM_SOURCES.length);
+    setReloadKey((k) => k + 1);
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setFullscreen(false); };
