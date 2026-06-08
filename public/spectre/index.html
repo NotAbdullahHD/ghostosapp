@@ -399,8 +399,13 @@ function createTab(url = "") {
   iframe.className = "viewframe";
   iframe.dataset.id = id;
   iframe.setAttribute("sandbox",
-    "allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-presentation allow-downloads"
+    "allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-presentation allow-downloads allow-pointer-lock allow-orientation-lock allow-top-navigation-by-user-activation allow-storage-access-by-user-activation"
   );
+  iframe.setAttribute("allow",
+    "autoplay; fullscreen; clipboard-read; clipboard-write; encrypted-media; picture-in-picture; gamepad; geolocation; camera; microphone; midi; payment; xr-spatial-tracking; accelerometer; gyroscope; magnetometer"
+  );
+  iframe.setAttribute("allowfullscreen", "true");
+  iframe.referrerPolicy = "no-referrer";
   document.body.appendChild(iframe);
 
   const tabBtn = document.createElement("div");
@@ -530,6 +535,27 @@ form.onsubmit = e => {
 newTabBtn.onclick = () => createTab();
 
 createTab();
+
+/* ===== Deep-link & embed mode ===== */
+(function initEmbed() {
+  try {
+    const params = new URLSearchParams(location.search);
+    const chrome = params.get("chrome");
+    if (chrome === "mini" || chrome === "none") {
+      const ui = document.querySelector(".browser-ui");
+      if (ui) ui.style.display = "none";
+      document.body.classList.add("embed");
+      const style = document.createElement("style");
+      style.textContent = ".viewframe{top:0!important;height:100%!important}";
+      document.head.appendChild(style);
+    }
+    const url = params.get("url");
+    if (url) {
+      // Defer until UV config is ready
+      setTimeout(() => navigate(url), 150);
+    }
+  } catch (e) { console.warn("embed init failed", e); }
+})();
 
 /* Surface low-level errors to diagnostics */
 window.addEventListener("error", e => {

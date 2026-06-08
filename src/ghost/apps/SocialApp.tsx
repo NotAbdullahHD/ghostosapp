@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, ExternalLink, Loader2, Maximize2, RotateCw, Wifi } from "lucide-react";
-import { proxify } from "../proxy";
+
+// Route social apps through the local Spectre (Ultraviolet) relay so they bypass
+// school / network filters the same way the Browser app does.
+const spectreEmbed = (url: string) =>
+  `/spectre/index.html?chrome=mini&url=${encodeURIComponent(url)}`;
 
 interface SocialConfig {
   id: string;
@@ -95,12 +99,11 @@ export function SocialApp({ kind }: { kind: "x" | "tiktok" | "pinterest" }) {
         </AnimatePresence>
         <iframe
           key={reloadKey}
-          src={proxify(cfg.url)}
+          src={spectreEmbed(cfg.url)}
           title={cfg.name}
           onLoad={() => setLoaded(true)}
           className="w-full h-full bg-black"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation allow-downloads"
-          allow="autoplay; fullscreen; clipboard-write; encrypted-media; picture-in-picture"
+          allow="autoplay; fullscreen; clipboard-read; clipboard-write; encrypted-media; picture-in-picture; gamepad; geolocation; camera; microphone; accelerometer; gyroscope"
           referrerPolicy="no-referrer"
         />
         {failed && (
