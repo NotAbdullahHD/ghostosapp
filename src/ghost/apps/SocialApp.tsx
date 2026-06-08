@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, ExternalLink, Loader2, Maximize2, RotateCw, Wifi } from "lucide-react";
-import { proxify } from "../proxy";
+
+// Route social apps through the local Spectre (Ultraviolet) relay so they bypass
+// school / network filters the same way the Browser app does.
+const spectreEmbed = (url: string) =>
+  `/spectre/index.html?chrome=mini&url=${encodeURIComponent(url)}`;
 
 interface SocialConfig {
   id: string;
