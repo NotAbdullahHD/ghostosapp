@@ -399,8 +399,13 @@ function createTab(url = "") {
   iframe.className = "viewframe";
   iframe.dataset.id = id;
   iframe.setAttribute("sandbox",
-    "allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-presentation allow-downloads"
+    "allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-presentation allow-downloads allow-pointer-lock allow-orientation-lock allow-top-navigation-by-user-activation allow-storage-access-by-user-activation"
   );
+  iframe.setAttribute("allow",
+    "autoplay; fullscreen; clipboard-read; clipboard-write; encrypted-media; picture-in-picture; gamepad; geolocation; camera; microphone; midi; payment; xr-spatial-tracking; accelerometer; gyroscope; magnetometer"
+  );
+  iframe.setAttribute("allowfullscreen", "true");
+  iframe.referrerPolicy = "no-referrer";
   document.body.appendChild(iframe);
 
   const tabBtn = document.createElement("div");
