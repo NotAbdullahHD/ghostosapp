@@ -322,7 +322,7 @@ function applyTransport(idx) {
   diagWisp.textContent = url;
   log("Setting transport → " + url);
   try {
-    connection.setTransport("/spectre/libcurl/index.mjs", [{ wisp: url }]);
+    connection.setTransport("/spectre/libcurl/index.mjs", [{ wisp: url, websocket: url }]);
     diagBaremux.className = "v good";
     diagBaremux.textContent = "transport set";
     setConn("warn", "handshake pending");
