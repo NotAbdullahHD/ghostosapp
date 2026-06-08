@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Globe, Shield, Maximize, RotateCw } from "lucide-react";
 import { useGhost } from "../store";
 
-const BROWSER_URL = "https://p-test-seven-woad.vercel.app/";
+const BROWSER_URL = "/spectre/index.html";
 
 export function BrowserApp() {
   const { windows, toggleFullscreen } = useGhost();
