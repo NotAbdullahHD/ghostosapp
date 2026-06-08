@@ -536,6 +536,27 @@ newTabBtn.onclick = () => createTab();
 
 createTab();
 
+/* ===== Deep-link & embed mode ===== */
+(function initEmbed() {
+  try {
+    const params = new URLSearchParams(location.search);
+    const chrome = params.get("chrome");
+    if (chrome === "mini" || chrome === "none") {
+      const ui = document.querySelector(".browser-ui");
+      if (ui) ui.style.display = "none";
+      document.body.classList.add("embed");
+      const style = document.createElement("style");
+      style.textContent = ".viewframe{top:0!important;height:100%!important}";
+      document.head.appendChild(style);
+    }
+    const url = params.get("url");
+    if (url) {
+      // Defer until UV config is ready
+      setTimeout(() => navigate(url), 150);
+    }
+  } catch (e) { console.warn("embed init failed", e); }
+})();
+
 /* Surface low-level errors to diagnostics */
 window.addEventListener("error", e => {
   if (e?.message && /BareMux|wisp|libcurl|transport/i.test(e.message)) {
