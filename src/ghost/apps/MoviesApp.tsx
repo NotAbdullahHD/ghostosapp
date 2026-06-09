@@ -338,10 +338,12 @@ function GhostFlixPlayer({ movie, phase, onExit }: { movie: OmdbMovie; phase: "i
             title={`${movie.Title} (${movie.Year})`}
             accent="red"
             loadingLabel={`STREAMING ${movie.Title.toUpperCase()}…`}
-            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox allow-orientation-lock allow-pointer-lock allow-top-navigation-by-user-activation allow-downloads allow-modals"
+            allow="autoplay; fullscreen; encrypted-media; picture-in-picture; clipboard-write; gamepad; accelerometer; gyroscope"
             onBack={onExit}
           />
         )}
+
 
         {phase === "live" && !streamUrl && (
           <div className="absolute inset-0 flex items-center justify-center bg-black">
