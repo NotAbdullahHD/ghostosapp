@@ -126,11 +126,17 @@ const LS_WALL = "ghost.wallpaperId";
 const LS_WINDOWS = "ghost.windows";
 const LS_SETTINGS = "ghost.settings";
 
+const isBrowser = typeof window !== "undefined";
+const ls = {
+  get: (k: string) => (isBrowser ? window.localStorage.getItem(k) : null),
+  set: (k: string, v: string) => { if (isBrowser) window.localStorage.setItem(k, v); },
+};
+
 export function GhostProvider({ children }: { children: ReactNode }) {
   const [booted, setBooted] = useState(false);
   const [windows, setWindows] = useState<WindowState[]>(() => {
     try {
-      const raw = localStorage.getItem(LS_WINDOWS);
+      const raw = ls.get(LS_WINDOWS);
       if (!raw) return [];
       const arr = JSON.parse(raw) as WindowState[];
       // restore but never start fullscreen on load
@@ -138,11 +144,11 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     } catch { return []; }
   });
   const [unlocked, setUnlocked] = useState<Record<string, boolean>>(() => {
-    try { return JSON.parse(localStorage.getItem(LS_UNLOCKED) || "{}"); } catch { return {}; }
+    try { return JSON.parse(ls.get(LS_UNLOCKED) || "{}"); } catch { return {}; }
   });
-  const [wallpaperId, setWallpaperId] = useState<string>(() => localStorage.getItem(LS_WALL) || WALLPAPERS[0].id);
+  const [wallpaperId, setWallpaperId] = useState<string>(() => ls.get(LS_WALL) || WALLPAPERS[0].id);
   const [wallpaper, setWallpaper] = useState(() => {
-    const id = localStorage.getItem(LS_WALL) || WALLPAPERS[0].id;
+    const id = ls.get(LS_WALL) || WALLPAPERS[0].id;
     return (WALLPAPERS.find((w) => w.id === id) || WALLPAPERS[0]).css;
   });
   const [notifications, setNotifications] = useState<Notification[]>([
@@ -152,18 +158,19 @@ export function GhostProvider({ children }: { children: ReactNode }) {
   const [showLauncher, setShowLauncher] = useState(false);
   const [locked, setLocked] = useState(false);
   const [settings, setSettings] = useState<SystemSettings>(() => {
-    try { return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem(LS_SETTINGS) || "{}") }; }
+    try { return { ...DEFAULT_SETTINGS, ...JSON.parse(ls.get(LS_SETTINGS) || "{}") }; }
     catch { return DEFAULT_SETTINGS; }
   });
   const zRef = useRef(10);
 
-  useEffect(() => { localStorage.setItem(LS_UNLOCKED, JSON.stringify(unlocked)); }, [unlocked]);
-  useEffect(() => { localStorage.setItem(LS_WALL, wallpaperId); }, [wallpaperId]);
-  useEffect(() => { localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); }, [settings]);
+  useEffect(() => { ls.set(LS_UNLOCKED, JSON.stringify(unlocked)); }, [unlocked]);
+  useEffect(() => { ls.set(LS_WALL, wallpaperId); }, [wallpaperId]);
+  useEffect(() => { ls.set(LS_SETTINGS, JSON.stringify(settings)); }, [settings]);
   useEffect(() => {
-    const id = setTimeout(() => localStorage.setItem(LS_WINDOWS, JSON.stringify(windows)), 200);
+    const id = setTimeout(() => ls.set(LS_WINDOWS, JSON.stringify(windows)), 200);
     return () => clearTimeout(id);
   }, [windows]);
+
 
   const setWallpaperById = useCallback((id: string) => {
     const wp = WALLPAPERS.find((w) => w.id === id);
