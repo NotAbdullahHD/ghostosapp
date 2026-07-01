@@ -23,7 +23,7 @@ export const APPS: AppDef[] = [
   { id: "x",          name: "X",          icon: "𝕏", accent: "from-zinc-700 to-black",                   description: "Signal feed" },
   { id: "tiktok",     name: "TikTok",     icon: "♫", accent: "from-pink-500 to-cyan-500",                description: "Loop reels" },
   { id: "pinterest",  name: "Pinterest",  icon: "◔", accent: "from-rose-500 to-red-700",                 description: "Visual mood" },
-  { id: "chat",       name: "Chat",       icon: "✉", accent: "from-sky-400 to-indigo-700",               description: "Global chat" },
+  { id: "chat",       name: "GhostChat",  icon: "✉", accent: "from-fuchsia-500 via-violet-600 to-blue-600", description: "Messages & FaceTime" },
   { id: "store",      name: "Store",      icon: "◈", accent: "from-amber-400 to-orange-700",             description: "App store" },
   { id: "files",      name: "Files",      icon: "▤", accent: "from-lime-400 to-emerald-700",             description: "Encrypted vault" },
   { id: "notes",      name: "Notes",      icon: "✎", accent: "from-yellow-300 to-amber-600",             description: "Quick notes" },
