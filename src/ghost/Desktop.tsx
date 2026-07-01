@@ -41,7 +41,7 @@ const APP_RENDER: Record<AppId, () => React.ReactElement> = {
   x: () => <SocialApp kind="x" />,
   tiktok: () => <SocialApp kind="tiktok" />,
   pinterest: () => <SocialApp kind="pinterest" />,
-  chat: () => <ChatApp />,
+  chat: () => <GhostChatApp />,
   store: () => <StoreApp />,
   settings: () => <SettingsApp />,
   files: () => <FilesApp />,
