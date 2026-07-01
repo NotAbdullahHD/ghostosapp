@@ -18,7 +18,7 @@ import { BrowserApp } from "./apps/BrowserApp";
 import { SettingsApp } from "./apps/SettingsApp";
 import { FilesApp } from "./apps/FilesApp";
 import { MusicApp } from "./apps/MusicApp";
-import { ChatApp } from "./apps/ChatApp";
+import { GhostChatApp } from "./apps/GhostChatApp";
 import { StoreApp } from "./apps/StoreApp";
 import { NotesApp } from "./apps/NotesApp";
 import { TerminalApp } from "./apps/TerminalApp";
@@ -41,7 +41,7 @@ const APP_RENDER: Record<AppId, () => React.ReactElement> = {
   x: () => <SocialApp kind="x" />,
   tiktok: () => <SocialApp kind="tiktok" />,
   pinterest: () => <SocialApp kind="pinterest" />,
-  chat: () => <ChatApp />,
+  chat: () => <GhostChatApp />,
   store: () => <StoreApp />,
   settings: () => <SettingsApp />,
   files: () => <FilesApp />,
