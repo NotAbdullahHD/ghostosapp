@@ -18,7 +18,7 @@ import { BrowserApp } from "./apps/BrowserApp";
 import { SettingsApp } from "./apps/SettingsApp";
 import { FilesApp } from "./apps/FilesApp";
 import { MusicApp } from "./apps/MusicApp";
-import { ChatApp } from "./apps/ChatApp";
+import { GhostChatApp } from "./apps/GhostChatApp";
 import { StoreApp } from "./apps/StoreApp";
 import { NotesApp } from "./apps/NotesApp";
 import { TerminalApp } from "./apps/TerminalApp";
