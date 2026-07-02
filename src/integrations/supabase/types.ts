@@ -80,6 +80,7 @@ export type Database = {
           ghost_id: string
           id: string
           updated_at: string
+          username: string | null
         }
         Insert: {
           avatar_emoji?: string
@@ -89,6 +90,7 @@ export type Database = {
           ghost_id: string
           id: string
           updated_at?: string
+          username?: string | null
         }
         Update: {
           avatar_emoji?: string
@@ -98,6 +100,7 @@ export type Database = {
           ghost_id?: string
           id?: string
           updated_at?: string
+          username?: string | null
         }
         Relationships: []
       }
