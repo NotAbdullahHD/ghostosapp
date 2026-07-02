@@ -13,6 +13,7 @@ import { useGhost } from "@/ghost/store";
 interface Profile {
   id: string;
   ghost_id: string;
+  username: string | null;
   display_name: string;
   avatar_emoji: string;
   avatar_gradient: string;
