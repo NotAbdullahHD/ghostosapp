@@ -725,17 +725,21 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
       {/* LEFT PANEL */}
       <aside className="w-72 border-r border-white/5 flex flex-col bg-black/40 backdrop-blur-xl">
         <div className="p-3 border-b border-white/5 flex items-center gap-2">
-          <div className="flex-1 min-w-0 flex items-center gap-2">
+          <button onClick={() => setShowAccount(true)} className="flex-1 min-w-0 flex items-center gap-2 rounded-lg hover:bg-white/5 transition p-1 -m-1 text-left" title="Account">
             <Avatar p={me} size={30} />
             <div className="min-w-0">
               <div className="text-sm font-semibold truncate">{me.display_name}</div>
               <div className="text-[10px] font-mono text-fuchsia-300/70 tracking-wider">{me.ghost_id}</div>
             </div>
-          </div>
-          <button onClick={() => setShowAdd(true)} className="h-8 w-8 rounded-full bg-fuchsia-500/15 hover:bg-fuchsia-500/25 flex items-center justify-center">
+          </button>
+          <button onClick={() => setShowAccount(true)} className="h-8 w-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center" title="Account settings">
+            <SettingsIcon className="h-4 w-4 text-white/70" />
+          </button>
+          <button onClick={() => setShowAdd(true)} className="h-8 w-8 rounded-full bg-fuchsia-500/15 hover:bg-fuchsia-500/25 flex items-center justify-center" title="Add friend">
             <Plus className="h-4 w-4 text-fuchsia-200" />
           </button>
         </div>
+
 
         <div className="px-3 pt-3">
           <div className="relative">
