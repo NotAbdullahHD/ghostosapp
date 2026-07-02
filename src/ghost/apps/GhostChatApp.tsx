@@ -4,6 +4,7 @@ import type { RealtimeChannel, Session } from "@supabase/supabase-js";
 import {
   Search, Send, Phone, Video, Info, ChevronLeft, Plus, UserPlus, Check, X,
   Mic, MicOff, VideoOff, PhoneOff, MonitorUp, MoreHorizontal, Sparkles,
+  Settings as SettingsIcon, Eye, EyeOff, Copy, RefreshCw, ShieldAlert, LogOut,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useGhost } from "@/ghost/store";
@@ -12,6 +13,7 @@ import { useGhost } from "@/ghost/store";
 interface Profile {
   id: string;
   ghost_id: string;
+  username: string | null;
   display_name: string;
   avatar_emoji: string;
   avatar_gradient: string;
@@ -49,6 +51,21 @@ const REACTIONS = ["❤️", "👍", "👎", "😂", "‼️", "❓"];
 
 function newGhostId() {
   return `GH-${Math.floor(100000 + Math.random() * 900000)}`;
+}
+function newRecoveryCode() {
+  const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const seg = (n: number) => Array.from({ length: n }, () => A[Math.floor(Math.random() * A.length)]).join("");
+  return `GS-${seg(4)}-${seg(4)}-${seg(4)}`;
+}
+function usernameToEmail(u: string) {
+  return `${u.trim().toLowerCase()}@ghost.local`;
+}
+const RECOVERY_LS = (uid: string) => `ghostchat.recovery.${uid}`;
+function storeRecovery(uid: string, code: string) {
+  try { localStorage.setItem(RECOVERY_LS(uid), code); } catch { /* ignore */ }
+}
+function loadRecovery(uid: string): string | null {
+  try { return localStorage.getItem(RECOVERY_LS(uid)); } catch { return null; }
 }
 function fmtTime(ts: string) {
   const d = new Date(ts);
@@ -89,32 +106,38 @@ export function GhostChatApp() {
   if (checking) {
     return <div className="h-full flex items-center justify-center bg-gradient-to-br from-black to-violet-950/30 text-white/50 text-xs font-mono">Loading GhostChat…</div>;
   }
-  if (!session) return <AuthGate />;
-  if (!profile) return <Onboarding userId={session.user.id} onDone={setProfile} />;
+  if (!session) return <AuthShell />;
+  if (!profile) return <div className="h-full flex items-center justify-center bg-black text-white/40 text-xs font-mono">Preparing account…</div>;
   return <Messenger me={profile} onProfile={setProfile} />;
 }
 
-// ============ Auth ============
-function AuthGate() {
-  const [mode, setMode] = useState<"in" | "up">("up");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+// ============ Auth Shell (Login vs Create) ============
+function AuthShell() {
+  const [mode, setMode] = useState<"login" | "create">("login");
+  return mode === "create"
+    ? <Onboarding onSwitchToLogin={() => setMode("login")} />
+    : <LoginScreen onSwitchToCreate={() => setMode("create")} />;
+}
+
+function LoginScreen({ onSwitchToCreate }: { onSwitchToCreate: () => void }) {
+  const [username, setUsername] = useState("");
+  const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [reveal, setReveal] = useState(false);
 
   const submit = async () => {
     setBusy(true); setErr("");
     try {
-      if (mode === "up") {
-        const { error } = await supabase.auth.signUp({
-          email, password,
-          options: { emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined },
-        });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      }
+      const u = username.trim().toLowerCase();
+      const c = code.trim().toUpperCase();
+      if (!u) throw new Error("Enter your username");
+      if (!c) throw new Error("Enter your recovery code");
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: usernameToEmail(u), password: c,
+      });
+      if (error) throw new Error("Username or recovery code is incorrect");
+      if (data.user) storeRecovery(data.user.id, c);
     } catch (e) {
       setErr((e as Error).message);
     } finally { setBusy(false); }
@@ -122,32 +145,46 @@ function AuthGate() {
 
   return (
     <div className="h-full flex items-center justify-center bg-gradient-to-br from-black via-violet-950/40 to-black text-white p-8 overflow-y-auto">
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm">
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-6">
           <div className="h-20 w-20 rounded-[26px] bg-gradient-to-br from-fuchsia-500 via-violet-600 to-blue-600 flex items-center justify-center text-4xl shadow-[0_20px_60px_-15px_rgba(168,85,247,0.6)] ring-1 ring-white/10">
             👻
           </div>
           <h1 className="mt-4 text-2xl font-bold tracking-tight">GhostChat</h1>
-          <p className="text-white/50 text-sm">Private messages · Ghost network</p>
+          <p className="text-white/50 text-sm">Sign in to your Ghost identity</p>
         </div>
 
         <div className="glass-strong rounded-2xl p-5 space-y-3">
-          <div className="flex bg-white/5 rounded-xl p-1 text-sm">
-            <button onClick={() => setMode("up")} className={`flex-1 py-1.5 rounded-lg transition ${mode === "up" ? "bg-white/10 text-white" : "text-white/50"}`}>Create Account</button>
-            <button onClick={() => setMode("in")} className={`flex-1 py-1.5 rounded-lg transition ${mode === "in" ? "bg-white/10 text-white" : "text-white/50"}`}>Sign In</button>
+          <div>
+            <div className="text-[10px] font-mono tracking-widest text-white/40 mb-1.5">USERNAME</div>
+            <input autoFocus value={username} onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_.-]/g, "").slice(0, 24))}
+              placeholder="ghost_user"
+              className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-fuchsia-400/50 text-sm font-mono" />
           </div>
-          <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-fuchsia-400/50 text-sm" />
-          <input type="password" placeholder="Password (min 6)" value={password} onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-fuchsia-400/50 text-sm" />
+          <div>
+            <div className="text-[10px] font-mono tracking-widest text-white/40 mb-1.5">RECOVERY CODE</div>
+            <div className="relative">
+              <input type={reveal ? "text" : "password"} value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 32))}
+                placeholder="GS-XXXX-XXXX-XXXX"
+                className="w-full px-3 py-2.5 pr-10 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-fuchsia-400/50 text-sm font-mono tracking-wider" />
+              <button type="button" onClick={() => setReveal((r) => !r)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/50">
+                {reveal ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+              </button>
+            </div>
+          </div>
           {err && <div className="text-xs text-rose-300 bg-rose-500/10 rounded-lg px-3 py-2">{err}</div>}
-          <button onClick={submit} disabled={busy || !email || password.length < 6}
+          <button onClick={submit} disabled={busy || !username || !code}
             className="w-full py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 font-semibold text-sm disabled:opacity-40 transition">
-            {busy ? "…" : mode === "up" ? "Create Ghost Account" : "Sign In"}
+            {busy ? "Signing in…" : "Sign In"}
+          </button>
+          <button onClick={onSwitchToCreate}
+            className="w-full py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm text-white/80 transition">
+            Create new Ghost account
           </button>
           <div className="text-[10px] text-white/40 text-center leading-relaxed pt-1">
-            By continuing you accept the GhostOS terms.<br />No phone number required — your Ghost ID is your address.
+            No email required. Your recovery code is the only way to sign in on another device — keep it safe.
           </div>
         </div>
       </motion.div>
@@ -156,41 +193,90 @@ function AuthGate() {
 }
 
 // ============ Onboarding ============
-function Onboarding({ userId, onDone }: { userId: string; onDone: (p: Profile) => void }) {
+function Onboarding({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
   const [step, setStep] = useState(0);
+  const [username, setUsername] = useState("");
+  const [usernameErr, setUsernameErr] = useState("");
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState(EMOJIS[0]);
   const [gradient, setGradient] = useState(GRADIENTS[0]);
   const [ghostId, setGhostId] = useState(newGhostId());
+  const [recovery, setRecovery] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [ack, setAck] = useState(false);
+  const totalSteps = 6;
 
-  const finish = async () => {
+  const validateUsername = async () => {
+    setUsernameErr("");
+    const u = username.trim().toLowerCase();
+    if (u.length < 3) return setUsernameErr("At least 3 characters"), false;
+    if (!/^[a-z0-9_.-]+$/.test(u)) return setUsernameErr("Letters, numbers, . _ - only"), false;
+    const { data } = await supabase.from("profiles").select("id").ilike("username", u).maybeSingle();
+    if (data) return setUsernameErr("That username is taken"), false;
+    return true;
+  };
+
+  const createAccount = async () => {
     setBusy(true); setErr("");
-    let gid = ghostId;
-    // ensure uniqueness — retry a few times on collision
-    for (let i = 0; i < 5; i++) {
-      const { error } = await supabase.from("profiles").insert({
-        id: userId, ghost_id: gid, display_name: name.trim(),
-        avatar_emoji: emoji, avatar_gradient: gradient,
+    try {
+      const u = username.trim().toLowerCase();
+      const code = newRecoveryCode();
+      let gid = ghostId;
+
+      const { data: signUp, error: suErr } = await supabase.auth.signUp({
+        email: usernameToEmail(u), password: code,
       });
-      if (!error) {
-        onDone({ id: userId, ghost_id: gid, display_name: name.trim(), avatar_emoji: emoji, avatar_gradient: gradient });
-        return;
+      if (suErr) throw suErr;
+      let userId = signUp.user?.id;
+
+      // If email confirmation is disabled we get a session; otherwise sign in explicitly.
+      if (!signUp.session) {
+        const { data: si, error: siErr } = await supabase.auth.signInWithPassword({
+          email: usernameToEmail(u), password: code,
+        });
+        if (siErr) throw siErr;
+        userId = si.user?.id;
       }
-      if (error.code === "23505") { gid = newGhostId(); continue; }
-      setErr(error.message); break;
-    }
-    setBusy(false);
+      if (!userId) throw new Error("Could not create account");
+
+      // Insert profile with a few retries to avoid ghost_id collision.
+      let inserted = false;
+      for (let i = 0; i < 5; i++) {
+        const { error } = await supabase.from("profiles").insert({
+          id: userId, ghost_id: gid, username: u,
+          display_name: name.trim(), avatar_emoji: emoji, avatar_gradient: gradient,
+        });
+        if (!error) { inserted = true; break; }
+        if (error.code === "23505" && error.message.toLowerCase().includes("ghost")) {
+          gid = newGhostId(); continue;
+        }
+        throw error;
+      }
+      if (!inserted) throw new Error("Could not reserve a Ghost ID");
+
+      storeRecovery(userId, code);
+      setGhostId(gid);
+      setRecovery(code);
+      setStep(5);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally { setBusy(false); }
+  };
+
+  const copyCode = async () => {
+    if (!recovery) return;
+    try { await navigator.clipboard.writeText(recovery); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
   };
 
   return (
     <div className="h-full flex items-center justify-center bg-gradient-to-br from-black via-violet-950/40 to-black text-white p-6 overflow-y-auto">
       <motion.div key={step} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
         <div className="text-center mb-6">
-          <div className="text-[10px] font-mono tracking-[0.4em] text-fuchsia-300/80">STEP {step + 1} OF 4</div>
+          <div className="text-[10px] font-mono tracking-[0.4em] text-fuchsia-300/80">STEP {Math.min(step + 1, totalSteps)} OF {totalSteps}</div>
           <div className="mt-1 h-1 w-full bg-white/5 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-fuchsia-400 to-violet-500 transition-all" style={{ width: `${((step + 1) / 4) * 100}%` }} />
+            <div className="h-full bg-gradient-to-r from-fuchsia-400 to-violet-500 transition-all" style={{ width: `${((Math.min(step + 1, totalSteps)) / totalSteps) * 100}%` }} />
           </div>
         </div>
 
@@ -200,12 +286,32 @@ function Onboarding({ userId, onDone }: { userId: string; onDone: (p: Profile) =
               <div className="text-center space-y-2">
                 <div className="text-5xl">👻</div>
                 <h2 className="text-2xl font-bold">Welcome to GhostChat</h2>
-                <p className="text-white/60 text-sm leading-relaxed">The private messaging layer of GhostOS. No phone numbers. No spam. Just Ghost IDs.</p>
+                <p className="text-white/60 text-sm leading-relaxed">The private messaging layer of GhostOS. No email. No phone. Just a username and your Ghost identity.</p>
               </div>
               <button onClick={() => setStep(1)} className="w-full py-3 rounded-2xl bg-gradient-to-r from-fuchsia-500 to-violet-600 font-semibold">Get Started</button>
+              <button onClick={onSwitchToLogin} className="w-full py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm text-white/70">I already have an account</button>
             </>
           )}
           {step === 1 && (
+            <>
+              <div>
+                <h2 className="text-xl font-bold">Choose a username</h2>
+                <p className="text-white/50 text-sm">Used to sign in on other devices. Lowercase letters, numbers, . _ -</p>
+              </div>
+              <input autoFocus value={username}
+                onChange={(e) => { setUsernameErr(""); setUsername(e.target.value.replace(/[^a-zA-Z0-9_.-]/g, "").toLowerCase().slice(0, 24)); }}
+                placeholder="ghost_user"
+                className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 outline-none focus:border-fuchsia-400/50 text-lg font-mono" />
+              {usernameErr && <div className="text-xs text-rose-300 bg-rose-500/10 rounded-lg px-3 py-2">{usernameErr}</div>}
+              <div className="flex gap-2">
+                <button onClick={() => setStep(0)} className="px-4 py-2.5 rounded-xl bg-white/5 text-sm">Back</button>
+                <button disabled={username.trim().length < 3}
+                  onClick={async () => { if (await validateUsername()) setStep(2); }}
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 font-semibold text-sm disabled:opacity-40">Continue</button>
+              </div>
+            </>
+          )}
+          {step === 2 && (
             <>
               <div>
                 <h2 className="text-xl font-bold">What's your name?</h2>
@@ -214,13 +320,13 @@ function Onboarding({ userId, onDone }: { userId: string; onDone: (p: Profile) =
               <input autoFocus value={name} onChange={(e) => setName(e.target.value.slice(0, 32))} placeholder="Your display name"
                 className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 outline-none focus:border-fuchsia-400/50 text-lg" />
               <div className="flex gap-2">
-                <button onClick={() => setStep(0)} className="px-4 py-2.5 rounded-xl bg-white/5 text-sm">Back</button>
-                <button disabled={name.trim().length < 2} onClick={() => setStep(2)}
+                <button onClick={() => setStep(1)} className="px-4 py-2.5 rounded-xl bg-white/5 text-sm">Back</button>
+                <button disabled={name.trim().length < 2} onClick={() => setStep(3)}
                   className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 font-semibold text-sm disabled:opacity-40">Continue</button>
               </div>
             </>
           )}
-          {step === 2 && (
+          {step === 3 && (
             <>
               <div>
                 <h2 className="text-xl font-bold">Choose an avatar</h2>
@@ -248,21 +354,22 @@ function Onboarding({ userId, onDone }: { userId: string; onDone: (p: Profile) =
                 </div>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => setStep(1)} className="px-4 py-2.5 rounded-xl bg-white/5 text-sm">Back</button>
-                <button onClick={() => setStep(3)} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 font-semibold text-sm">Continue</button>
+                <button onClick={() => setStep(2)} className="px-4 py-2.5 rounded-xl bg-white/5 text-sm">Back</button>
+                <button onClick={() => setStep(4)} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 font-semibold text-sm">Continue</button>
               </div>
             </>
           )}
-          {step === 3 && (
+          {step === 4 && (
             <>
               <div>
                 <h2 className="text-xl font-bold">Your Ghost ID</h2>
-                <p className="text-white/50 text-sm">This replaces your phone number. Friends will add you with this.</p>
+                <p className="text-white/50 text-sm">Friends add you with this. It's shown publicly on your profile.</p>
               </div>
               <div className="flex flex-col items-center gap-3 py-3">
                 <div className={`h-20 w-20 rounded-3xl bg-gradient-to-br ${gradient} flex items-center justify-center text-4xl ring-1 ring-white/15`}>{emoji}</div>
                 <div className="text-sm text-white/70">{name}</div>
-                <div className="font-mono text-3xl tracking-widest bg-white/5 rounded-2xl px-6 py-3 border border-white/10">
+                <div className="text-[11px] font-mono text-white/40">@{username}</div>
+                <div className="font-mono text-2xl tracking-widest bg-white/5 rounded-2xl px-6 py-3 border border-white/10">
                   {ghostId}
                 </div>
                 <button onClick={() => setGhostId(newGhostId())} className="text-xs text-fuchsia-300 hover:text-fuchsia-200 flex items-center gap-1">
@@ -271,12 +378,39 @@ function Onboarding({ userId, onDone }: { userId: string; onDone: (p: Profile) =
               </div>
               {err && <div className="text-xs text-rose-300 bg-rose-500/10 rounded-lg px-3 py-2">{err}</div>}
               <div className="flex gap-2">
-                <button onClick={() => setStep(2)} className="px-4 py-2.5 rounded-xl bg-white/5 text-sm">Back</button>
-                <button disabled={busy} onClick={finish}
+                <button onClick={() => setStep(3)} className="px-4 py-2.5 rounded-xl bg-white/5 text-sm">Back</button>
+                <button disabled={busy} onClick={createAccount}
                   className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 font-semibold text-sm disabled:opacity-40">
-                  {busy ? "Creating…" : "Complete Setup"}
+                  {busy ? "Creating…" : "Create Account"}
                 </button>
               </div>
+            </>
+          )}
+          {step === 5 && recovery && (
+            <>
+              <div className="text-center space-y-1">
+                <div className="mx-auto h-12 w-12 rounded-2xl bg-amber-500/15 ring-1 ring-amber-400/40 flex items-center justify-center">
+                  <ShieldAlert className="h-6 w-6 text-amber-300" />
+                </div>
+                <h2 className="text-xl font-bold">Your Secret Recovery Code</h2>
+                <p className="text-white/60 text-xs leading-relaxed">Write this down. It is the <b>only</b> way to sign in on another device. GhostOS cannot recover it for you.</p>
+              </div>
+              <div className="font-mono text-lg tracking-widest bg-black/60 rounded-2xl px-4 py-4 border border-amber-400/20 text-center select-all">
+                {recovery}
+              </div>
+              <button onClick={copyCode} className="w-full py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm flex items-center justify-center gap-2">
+                <Copy className="h-3.5 w-3.5" /> {copied ? "Copied" : "Copy code"}
+              </button>
+              <label className="flex items-start gap-2 text-xs text-white/70 cursor-pointer">
+                <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded accent-fuchsia-500" />
+                <span>I've saved my recovery code somewhere safe.</span>
+              </label>
+              <button disabled={!ack} onClick={() => { /* session already set — root will render Messenger */ }}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 font-semibold text-sm disabled:opacity-40">
+                Enter GhostChat
+              </button>
+              <div className="text-[10px] text-white/40 text-center">You can view this code again in Settings → Account.</div>
             </>
           )}
         </div>
@@ -284,6 +418,115 @@ function Onboarding({ userId, onDone }: { userId: string; onDone: (p: Profile) =
     </div>
   );
 }
+
+// ============ Account Settings Panel ============
+function AccountPanel({ me, onClose }: { me: Profile; onClose: () => void }) {
+  const [code, setCode] = useState<string | null>(() => loadRecovery(me.id));
+  const [reveal, setReveal] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const copy = async () => {
+    if (!code) return;
+    try { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
+  };
+  const regenerate = async () => {
+    setBusy(true); setErr("");
+    try {
+      const next = newRecoveryCode();
+      const { error } = await supabase.auth.updateUser({ password: next });
+      if (error) throw error;
+      storeRecovery(me.id, next);
+      setCode(next);
+      setReveal(true);
+      setConfirm(false);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally { setBusy(false); }
+  };
+  const signOut = async () => { await supabase.auth.signOut(); };
+
+  return (
+    <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-md p-6" onClick={onClose}>
+      <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md glass-strong rounded-3xl p-6 space-y-5 text-white">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold">Account</h2>
+          <button onClick={onClose} className="h-8 w-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center"><X className="h-4 w-4" /></button>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${me.avatar_gradient} flex items-center justify-center text-2xl ring-1 ring-white/15`}>{me.avatar_emoji}</div>
+          <div className="min-w-0">
+            <div className="text-base font-semibold truncate">{me.display_name}</div>
+            <div className="text-[11px] font-mono text-white/50">@{me.username ?? "—"}</div>
+            <div className="text-[11px] font-mono text-fuchsia-300/70">{me.ghost_id}</div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4 text-amber-300" />
+            <div className="text-sm font-semibold">Secret Recovery Code</div>
+          </div>
+          <div className="text-[11px] text-white/60 leading-relaxed">
+            Keep this code safe. It is required to sign in on another device. Anyone with this code can access your account.
+          </div>
+          {code ? (
+            <>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 font-mono text-sm tracking-widest bg-black/50 rounded-xl px-3 py-2.5 border border-white/10 select-all">
+                  {reveal ? code : "•••• •••• •••• ••••"}
+                </div>
+                <button onClick={() => setReveal((r) => !r)} className="h-9 w-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center">
+                  {reveal ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+                <button onClick={copy} className="h-9 w-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center">
+                  <Copy className="h-4 w-4" />
+                </button>
+              </div>
+              {copied && <div className="text-[10px] text-emerald-300">Copied to clipboard</div>}
+            </>
+          ) : (
+            <div className="text-[11px] text-white/50 italic">
+              Your recovery code isn't stored on this device. Regenerate a new one to view and save it.
+            </div>
+          )}
+
+          {!confirm ? (
+            <button onClick={() => setConfirm(true)}
+              className="w-full py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs flex items-center justify-center gap-2">
+              <RefreshCw className="h-3.5 w-3.5" /> Regenerate Recovery Code
+            </button>
+          ) : (
+            <div className="space-y-2">
+              <div className="text-[11px] text-amber-200 bg-amber-500/10 rounded-lg px-3 py-2">
+                Regenerating will invalidate your old code. Any device signed out will need the new code to sign in.
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setConfirm(false)} className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs">Cancel</button>
+                <button disabled={busy} onClick={regenerate}
+                  className="flex-1 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 text-xs font-semibold disabled:opacity-40">
+                  {busy ? "…" : "Regenerate"}
+                </button>
+              </div>
+            </div>
+          )}
+          {err && <div className="text-xs text-rose-300 bg-rose-500/10 rounded-lg px-3 py-2">{err}</div>}
+        </div>
+
+        <button onClick={signOut}
+          className="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-sm flex items-center justify-center gap-2 text-white/80">
+          <LogOut className="h-4 w-4" /> Sign out
+        </button>
+      </motion.div>
+    </div>
+  );
+}
+
 
 // ============ Messenger ============
 function Avatar({ p, size = 40 }: { p: Pick<Profile, "avatar_emoji" | "avatar_gradient">; size?: number }) {
@@ -310,6 +553,7 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
   const [showInfo, setShowInfo] = useState(true);
   const [call, setCall] = useState<{ withId: string; video: boolean } | null>(null);
   const [search, setSearch] = useState("");
+  const [showAccount, setShowAccount] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   // Initial load
@@ -481,17 +725,21 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
       {/* LEFT PANEL */}
       <aside className="w-72 border-r border-white/5 flex flex-col bg-black/40 backdrop-blur-xl">
         <div className="p-3 border-b border-white/5 flex items-center gap-2">
-          <div className="flex-1 min-w-0 flex items-center gap-2">
+          <button onClick={() => setShowAccount(true)} className="flex-1 min-w-0 flex items-center gap-2 rounded-lg hover:bg-white/5 transition p-1 -m-1 text-left" title="Account">
             <Avatar p={me} size={30} />
             <div className="min-w-0">
               <div className="text-sm font-semibold truncate">{me.display_name}</div>
               <div className="text-[10px] font-mono text-fuchsia-300/70 tracking-wider">{me.ghost_id}</div>
             </div>
-          </div>
-          <button onClick={() => setShowAdd(true)} className="h-8 w-8 rounded-full bg-fuchsia-500/15 hover:bg-fuchsia-500/25 flex items-center justify-center">
+          </button>
+          <button onClick={() => setShowAccount(true)} className="h-8 w-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center" title="Account settings">
+            <SettingsIcon className="h-4 w-4 text-white/70" />
+          </button>
+          <button onClick={() => setShowAdd(true)} className="h-8 w-8 rounded-full bg-fuchsia-500/15 hover:bg-fuchsia-500/25 flex items-center justify-center" title="Add friend">
             <Plus className="h-4 w-4 text-fuchsia-200" />
           </button>
         </div>
+
 
         <div className="px-3 pt-3">
           <div className="relative">
@@ -599,7 +847,6 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
           )}
         </div>
 
-        <button onClick={() => supabase.auth.signOut()} className="text-[10px] text-white/30 hover:text-white/60 py-2 border-t border-white/5">Sign out</button>
       </aside>
 
       {/* CENTER */}
@@ -701,6 +948,10 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
         {call && other && profiles[call.withId] && (
           <CallOverlay me={me} peer={profiles[call.withId]} video={call.video} onEnd={() => setCall(null)} />
         )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showAccount && <AccountPanel me={me} onClose={() => setShowAccount(false)} />}
       </AnimatePresence>
 
       {/* keep onProfile referenced */}
