@@ -847,7 +847,6 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
           )}
         </div>
 
-        <button onClick={() => supabase.auth.signOut()} className="text-[10px] text-white/30 hover:text-white/60 py-2 border-t border-white/5">Sign out</button>
       </aside>
 
       {/* CENTER */}
