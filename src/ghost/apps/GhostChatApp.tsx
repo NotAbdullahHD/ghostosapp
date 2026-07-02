@@ -4,6 +4,7 @@ import type { RealtimeChannel, Session } from "@supabase/supabase-js";
 import {
   Search, Send, Phone, Video, Info, ChevronLeft, Plus, UserPlus, Check, X,
   Mic, MicOff, VideoOff, PhoneOff, MonitorUp, MoreHorizontal, Sparkles,
+  Settings as SettingsIcon, Eye, EyeOff, Copy, RefreshCw, ShieldAlert, LogOut,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useGhost } from "@/ghost/store";
