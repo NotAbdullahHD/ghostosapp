@@ -950,6 +950,10 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {showAccount && <AccountPanel me={me} onClose={() => setShowAccount(false)} />}
+      </AnimatePresence>
+
       {/* keep onProfile referenced */}
       <span className="hidden" data-p={me.id} onClick={() => onProfile(me)} />
     </div>
