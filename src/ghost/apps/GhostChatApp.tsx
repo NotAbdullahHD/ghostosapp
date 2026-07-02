@@ -553,6 +553,7 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
   const [showInfo, setShowInfo] = useState(true);
   const [call, setCall] = useState<{ withId: string; video: boolean } | null>(null);
   const [search, setSearch] = useState("");
+  const [showAccount, setShowAccount] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   // Initial load
