@@ -19,29 +19,43 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
   }, [win.fullscreen, win.id, toggleFullscreen]);
 
   useEffect(() => {
+    let raf = 0;
+    let pending: Partial<WindowState> | null = null;
+    const flush = () => {
+      raf = 0;
+      if (pending) { updateWindow(win.id, pending); pending = null; }
+    };
+    const schedule = (patch: Partial<WindowState>) => {
+      pending = pending ? { ...pending, ...patch } : patch;
+      if (!raf) raf = requestAnimationFrame(flush);
+    };
+
     const onMove = (e: MouseEvent) => {
       if (dragStart.current && !win.maximized && !win.fullscreen) {
         const dx = e.clientX - dragStart.current.mx;
         const dy = e.clientY - dragStart.current.my;
-        updateWindow(win.id, {
+        schedule({
           x: Math.max(0, dragStart.current.x + dx),
           y: Math.max(0, dragStart.current.y + dy),
         });
-        if (e.clientY <= 4) setSnapHint("top");
-        else if (e.clientX <= 6) setSnapHint("left");
-        else if (e.clientX >= window.innerWidth - 6) setSnapHint("right");
-        else setSnapHint(null);
+        const nextHint =
+          e.clientY <= 4 ? "top"
+          : e.clientX <= 6 ? "left"
+          : e.clientX >= window.innerWidth - 6 ? "right"
+          : null;
+        setSnapHint((h) => (h === nextHint ? h : nextHint));
       }
       if (resizeStart.current) {
         const dx = e.clientX - resizeStart.current.mx;
         const dy = e.clientY - resizeStart.current.my;
-        updateWindow(win.id, {
+        schedule({
           width: Math.max(420, resizeStart.current.w + dx),
           height: Math.max(320, resizeStart.current.h + dy),
         });
       }
     };
     const onUp = () => {
+      if (raf) { cancelAnimationFrame(raf); raf = 0; flush(); }
       if (dragStart.current && snapHint) {
         if (snapHint === "top") toggleMaximize(win.id);
         else {
@@ -56,9 +70,13 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
       dragStart.current = null; resizeStart.current = null;
       setSnapHint(null); setDragging(false);
     };
-    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mousemove", onMove, { passive: true });
     window.addEventListener("mouseup", onUp);
-    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, [win.id, win.maximized, win.fullscreen, updateWindow, snapHint, toggleMaximize]);
 
   const fullscreen = win.fullscreen;
