@@ -103,16 +103,18 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
 
       <motion.div
         key={win.id}
-        initial={{ opacity: 0, scale: 0.88, y: 30, filter: "blur(8px)" }}
+        initial={{ opacity: 0, scale: 0.9, y: 24, filter: "blur(10px)" }}
         animate={{
           opacity: win.minimized ? 0 : 1,
-          scale: win.minimized ? 0.35 : (dragging ? 1.005 : 1),
-          y: win.minimized ? 500 : 0,
-          filter: "blur(0px)",
+          scale: win.minimized ? 0.4 : (dragging ? 1.004 : 1),
+          y: win.minimized ? 480 : 0,
+          filter: dragging ? "blur(0px)" : "blur(0px)",
+          transition: dragging
+            ? { duration: 0 }
+            : { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
         }}
-        exit={{ opacity: 0, scale: 0.85, y: 50, filter: "blur(6px)", transition: { duration: 0.25 } }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className={`absolute ${fullscreen ? "" : "glass-strong window-shadow rounded-2xl"} overflow-hidden flex flex-col`}
+        exit={{ opacity: 0, scale: 0.86, y: 40, filter: "blur(8px)", transition: { duration: 0.28, ease: [0.4, 0, 1, 1] } }}
+        className={`absolute ${fullscreen ? "" : "glass-strong window-shadow rounded-2xl"} overflow-hidden flex flex-col will-change-transform`}
         style={{ ...style, zIndex: fullscreen ? 9999 : win.z, pointerEvents: win.minimized ? "none" : "auto" }}
         onMouseDown={() => focusWindow(win.id)}
       >
