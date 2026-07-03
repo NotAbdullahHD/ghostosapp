@@ -117,6 +117,7 @@ export function isValidImdbId(id?: string | null): id is string {
 
 /** Ordered list of stream providers. VidLink is primary; others are fallbacks. */
 export const STREAM_SOURCES: { id: string; label: string; build: (imdb: string) => string }[] = [
+  { id: "toustream",  label: "Toustream",   build: (i) => `https://toustream.xyz/tou/movies/${encodeURIComponent(i)}` },
   { id: "vidlink",    label: "VidLink.pro", build: (i) => `https://vidlink.pro/movie/${encodeURIComponent(i)}` },
   { id: "vidsrc-to",  label: "VidSrc.to",   build: (i) => `https://vidsrc.to/embed/movie/${encodeURIComponent(i)}` },
   { id: "vidsrc-xyz", label: "VidSrc.xyz",  build: (i) => `https://vidsrc.xyz/embed/movie/${encodeURIComponent(i)}` },
