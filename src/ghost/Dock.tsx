@@ -53,17 +53,17 @@ function DockIcon({ app, mouseX, isOpen, onClick }: { app: AppDef; mouseX: Motio
     const rect = ref.current.getBoundingClientRect();
     return mx - (rect.left + rect.width / 2);
   });
-  const size = useTransform(distance, [-140, 0, 140], [48, 70, 48]);
-  const lift = useTransform(distance, [-140, 0, 140], [0, -12, 0]);
+  const size = useTransform(distance, [-140, -70, 0, 70, 140], [48, 58, 72, 58, 48]);
+  const lift = useTransform(distance, [-140, 0, 140], [0, -14, 0]);
 
   return (
     <button onClick={onClick} className="group relative flex flex-col items-center" title={app.name}>
       <motion.div
         ref={ref}
         style={{ width: size, height: size, y: lift }}
-        transition={{ type: "spring", stiffness: 400, damping: 26, mass: 0.4 }}
-        whileTap={{ scale: 0.86 }}
-        className={`relative rounded-2xl bg-gradient-to-br ${app.accent} flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-black/60 ring-1 ring-white/20`}
+        transition={{ type: "spring", stiffness: 500, damping: 30, mass: 0.35 }}
+        whileTap={{ scale: 0.84 }}
+        className={`relative rounded-2xl bg-gradient-to-br ${app.accent} flex items-center justify-center text-white text-2xl font-bold shadow-[0_10px_30px_-8px_rgba(0,0,0,0.7)] ring-1 ring-white/20`}
       >
         <span className="absolute inset-0 rounded-2xl bg-gradient-to-t from-transparent to-white/15" />
         <span className="relative drop-shadow-[0_2px_3px_rgba(0,0,0,.6)]">{app.icon}</span>
@@ -71,7 +71,12 @@ function DockIcon({ app, mouseX, isOpen, onClick }: { app: AppDef; mouseX: Motio
           {app.name}
         </span>
       </motion.div>
-      <span className={`mt-0.5 h-1 w-1 rounded-full transition-all ${isOpen ? "bg-fuchsia-300 shadow-[0_0_8px_rgba(232,121,249,1)]" : "bg-transparent"}`} />
+      <motion.span
+        initial={false}
+        animate={{ width: isOpen ? 14 : 0, opacity: isOpen ? 1 : 0 }}
+        transition={{ type: "spring", stiffness: 500, damping: 32 }}
+        className="mt-1 h-[3px] rounded-full bg-fuchsia-300 shadow-[0_0_10px_rgba(232,121,249,1)]"
+      />
     </button>
   );
 }
