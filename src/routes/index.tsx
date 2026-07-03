@@ -17,10 +17,20 @@ export const Route = createFileRoute("/")({
 });
 
 function Shell() {
-  const { booted, setBooted } = useGhost();
+  const { booted, setBooted, setLocked } = useGhost();
   return (
     <>
-      <AnimatePresence>{!booted && <BootScreen onDone={() => setBooted(true)} />}</AnimatePresence>
+      <AnimatePresence>
+        {!booted && (
+          <BootScreen
+            onDone={() => {
+              // Land on the lock screen after the boot sequence.
+              setLocked(true);
+              setBooted(true);
+            }}
+          />
+        )}
+      </AnimatePresence>
       {booted && <Desktop />}
     </>
   );
