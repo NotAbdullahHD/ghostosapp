@@ -12,6 +12,7 @@ import { OnlineStatus } from "./OnlineStatus";
 import { AppLauncher } from "./AppLauncher";
 import { LockScreen } from "./LockScreen";
 import { DesktopContextMenu } from "./DesktopContextMenu";
+import { GhostDrop } from "./GhostDrop";
 import type { AppId } from "./apps";
 
 // Lazy-load all app content — only fetches when opened.
@@ -140,6 +141,7 @@ export function Desktop() {
       <AppLauncher />
       <LockScreen />
       <DesktopContextMenu />
+      <GhostDrop />
     </div>
   );
 }
