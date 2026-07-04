@@ -117,6 +117,12 @@ interface GhostCtx {
   triggerPanic: () => void;
   locked: boolean;
   setLocked: (b: boolean) => void;
+  showGhostDrop: boolean;
+  toggleGhostDrop: () => void;
+  openGhostDrop: (files?: File[]) => void;
+  closeGhostDrop: () => void;
+  pendingDropFiles: File[];
+  clearPendingDropFiles: () => void;
 }
 
 const Ctx = createContext<GhostCtx | null>(null);
