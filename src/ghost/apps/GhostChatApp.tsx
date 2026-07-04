@@ -4,7 +4,7 @@ import type { RealtimeChannel, Session } from "@supabase/supabase-js";
 import {
   Search, Send, Phone, Video, Info, ChevronLeft, Plus, UserPlus, Check, X,
   Mic, MicOff, VideoOff, PhoneOff, MonitorUp, MoreHorizontal, Sparkles,
-  Settings as SettingsIcon, Eye, EyeOff, Copy, RefreshCw, ShieldAlert, LogOut,
+  Settings as SettingsIcon, Eye, EyeOff, Copy, RefreshCw, ShieldAlert, LogOut, Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useGhost } from "@/ghost/store";
@@ -448,6 +448,27 @@ function AccountPanel({ me, onClose }: { me: Profile; onClose: () => void }) {
   };
   const signOut = async () => { await supabase.auth.signOut(); };
 
+  const [wipeConfirm, setWipeConfirm] = useState(false);
+  const [wiping, setWiping] = useState(false);
+  const devWipe = async () => {
+    setWiping(true);
+    try {
+      await supabase.from("messages").delete().or(`sender_id.eq.${me.id},recipient_id.eq.${me.id}`);
+      await supabase.from("friendships").delete().or(`requester_id.eq.${me.id},addressee_id.eq.${me.id}`);
+      await supabase.from("profiles").update({
+        username: null,
+        display_name: "(deleted)",
+        ghost_id: `DEL-${Math.floor(100000 + Math.random() * 900000)}`,
+        avatar_emoji: "👻",
+        avatar_gradient: "from-zinc-600 to-zinc-800",
+      }).eq("id", me.id);
+      try { localStorage.removeItem(RECOVERY_LS(me.id)); } catch { /* ignore */ }
+      await supabase.auth.signOut();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally { setWiping(false); }
+  };
+
   return (
     <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-md p-6" onClick={onClose}>
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
@@ -522,6 +543,28 @@ function AccountPanel({ me, onClose }: { me: Profile; onClose: () => void }) {
           className="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-sm flex items-center justify-center gap-2 text-white/80">
           <LogOut className="h-4 w-4" /> Sign out
         </button>
+
+        {/* Dev-only account reset (remove before public release) */}
+        <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-3 space-y-2">
+          <div className="text-[10px] font-mono tracking-widest text-rose-300/80">DEV · DANGER ZONE</div>
+          <div className="text-[11px] text-white/60 leading-relaxed">
+            Permanently delete this account's data (messages, contacts, requests, profile, recovery code) and free your username for reuse.
+          </div>
+          {!wipeConfirm ? (
+            <button onClick={() => setWipeConfirm(true)}
+              className="w-full py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-xs text-rose-200 flex items-center justify-center gap-2">
+              <Trash2 className="h-3.5 w-3.5" /> Delete my account & reset
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <button onClick={() => setWipeConfirm(false)} className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs">Cancel</button>
+              <button disabled={wiping} onClick={devWipe}
+                className="flex-1 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-xs font-semibold disabled:opacity-40">
+                {wiping ? "Deleting…" : "Yes, delete everything"}
+              </button>
+            </div>
+          )}
+        </div>
       </motion.div>
     </div>
   );

@@ -117,6 +117,12 @@ interface GhostCtx {
   triggerPanic: () => void;
   locked: boolean;
   setLocked: (b: boolean) => void;
+  showGhostDrop: boolean;
+  toggleGhostDrop: () => void;
+  openGhostDrop: (files?: File[]) => void;
+  closeGhostDrop: () => void;
+  pendingDropFiles: File[];
+  clearPendingDropFiles: () => void;
 }
 
 const Ctx = createContext<GhostCtx | null>(null);
@@ -317,6 +323,16 @@ export function GhostProvider({ children }: { children: ReactNode }) {
 
   const hasFullscreen = windows.some((w) => w.fullscreen && !w.minimized);
 
+  const [showGhostDrop, setShowGhostDrop] = useState(false);
+  const [pendingDropFiles, setPendingDropFiles] = useState<File[]>([]);
+  const toggleGhostDrop = useCallback(() => setShowGhostDrop((s) => !s), []);
+  const closeGhostDrop = useCallback(() => setShowGhostDrop(false), []);
+  const openGhostDrop = useCallback((files?: File[]) => {
+    if (files && files.length) setPendingDropFiles(files);
+    setShowGhostDrop(true);
+  }, []);
+  const clearPendingDropFiles = useCallback(() => setPendingDropFiles([]), []);
+
   const value = useMemo<GhostCtx>(() => ({
     booted, setBooted, windows, wallpaper, wallpaperId, setWallpaperById,
     unlocked, redeemCode, unlockExclusive,
@@ -325,11 +341,14 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     openApp, closeWindow, focusWindow, updateWindow, toggleMinimize, toggleMaximize, toggleFullscreen, setWallpaper,
     hasFullscreen, showLauncher, toggleLauncher,
     settings, updateSettings, triggerPanic, locked, setLocked,
+    showGhostDrop, toggleGhostDrop, openGhostDrop, closeGhostDrop, pendingDropFiles, clearPendingDropFiles,
   }), [booted, windows, wallpaper, wallpaperId, setWallpaperById, unlocked, redeemCode, unlockExclusive,
     notifications, showNotifCenter,
     toggleNotifCenter, pushNotification, dismissNotification,
     openApp, closeWindow, focusWindow, updateWindow, toggleMinimize, toggleMaximize, toggleFullscreen,
-    hasFullscreen, showLauncher, toggleLauncher, settings, updateSettings, triggerPanic, locked]);
+    hasFullscreen, showLauncher, toggleLauncher, settings, updateSettings, triggerPanic, locked,
+    showGhostDrop, toggleGhostDrop, openGhostDrop, closeGhostDrop, pendingDropFiles, clearPendingDropFiles]);
+
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

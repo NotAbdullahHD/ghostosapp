@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Palette, Monitor, RefreshCw, Maximize, Settings, Terminal, Image } from "lucide-react";
+import { Palette, Monitor, RefreshCw, Maximize, Settings, Terminal, Image, Radio } from "lucide-react";
 import { useGhost } from "./store";
 
 export function DesktopContextMenu() {
-  const { openApp, hasFullscreen } = useGhost();
+  const { openApp, hasFullscreen, openGhostDrop } = useGhost();
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -32,6 +32,7 @@ export function DesktopContextMenu() {
   if (hasFullscreen) return null;
 
   const items = [
+    { icon: <Radio className="h-3.5 w-3.5" />, label: "Share with GhostDrop", action: () => openGhostDrop() },
     { icon: <Palette className="h-3.5 w-3.5" />, label: "Personalize", action: () => openApp("settings", "Settings") },
     { icon: <Image className="h-3.5 w-3.5" />, label: "Wallpapers", action: () => openApp("settings", "Settings") },
     { icon: <Monitor className="h-3.5 w-3.5" />, label: "Display Settings", action: () => openApp("settings", "Settings") },
