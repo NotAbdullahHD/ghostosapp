@@ -1,11 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Plus, Info, Search, Maximize2, X, Loader2, ArrowLeft, RotateCw, Star, Activity } from "lucide-react";
-import { SafeEmbed } from "../SafeEmbed";
+import {
+  Play, Plus, Info, Search, Maximize2, X, Loader2, ArrowLeft, RotateCw, Star,
+  Activity, Settings as SettingsIcon, Volume2, VolumeX, Pause, Subtitles,
+  Languages, ChevronUp, ChevronDown, AlertTriangle, CheckCircle2, RefreshCw,
+} from "lucide-react";
 import {
   CATEGORIES, FEATURED_ID, type OmdbMovie, fetchMovie, fetchMovies,
-  searchMovies, isValidImdbId, buildVidsrcUrl, STREAM_SOURCES,
+  searchMovies, isValidImdbId,
 } from "../omdb";
+import {
+  ALL_PROVIDERS, orderedProviders, loadProviderPrefs, saveProviderPrefs,
+  type PlaybackProvider, type ProviderPrefs,
+} from "../providers/playback";
 
 const COLORS = [
   "from-purple-700 to-indigo-950",
@@ -21,7 +28,6 @@ const COLORS = [
 export function MoviesApp() {
   const [active, setActive] = useState<OmdbMovie | null>(null);
   const [launched, setLaunched] = useState(false);
-  const [phase, setPhase] = useState<"idle" | "boot" | "live">("idle");
 
   const [featured, setFeatured] = useState<OmdbMovie | null>(null);
   const [rows, setRows] = useState<{ label: string; items: OmdbMovie[] }[]>(
@@ -32,13 +38,13 @@ export function MoviesApp() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchResults, setSearchResults] = useState<OmdbMovie[]>([]);
   const [searching, setSearching] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     let alive = true;
     (async () => {
       const f = await fetchMovie(FEATURED_ID);
       if (alive && f) setFeatured(f);
-      // Load rows in parallel
       const loaded = await Promise.all(
         CATEGORIES.map(async (c) => ({ label: c.label, items: await fetchMovies(c.ids) }))
       );
@@ -47,7 +53,6 @@ export function MoviesApp() {
     return () => { alive = false; };
   }, []);
 
-  // Debounced search
   useEffect(() => {
     if (!showSearch) return;
     const q = query.trim();
@@ -55,7 +60,6 @@ export function MoviesApp() {
     setSearching(true);
     const t = setTimeout(async () => {
       const hits = await searchMovies(q);
-      // hydrate first 12 with full details (so we get rating/plot/genre)
       const full = await fetchMovies(hits.slice(0, 12).map((h) => h.imdbID));
       setSearchResults(full);
       setSearching(false);
@@ -67,23 +71,19 @@ export function MoviesApp() {
     if (!isValidImdbId(m.imdbID)) return;
     setActive(m);
     setLaunched(true);
-    setPhase("boot");
-    setTimeout(() => setPhase("live"), 1600);
   };
 
   if (launched && active) {
     return (
       <GhostFlixPlayer
         movie={active}
-        phase={phase}
-        onExit={() => { setLaunched(false); setPhase("idle"); setActive(null); }}
+        onExit={() => { setLaunched(false); setActive(null); }}
       />
     );
   }
 
   return (
     <div className="h-full overflow-y-auto scrollbar-hide bg-black text-white relative">
-      {/* GhostFlix banner */}
       <div className="relative h-80 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-red-900 via-black to-purple-950" />
         {featured?.Poster && featured.Poster !== "N/A" && (
@@ -115,6 +115,9 @@ export function MoviesApp() {
           <button onClick={() => setShowSearch((s) => !s)} className="px-3 py-1.5 rounded-full glass text-xs flex items-center gap-1.5">
             <Search className="h-3 w-3" /> Search
           </button>
+          <button onClick={() => setShowSettings(true)} className="px-3 py-1.5 rounded-full glass text-xs flex items-center gap-1.5">
+            <SettingsIcon className="h-3 w-3" /> Settings
+          </button>
         </div>
 
         <div className="absolute bottom-6 left-6 max-w-lg">
@@ -143,7 +146,6 @@ export function MoviesApp() {
         </div>
       </div>
 
-      {/* Search panel */}
       <AnimatePresence>
         {showSearch && (
           <motion.div
@@ -193,6 +195,10 @@ export function MoviesApp() {
       <div className="px-6 py-8 text-center">
         <div className="text-[10px] tracking-[0.4em] text-white/30 font-mono">GHOSTFLIX · ENCRYPTED STREAM · NET22 RELAY</div>
       </div>
+
+      <AnimatePresence>
+        {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
+      </AnimatePresence>
     </div>
   );
 }
@@ -241,43 +247,207 @@ function SkeletonCard({ idx }: { idx: number }) {
   );
 }
 
-function GhostFlixPlayer({ movie, phase, onExit }: { movie: OmdbMovie; phase: "idle" | "boot" | "live"; onExit: () => void }) {
-  const [fullscreen, setFullscreen] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
-  const [sourceIdx, setSourceIdx] = useState(0);
-  const [showDiag, setShowDiag] = useState(false);
-  const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("loading");
+// ---------------------------------------------------------------------------
+// PLAYER — modular provider engine with graceful failover.
+// ---------------------------------------------------------------------------
 
-  const playable = isValidImdbId(movie.imdbID);
-  const streamUrl = useMemo(
-    () => (playable ? buildVidsrcUrl(movie.imdbID, sourceIdx) : null),
-    [movie.imdbID, playable, sourceIdx]
+type Stage =
+  | "loading-movie"
+  | "checking-provider"
+  | "preparing-stream"
+  | "starting-playback"
+  | "playing"
+  | "error";
+
+const STAGE_LABELS: Record<Exclude<Stage, "playing" | "error">, string> = {
+  "loading-movie": "Loading Movie…",
+  "checking-provider": "Checking Playback Provider…",
+  "preparing-stream": "Preparing Stream…",
+  "starting-playback": "Starting Playback…",
+};
+
+interface ResolvedStream {
+  provider: PlaybackProvider;
+  url: string;
+  sandbox?: string;
+  allow?: string;
+  timeoutMs: number;
+}
+
+function GhostFlixPlayer({ movie, onExit }: { movie: OmdbMovie; onExit: () => void }) {
+  const [providers, setProviders] = useState<PlaybackProvider[]>(() => orderedProviders());
+  const [providerIdx, setProviderIdx] = useState(0);
+  const [stage, setStage] = useState<Stage>("loading-movie");
+  const [stream, setStream] = useState<ResolvedStream | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showDiag, setShowDiag] = useState(false);
+
+  // Cinematic control-bar (visual overlay — real playback stays inside the embed).
+  const [muted, setMuted] = useState(false);
+  const [playing, setPlaying] = useState(true);
+  const [showSubs, setShowSubs] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const hostRef = useRef<HTMLDivElement>(null);
+
+  const iframeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeAttemptRef = useRef(0);
+  const cancelRef = useRef(false);
+
+  const currentProvider = providers[providerIdx];
+
+  // Refresh provider order when settings change.
+  useEffect(() => {
+    const onStorage = () => setProviders(orderedProviders());
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  const clearTimer = () => {
+    if (iframeTimeoutRef.current) {
+      clearTimeout(iframeTimeoutRef.current);
+      iframeTimeoutRef.current = null;
+    }
+  };
+
+  const attemptProvider = useCallback(
+    async (idx: number) => {
+      cancelRef.current = false;
+      activeAttemptRef.current += 1;
+      const myAttempt = activeAttemptRef.current;
+
+      if (idx >= providers.length) {
+        setStage("error");
+        setErrorMsg("All playback providers are unavailable. Please try again later.");
+        return;
+      }
+
+      const provider = providers[idx];
+      setStream(null);
+      setErrorMsg(null);
+      setStage("loading-movie");
+      await wait(450);
+      if (cancelRef.current || myAttempt !== activeAttemptRef.current) return;
+
+      setStage("checking-provider");
+      await wait(500);
+      if (cancelRef.current || myAttempt !== activeAttemptRef.current) return;
+
+      let result;
+      try {
+        result = await provider.resolve({
+          imdbID: movie.imdbID,
+          title: movie.Title,
+          year: movie.Year,
+        });
+      } catch (err) {
+        result = {
+          ok: false as const,
+          fallback: true,
+          message: `Provider ${provider.label} threw an error.`,
+        };
+      }
+
+      if (cancelRef.current || myAttempt !== activeAttemptRef.current) return;
+
+      if (!result.ok) {
+        if (result.fallback) {
+          setProviderIdx(idx + 1);
+          return;
+        }
+        setStage("error");
+        setErrorMsg(result.message || "Playback provider unavailable.");
+        return;
+      }
+
+      setStage("preparing-stream");
+      await wait(500);
+      if (cancelRef.current || myAttempt !== activeAttemptRef.current) return;
+
+      setStream({
+        provider,
+        url: result.url,
+        sandbox: result.sandbox,
+        allow: result.allow,
+        timeoutMs: result.timeoutMs ?? 12_000,
+      });
+      setStage("starting-playback");
+    },
+    [providers, movie.imdbID, movie.Title, movie.Year],
   );
 
+  // Kick off / restart when provider index changes.
   useEffect(() => {
-    if (streamUrl) {
-      // eslint-disable-next-line no-console
-      console.info("[GhostFlix] Playback URL:", {
-        title: movie.Title, imdbID: movie.imdbID,
-        source: STREAM_SOURCES[sourceIdx]?.label, url: streamUrl,
-      });
-      setStatus("loading");
-    }
-  }, [streamUrl, movie.Title, movie.imdbID, sourceIdx]);
+    attemptProvider(providerIdx);
+    return () => {
+      cancelRef.current = true;
+      clearTimer();
+    };
+  }, [providerIdx, attemptProvider, reloadKey]);
 
-  const cycleSource = () => {
-    setSourceIdx((i) => (i + 1) % STREAM_SOURCES.length);
+  // Iframe watchdog — if the stream never loads, mark provider as failed.
+  useEffect(() => {
+    if (!stream || stage !== "starting-playback") return;
+    clearTimer();
+    iframeTimeoutRef.current = setTimeout(() => {
+      // Provider didn't fire onLoad in time — fall through.
+      setProviderIdx((i) => i + 1);
+    }, stream.timeoutMs);
+    return clearTimer;
+  }, [stream, stage]);
+
+  const handleIframeLoad = () => {
+    clearTimer();
+    setStage("playing");
+  };
+  const handleIframeError = () => {
+    clearTimer();
+    setProviderIdx((i) => i + 1);
+  };
+
+  const retryFromStart = () => {
+    activeAttemptRef.current += 1;
+    setErrorMsg(null);
+    setProviderIdx(0);
     setReloadKey((k) => k + 1);
   };
 
+  const reloadCurrent = () => {
+    activeAttemptRef.current += 1;
+    setReloadKey((k) => k + 1);
+    setStream(null);
+    // Re-run current provider from stages.
+    attemptProvider(providerIdx);
+  };
+
+  // Fake progress simulation for the visual control bar.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setFullscreen(false); };
+    if (stage !== "playing" || !playing) return;
+    const interval = setInterval(() => {
+      setProgress((p) => (p >= 100 ? 100 : p + 0.15));
+    }, 500);
+    return () => clearInterval(interval);
+  }, [stage, playing]);
+
+  // Fullscreen — real browser fullscreen on the host node.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFullscreen(false);
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const stageLabel = stage in STAGE_LABELS ? STAGE_LABELS[stage as keyof typeof STAGE_LABELS] : "";
+
   return (
-    <div className={`${fullscreen ? "fixed inset-0 z-[9999]" : "h-full"} bg-black text-white flex flex-col`}>
+    <div
+      ref={hostRef}
+      className={`${fullscreen ? "fixed inset-0 z-[9999]" : "h-full"} bg-black text-white flex flex-col`}
+    >
+      {/* Top chrome */}
       <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-red-950/60 via-black to-purple-950/60 border-b border-white/5">
         <div className="flex items-center gap-2 min-w-0">
           <button onClick={onExit} className="p-1.5 rounded hover:bg-white/10 text-white/70"><ArrowLeft className="h-3.5 w-3.5" /></button>
@@ -290,11 +460,16 @@ function GhostFlixPlayer({ movie, phase, onExit }: { movie: OmdbMovie; phase: "i
           </span>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={cycleSource} title={`Source: ${STREAM_SOURCES[sourceIdx]?.label}`} className="px-2 py-1 rounded hover:bg-white/10 text-[10px] font-mono text-white/60 tracking-widest">
-            SRC {sourceIdx + 1}/{STREAM_SOURCES.length}
+          <button
+            onClick={() => currentProvider && setProviderIdx((i) => (i + 1) % Math.max(providers.length, 1))}
+            title={`Provider: ${currentProvider?.label ?? "none"}`}
+            className="px-2 py-1 rounded hover:bg-white/10 text-[10px] font-mono text-white/60 tracking-widest"
+          >
+            {currentProvider?.label ?? "—"} · {providerIdx + 1}/{providers.length}
           </button>
-          <button onClick={() => setShowDiag((s) => !s)} title="Diagnostics" className={`p-1.5 rounded hover:bg-white/10 ${showDiag ? "text-emerald-300" : "text-white/70"}`}><Activity className="h-3.5 w-3.5" /></button>
-          <button onClick={() => setReloadKey((k) => k + 1)} className="p-1.5 rounded hover:bg-white/10 text-white/70"><RotateCw className="h-3.5 w-3.5" /></button>
+          <button onClick={() => setShowSettings(true)} className="p-1.5 rounded hover:bg-white/10 text-white/70"><SettingsIcon className="h-3.5 w-3.5" /></button>
+          <button onClick={() => setShowDiag((s) => !s)} className={`p-1.5 rounded hover:bg-white/10 ${showDiag ? "text-emerald-300" : "text-white/70"}`}><Activity className="h-3.5 w-3.5" /></button>
+          <button onClick={reloadCurrent} className="p-1.5 rounded hover:bg-white/10 text-white/70"><RotateCw className="h-3.5 w-3.5" /></button>
           <button onClick={() => setFullscreen((f) => !f)} className="p-1.5 rounded hover:bg-white/10 text-white/70"><Maximize2 className="h-3.5 w-3.5" /></button>
           <button onClick={onExit} className="p-1.5 rounded hover:bg-red-500/20 text-red-300"><X className="h-3.5 w-3.5" /></button>
         </div>
@@ -303,63 +478,316 @@ function GhostFlixPlayer({ movie, phase, onExit }: { movie: OmdbMovie; phase: "i
       {showDiag && (
         <div className="px-3 py-2 bg-black/80 border-b border-emerald-500/20 text-[10px] font-mono text-white/70 space-y-0.5">
           <div><span className="text-emerald-300">TITLE</span> <span className="text-white">{movie.Title}</span></div>
-          <div><span className="text-emerald-300">IMDB </span> <span className="text-white">{movie.imdbID || "—"}</span> <span className="text-white/40">· valid: {String(playable)}</span></div>
-          <div><span className="text-emerald-300">SRC  </span> <span className="text-white">{STREAM_SOURCES[sourceIdx]?.label}</span> <span className="text-white/40">(#{sourceIdx + 1}/{STREAM_SOURCES.length})</span></div>
-          <div className="break-all"><span className="text-emerald-300">URL  </span> {streamUrl ? <a href={streamUrl} target="_blank" rel="noreferrer" className="text-sky-300 underline">{streamUrl}</a> : <span className="text-rose-300">none</span>}</div>
-          <div><span className="text-emerald-300">STAT </span> <span className={status === "error" ? "text-rose-300" : status === "ready" ? "text-emerald-300" : "text-amber-300"}>{status.toUpperCase()}</span></div>
+          <div><span className="text-emerald-300">IMDB </span> <span className="text-white">{movie.imdbID}</span></div>
+          <div><span className="text-emerald-300">PROV </span> <span className="text-white">{currentProvider?.label ?? "—"}</span> <span className="text-white/40">(#{providerIdx + 1}/{providers.length})</span></div>
+          <div><span className="text-emerald-300">STAG </span> <span className="text-amber-300">{stage.toUpperCase()}</span></div>
+          <div className="break-all"><span className="text-emerald-300">URL  </span> {stream ? <span className="text-sky-300">{stream.url}</span> : <span className="text-white/40">—</span>}</div>
         </div>
       )}
 
+      {/* Playback surface */}
       <div className="flex-1 relative bg-black">
-        <AnimatePresence>
-          {phase === "boot" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black">
-              <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                className="text-6xl font-black tracking-widest bg-gradient-to-r from-red-500 to-rose-300 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(220,38,38,.6)]">
-                GHOSTFLIX
-              </motion.div>
-              <div className="mt-3 text-xs text-white/60">{movie.Title} <span className="text-white/30">· {movie.Year}</span></div>
-              <motion.div className="mt-6 h-0.5 w-64 bg-white/10 overflow-hidden rounded-full">
-                <motion.div className="h-full bg-gradient-to-r from-red-500 to-rose-300"
-                  initial={{ width: "0%" }} animate={{ width: "100%" }} transition={{ duration: 1.4, ease: "easeInOut" }} />
-              </motion.div>
-              <div className="mt-3 text-[10px] tracking-[0.45em] font-mono text-white/40 flex items-center gap-2">
-                <Loader2 className="h-3 w-3 animate-spin" /> ROUTING THROUGH NET22 RELAY
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {phase === "live" && streamUrl && (
-          <SafeEmbed
-            key={`${movie.imdbID}-${reloadKey}`}
-            url={streamUrl}
+        {stream && stage !== "error" && (
+          <iframe
+            key={`${stream.provider.id}-${reloadKey}`}
+            src={stream.url}
             title={`${movie.Title} (${movie.Year})`}
-            accent="red"
-            loadingLabel={`STREAMING ${movie.Title.toUpperCase()}…`}
-            sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox allow-orientation-lock allow-pointer-lock allow-top-navigation-by-user-activation allow-downloads allow-modals"
-            allow="autoplay; fullscreen; encrypted-media; picture-in-picture; clipboard-write; gamepad; accelerometer; gyroscope"
-            onBack={onExit}
+            onLoad={handleIframeLoad}
+            onError={handleIframeError}
+            className="absolute inset-0 w-full h-full bg-black"
+            sandbox={stream.sandbox ?? "allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox allow-orientation-lock allow-pointer-lock allow-top-navigation-by-user-activation allow-downloads allow-modals"}
+            allow={stream.allow ?? "autoplay; fullscreen; encrypted-media; picture-in-picture; clipboard-write; gamepad; accelerometer; gyroscope"}
+            referrerPolicy="no-referrer"
           />
         )}
 
+        <AnimatePresence>
+          {stage !== "playing" && stage !== "error" && (
+            <StageOverlay
+              key="stage"
+              stage={stage}
+              label={stageLabel}
+              provider={currentProvider}
+              attempt={providerIdx + 1}
+              total={providers.length}
+              title={movie.Title}
+            />
+          )}
+          {stage === "error" && (
+            <ErrorOverlay
+              key="err"
+              title={movie.Title}
+              message={errorMsg ?? "Movie temporarily unavailable."}
+              onRetry={retryFromStart}
+              onBack={onExit}
+              onSettings={() => setShowSettings(true)}
+            />
+          )}
+        </AnimatePresence>
 
-        {phase === "live" && !streamUrl && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black">
-            <div className="max-w-sm text-center px-6">
-              <div className="text-[10px] tracking-[0.5em] font-mono text-rose-300">MOVIE UNAVAILABLE</div>
-              <h3 className="mt-2 text-2xl font-black">{movie.Title}</h3>
-              <p className="mt-3 text-sm text-white/60">This title has no valid IMDb identifier and cannot be streamed through the NET22 relay.</p>
-              <button onClick={onExit} className="mt-5 px-4 py-2 rounded bg-white/10 hover:bg-white/20 text-xs font-bold tracking-widest">
-                BACK TO LIBRARY
-              </button>
-            </div>
-          </div>
+        {/* Cinematic control bar (visual overlay). */}
+        {stage === "playing" && (
+          <ControlBar
+            playing={playing}
+            onPlayToggle={() => setPlaying((p) => !p)}
+            muted={muted}
+            onMuteToggle={() => setMuted((m) => !m)}
+            showSubs={showSubs}
+            onSubsToggle={() => setShowSubs((s) => !s)}
+            progress={progress}
+            onSeek={setProgress}
+            onFullscreen={() => setFullscreen((f) => !f)}
+          />
         )}
 
         <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-red-500/10" />
       </div>
+
+      <AnimatePresence>
+        {showSettings && <SettingsPanel onClose={() => { setShowSettings(false); setProviders(orderedProviders()); }} />}
+      </AnimatePresence>
     </div>
+  );
+}
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
+
+// ---------------------------------------------------------------------------
+// UI PIECES
+// ---------------------------------------------------------------------------
+
+function StageOverlay({
+  stage, label, provider, attempt, total, title,
+}: {
+  stage: Stage; label: string; provider?: PlaybackProvider;
+  attempt: number; total: number; title: string;
+}) {
+  const stageOrder: Stage[] = [
+    "loading-movie", "checking-provider", "preparing-stream", "starting-playback",
+  ];
+  const idx = Math.max(0, stageOrder.indexOf(stage));
+  const pct = ((idx + 1) / stageOrder.length) * 100;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black"
+    >
+      <motion.div
+        initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        className="text-5xl sm:text-6xl font-black tracking-widest bg-gradient-to-r from-red-500 to-rose-300 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(220,38,38,.6)]"
+      >
+        GHOSTFLIX
+      </motion.div>
+      <div className="mt-2 text-xs text-white/60">{title}</div>
+
+      <div className="mt-8 h-0.5 w-72 bg-white/10 rounded-full overflow-hidden">
+        <motion.div
+          className="h-full bg-gradient-to-r from-red-500 to-rose-300"
+          initial={false}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
+        />
+      </div>
+
+      <div className="mt-4 flex items-center gap-2 text-[11px] tracking-[0.4em] font-mono text-white/70">
+        <Loader2 className="h-3 w-3 animate-spin text-rose-300" />
+        {label}
+      </div>
+
+      <div className="mt-6 text-[10px] font-mono text-white/40 tracking-widest">
+        PROVIDER {attempt}/{total} · {provider?.label ?? "—"}
+      </div>
+
+      <ul className="mt-3 space-y-1 text-[10px] font-mono text-white/50">
+        {stageOrder.map((s, i) => (
+          <li key={s} className="flex items-center gap-2">
+            {i < idx ? (
+              <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+            ) : i === idx ? (
+              <Loader2 className="h-3 w-3 animate-spin text-rose-300" />
+            ) : (
+              <span className="h-3 w-3 rounded-full border border-white/20" />
+            )}
+            <span className={i === idx ? "text-white/80" : ""}>{STAGE_LABELS[s as keyof typeof STAGE_LABELS]}</span>
+          </li>
+        ))}
+      </ul>
+    </motion.div>
+  );
+}
+
+function ErrorOverlay({
+  title, message, onRetry, onBack, onSettings,
+}: {
+  title: string; message: string;
+  onRetry: () => void; onBack: () => void; onSettings: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+      className="absolute inset-0 z-40 flex items-center justify-center bg-black/95 backdrop-blur-md p-6"
+    >
+      <div className="relative max-w-md w-full rounded-2xl bg-gradient-to-br from-black via-zinc-950 to-black ring-1 ring-rose-400/40 shadow-[0_0_40px_rgba(244,63,94,.35)] p-7 text-center">
+        <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-red-500 to-rose-700 flex items-center justify-center ring-1 ring-white/15">
+          <AlertTriangle className="h-7 w-7 text-white" />
+        </div>
+        <div className="mt-5 text-[10px] tracking-[0.5em] font-mono text-rose-300">MOVIE UNAVAILABLE</div>
+        <h3 className="mt-1 text-xl font-black tracking-wide text-white">{title}</h3>
+        <p className="mt-3 text-sm text-white/70 leading-relaxed">{message}</p>
+        <p className="mt-2 text-xs text-white/40">Please try again later, or switch playback provider in Settings.</p>
+        <div className="mt-5 grid grid-cols-3 gap-2">
+          <button onClick={onRetry} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-gradient-to-r from-red-500 to-rose-700 text-white text-xs font-bold tracking-wider hover:brightness-110 transition">
+            <RefreshCw className="h-3.5 w-3.5" /> RETRY
+          </button>
+          <button onClick={onSettings} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/5 ring-1 ring-white/15 text-white text-xs font-bold tracking-wider hover:bg-white/10 transition">
+            <SettingsIcon className="h-3.5 w-3.5" /> PROVIDERS
+          </button>
+          <button onClick={onBack} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/5 ring-1 ring-white/15 text-white/80 text-xs font-bold tracking-wider hover:bg-white/10 transition">
+            <ArrowLeft className="h-3.5 w-3.5" /> BACK
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function ControlBar({
+  playing, onPlayToggle, muted, onMuteToggle, showSubs, onSubsToggle,
+  progress, onSeek, onFullscreen,
+}: {
+  playing: boolean; onPlayToggle: () => void;
+  muted: boolean; onMuteToggle: () => void;
+  showSubs: boolean; onSubsToggle: () => void;
+  progress: number; onSeek: (p: number) => void;
+  onFullscreen: () => void;
+}) {
+  return (
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-4">
+      <div className="pointer-events-auto rounded-xl bg-black/40 backdrop-blur-xl ring-1 ring-white/10 shadow-[0_0_30px_rgba(0,0,0,.6)] p-3">
+        <div className="flex items-center gap-3">
+          <button onClick={onPlayToggle} className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+            {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 fill-white" />}
+          </button>
+
+          <input
+            type="range" min={0} max={100} value={progress}
+            onChange={(e) => onSeek(Number(e.target.value))}
+            className="flex-1 h-1 accent-rose-400 cursor-pointer"
+            aria-label="Progress"
+          />
+
+          <span className="text-[10px] font-mono text-white/60 w-10 text-right">
+            {Math.floor(progress)}%
+          </span>
+
+          <button onClick={onMuteToggle} className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition" title={muted ? "Unmute" : "Mute"}>
+            {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+          </button>
+          <button onClick={onSubsToggle} className={`h-9 w-9 rounded-full flex items-center justify-center transition ${showSubs ? "bg-rose-500/40 text-white" : "bg-white/10 hover:bg-white/20 text-white/80"}`} title="Subtitles">
+            <Subtitles className="h-4 w-4" />
+          </button>
+          <button className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 transition" title="Audio track">
+            <Languages className="h-4 w-4" />
+          </button>
+          <button onClick={onFullscreen} className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition" title="Fullscreen">
+            <Maximize2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SETTINGS — provider preferences
+// ---------------------------------------------------------------------------
+
+function SettingsPanel({ onClose }: { onClose: () => void }) {
+  const [prefs, setPrefs] = useState<ProviderPrefs>(() => loadProviderPrefs());
+  const ordered = useMemo(() => orderedProviders(prefs), [prefs]);
+
+  const commit = (next: ProviderPrefs) => {
+    setPrefs(next);
+    saveProviderPrefs(next);
+  };
+
+  const move = (id: string, dir: -1 | 1) => {
+    const list = ordered.map((p) => p.id);
+    const i = list.indexOf(id);
+    if (i < 0) return;
+    const j = i + dir;
+    if (j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j], list[i]];
+    // Append any providers not in `list` at the end (defensive).
+    for (const p of ALL_PROVIDERS) if (!list.includes(p.id)) list.push(p.id);
+    commit({ ...prefs, order: list });
+  };
+
+  const toggle = (id: string) => {
+    const disabled = new Set(prefs.disabled);
+    if (disabled.has(id)) disabled.delete(id);
+    else disabled.add(id);
+    commit({ ...prefs, disabled: Array.from(disabled) });
+  };
+
+  const reset = () => commit({ order: [], disabled: [] });
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md p-6"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.96, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-2xl bg-gradient-to-br from-zinc-950 via-black to-zinc-950 ring-1 ring-white/10 shadow-[0_0_40px_rgba(0,0,0,.7)] p-6 text-white"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[10px] tracking-[0.4em] font-mono text-rose-300">GHOSTFLIX SETTINGS</div>
+            <h3 className="mt-1 text-lg font-black tracking-wide">Playback Provider</h3>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-white/60"><X className="h-4 w-4" /></button>
+        </div>
+
+        <p className="mt-2 text-xs text-white/50 leading-relaxed">
+          GhostFlix will try providers in order. If one fails, it automatically switches to the next. Reorder or disable providers to match your preference.
+        </p>
+
+        <ul className="mt-5 space-y-2">
+          {orderedProviders({ order: prefs.order, disabled: [] }).map((p, i, arr) => {
+            const disabled = prefs.disabled.includes(p.id);
+            return (
+              <li key={p.id} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ring-1 ring-white/10 ${disabled ? "opacity-40 bg-white/[0.02]" : "bg-white/[0.04]"}`}>
+                <div className="text-[10px] font-mono text-white/40 w-6">{String(i + 1).padStart(2, "0")}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-bold truncate">{p.label}</div>
+                  <div className="text-[11px] text-white/50 truncate">{p.description}</div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => move(p.id, -1)} disabled={i === 0} className="h-7 w-7 rounded hover:bg-white/10 disabled:opacity-30 flex items-center justify-center"><ChevronUp className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => move(p.id, 1)} disabled={i === arr.length - 1} className="h-7 w-7 rounded hover:bg-white/10 disabled:opacity-30 flex items-center justify-center"><ChevronDown className="h-3.5 w-3.5" /></button>
+                  <button
+                    onClick={() => toggle(p.id)}
+                    className={`ml-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest ${disabled ? "bg-white/5 text-white/50" : "bg-rose-500/30 text-rose-100 ring-1 ring-rose-400/40"}`}
+                  >
+                    {disabled ? "OFF" : "ON"}
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="mt-5 flex items-center justify-between">
+          <button onClick={reset} className="text-[11px] font-mono text-white/50 hover:text-white/80 tracking-widest">RESET TO DEFAULTS</button>
+          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gradient-to-r from-red-500 to-rose-700 text-white text-xs font-bold tracking-widest hover:brightness-110">DONE</button>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
