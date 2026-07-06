@@ -103,8 +103,12 @@ interface GhostCtx {
   notifications: Notification[];
   showNotifCenter: boolean;
   toggleNotifCenter: () => void;
-  pushNotification: (n: { title: string; body: string }) => void;
+  pushNotification: (n: { title: string; body: string; app?: NotifApp }) => void;
   dismissNotification: (id: string) => void;
+  clearAllNotifications: () => void;
+  markAllNotificationsRead: () => void;
+  showControlCenter: boolean;
+  toggleControlCenter: () => void;
   openApp: (appId: AppId, title: string) => void;
   closeWindow: (id: string) => void;
   focusWindow: (id: string) => void;
