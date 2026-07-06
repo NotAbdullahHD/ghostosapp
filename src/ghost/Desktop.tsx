@@ -145,6 +145,7 @@ export function Desktop() {
       <LockScreen />
       <DesktopContextMenu />
       <GhostDrop />
+      <ControlCenter />
     </div>
   );
 }
