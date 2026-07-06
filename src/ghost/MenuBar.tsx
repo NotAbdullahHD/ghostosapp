@@ -41,6 +41,8 @@ export function MenuBar() {
           <BatteryFull className="h-3.5 w-3.5" />
           <SlidersHorizontal className="h-3.5 w-3.5 text-fuchsia-300/80" />
         </button>
+        <button
+          onClick={toggleGhostDrop}
           className={`transition ${showGhostDrop ? "text-fuchsia-300" : "hover:text-fuchsia-300"}`}
           title="GhostDrop"
         >
