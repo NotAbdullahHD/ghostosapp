@@ -169,6 +169,7 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     { id: "welcome", title: "GhostOS v3.4.0", body: "Persistent sessions enabled. Multitask freely.", time: Date.now() },
   ]);
   const [showNotifCenter, setShowNotifCenter] = useState(false);
+  const [showControlCenter, setShowControlCenter] = useState(false);
   const [showLauncher, setShowLauncher] = useState(false);
   const [locked, setLocked] = useState(false);
   const [settings, setSettings] = useState<SystemSettings>(() => {
