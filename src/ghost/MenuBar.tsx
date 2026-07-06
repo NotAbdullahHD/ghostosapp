@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
-import { Wifi, BatteryFull, Volume2, Bell, Search, Lock, Radio } from "lucide-react";
+import { Wifi, BatteryFull, Volume2, Bell, Search, Lock, Radio, SlidersHorizontal } from "lucide-react";
 import { useGhost } from "./store";
 import { GhostLogo } from "./GhostLogo";
 
 export function MenuBar() {
-  const { toggleNotifCenter, notifications, toggleLauncher, setLocked, toggleGhostDrop, showGhostDrop } = useGhost();
+  const { toggleNotifCenter, notifications, toggleLauncher, setLocked, toggleGhostDrop, showGhostDrop, toggleControlCenter, showControlCenter } = useGhost();
   return (
     <motion.div
       initial={{ y: -40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
