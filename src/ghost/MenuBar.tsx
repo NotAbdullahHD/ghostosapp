@@ -31,11 +31,16 @@ export function MenuBar() {
         <button onClick={toggleLauncher} className="hover:text-white transition" title="App launcher (search)">
           <Search className="h-3.5 w-3.5" />
         </button>
-        <Wifi className="h-3.5 w-3.5" />
-        <Volume2 className="h-3.5 w-3.5" />
-        <BatteryFull className="h-3.5 w-3.5" />
         <button
-          onClick={toggleGhostDrop}
+          onClick={toggleControlCenter}
+          className={`flex items-center gap-2 px-2 py-1 rounded-md transition ${showControlCenter ? "bg-white/10 text-white" : "hover:bg-white/5 hover:text-white"}`}
+          title="Control Center"
+        >
+          <Wifi className="h-3.5 w-3.5" />
+          <Volume2 className="h-3.5 w-3.5" />
+          <BatteryFull className="h-3.5 w-3.5" />
+          <SlidersHorizontal className="h-3.5 w-3.5 text-fuchsia-300/80" />
+        </button>
           className={`transition ${showGhostDrop ? "text-fuchsia-300" : "hover:text-fuchsia-300"}`}
           title="GhostDrop"
         >
