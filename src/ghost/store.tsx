@@ -15,11 +15,15 @@ export interface WindowState {
   fullscreen: boolean;
 }
 
+export type NotifApp = "system" | "chat" | "ghostdrop" | "movies" | "games" | "downloads" | "settings";
+
 export interface Notification {
   id: string;
   title: string;
   body: string;
   time: number;
+  app?: NotifApp;
+  read?: boolean;
 }
 
 export interface Wallpaper {
@@ -99,8 +103,12 @@ interface GhostCtx {
   notifications: Notification[];
   showNotifCenter: boolean;
   toggleNotifCenter: () => void;
-  pushNotification: (n: { title: string; body: string }) => void;
+  pushNotification: (n: { title: string; body: string; app?: NotifApp }) => void;
   dismissNotification: (id: string) => void;
+  clearAllNotifications: () => void;
+  markAllNotificationsRead: () => void;
+  showControlCenter: boolean;
+  toggleControlCenter: () => void;
   openApp: (appId: AppId, title: string) => void;
   closeWindow: (id: string) => void;
   focusWindow: (id: string) => void;
@@ -161,6 +169,7 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     { id: "welcome", title: "GhostOS v3.4.0", body: "Persistent sessions enabled. Multitask freely.", time: Date.now() },
   ]);
   const [showNotifCenter, setShowNotifCenter] = useState(false);
+  const [showControlCenter, setShowControlCenter] = useState(false);
   const [showLauncher, setShowLauncher] = useState(false);
   const [locked, setLocked] = useState(false);
   const [settings, setSettings] = useState<SystemSettings>(() => {
@@ -226,12 +235,15 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, maximized: !w.maximized, fullscreen: false } : w))), []);
   const toggleFullscreen = useCallback((id: string) =>
     setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, fullscreen: !w.fullscreen } : w))), []);
-  const toggleNotifCenter = useCallback(() => setShowNotifCenter((s) => !s), []);
+  const toggleNotifCenter = useCallback(() => setShowNotifCenter((s) => { if (!s) setShowControlCenter(false); return !s; }), []);
+  const toggleControlCenter = useCallback(() => setShowControlCenter((s) => { if (!s) setShowNotifCenter(false); return !s; }), []);
   const toggleLauncher = useCallback(() => setShowLauncher((s) => !s), []);
-  const pushNotification = useCallback((n: { title: string; body: string }) =>
-    setNotifications((arr) => [{ ...n, id: Math.random().toString(36).slice(2), time: Date.now() }, ...arr].slice(0, 20)), []);
+  const pushNotification = useCallback((n: { title: string; body: string; app?: NotifApp }) =>
+    setNotifications((arr) => [{ app: "system" as NotifApp, read: false, ...n, id: Math.random().toString(36).slice(2), time: Date.now() }, ...arr].slice(0, 40)), []);
   const dismissNotification = useCallback((id: string) =>
     setNotifications((arr) => arr.filter((n) => n.id !== id)), []);
+  const clearAllNotifications = useCallback(() => setNotifications([]), []);
+  const markAllNotificationsRead = useCallback(() => setNotifications((arr) => arr.map((n) => ({ ...n, read: true }))), []);
 
   const redeemCode = useCallback((raw: string) => {
     const code = raw.trim().toLowerCase();
@@ -336,8 +348,8 @@ export function GhostProvider({ children }: { children: ReactNode }) {
   const value = useMemo<GhostCtx>(() => ({
     booted, setBooted, windows, wallpaper, wallpaperId, setWallpaperById,
     unlocked, redeemCode, unlockExclusive,
-    notifications, showNotifCenter,
-    toggleNotifCenter, pushNotification, dismissNotification,
+    notifications, showNotifCenter, showControlCenter, toggleControlCenter,
+    toggleNotifCenter, pushNotification, dismissNotification, clearAllNotifications, markAllNotificationsRead,
     openApp, closeWindow, focusWindow, updateWindow, toggleMinimize, toggleMaximize, toggleFullscreen, setWallpaper,
     hasFullscreen, showLauncher, toggleLauncher,
     settings, updateSettings, triggerPanic, locked, setLocked,

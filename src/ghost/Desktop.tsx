@@ -13,6 +13,7 @@ import { AppLauncher } from "./AppLauncher";
 import { LockScreen } from "./LockScreen";
 import { DesktopContextMenu } from "./DesktopContextMenu";
 import { GhostDrop } from "./GhostDrop";
+import { ControlCenter } from "./ControlCenter";
 import type { AppId } from "./apps";
 
 // Lazy-load all app content — only fetches when opened.
@@ -26,6 +27,7 @@ const MusicApp = lazy(() => import("./apps/MusicApp").then((m) => ({ default: m.
 const GhostChatApp = lazy(() => import("./apps/GhostChatApp").then((m) => ({ default: m.GhostChatApp })));
 const StoreApp = lazy(() => import("./apps/StoreApp").then((m) => ({ default: m.StoreApp })));
 const NotesApp = lazy(() => import("./apps/NotesApp").then((m) => ({ default: m.NotesApp })));
+const CalendarApp = lazy(() => import("./apps/CalendarApp").then((m) => ({ default: m.CalendarApp })));
 const TerminalApp = lazy(() => import("./apps/TerminalApp").then((m) => ({ default: m.TerminalApp })));
 const DiscoverApp = lazy(() => import("./apps/DiscoverApp").then((m) => ({ default: m.DiscoverApp })));
 const SocialApp = lazy(() => import("./apps/SocialApp").then((m) => ({ default: m.SocialApp })));
@@ -49,6 +51,7 @@ const APP_RENDER: Record<AppId, () => React.ReactElement> = {
   settings: () => <SettingsApp />,
   files: () => <FilesApp />,
   notes: () => <NotesApp />,
+  calendar: () => <CalendarApp />,
   terminal: () => <TerminalApp />,
 };
 
@@ -142,6 +145,7 @@ export function Desktop() {
       <LockScreen />
       <DesktopContextMenu />
       <GhostDrop />
+      <ControlCenter />
     </div>
   );
 }
