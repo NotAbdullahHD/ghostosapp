@@ -239,7 +239,7 @@ export function GhostProvider({ children }: { children: ReactNode }) {
   const toggleControlCenter = useCallback(() => setShowControlCenter((s) => { if (!s) setShowNotifCenter(false); return !s; }), []);
   const toggleLauncher = useCallback(() => setShowLauncher((s) => !s), []);
   const pushNotification = useCallback((n: { title: string; body: string; app?: NotifApp }) =>
-    setNotifications((arr) => [{ app: "system", read: false, ...n, id: Math.random().toString(36).slice(2), time: Date.now() }, ...arr].slice(0, 40)), []);
+    setNotifications((arr) => [{ app: "system" as NotifApp, read: false, ...n, id: Math.random().toString(36).slice(2), time: Date.now() }, ...arr].slice(0, 40)), []);
   const dismissNotification = useCallback((id: string) =>
     setNotifications((arr) => arr.filter((n) => n.id !== id)), []);
   const clearAllNotifications = useCallback(() => setNotifications([]), []);
