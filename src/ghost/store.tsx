@@ -348,8 +348,8 @@ export function GhostProvider({ children }: { children: ReactNode }) {
   const value = useMemo<GhostCtx>(() => ({
     booted, setBooted, windows, wallpaper, wallpaperId, setWallpaperById,
     unlocked, redeemCode, unlockExclusive,
-    notifications, showNotifCenter,
-    toggleNotifCenter, pushNotification, dismissNotification,
+    notifications, showNotifCenter, showControlCenter, toggleControlCenter,
+    toggleNotifCenter, pushNotification, dismissNotification, clearAllNotifications, markAllNotificationsRead,
     openApp, closeWindow, focusWindow, updateWindow, toggleMinimize, toggleMaximize, toggleFullscreen, setWallpaper,
     hasFullscreen, showLauncher, toggleLauncher,
     settings, updateSettings, triggerPanic, locked, setLocked,
