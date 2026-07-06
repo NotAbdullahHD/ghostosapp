@@ -50,6 +50,7 @@ const APP_RENDER: Record<AppId, () => React.ReactElement> = {
   settings: () => <SettingsApp />,
   files: () => <FilesApp />,
   notes: () => <NotesApp />,
+  calendar: () => <CalendarApp />,
   terminal: () => <TerminalApp />,
 };
 
