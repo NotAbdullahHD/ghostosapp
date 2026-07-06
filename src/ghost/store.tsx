@@ -15,11 +15,15 @@ export interface WindowState {
   fullscreen: boolean;
 }
 
+export type NotifApp = "system" | "chat" | "ghostdrop" | "movies" | "games" | "downloads" | "settings";
+
 export interface Notification {
   id: string;
   title: string;
   body: string;
   time: number;
+  app?: NotifApp;
+  read?: boolean;
 }
 
 export interface Wallpaper {
