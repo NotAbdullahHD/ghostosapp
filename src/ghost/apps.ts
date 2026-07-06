@@ -27,6 +27,7 @@ export const APPS: AppDef[] = [
   { id: "store",      name: "Store",      icon: "◈", accent: "from-amber-400 to-orange-700",             description: "App store" },
   { id: "files",      name: "Files",      icon: "▤", accent: "from-lime-400 to-emerald-700",             description: "Encrypted vault" },
   { id: "notes",      name: "Notes",      icon: "✎", accent: "from-yellow-300 to-amber-600",             description: "Quick notes" },
+  { id: "calendar",   name: "Calendar",   icon: "◪", accent: "from-rose-400 to-red-700",                 description: "Schedule & events" },
   { id: "terminal",   name: "Terminal",   icon: "❯", accent: "from-slate-300 to-slate-600",              description: "Spectral shell" },
   { id: "settings",   name: "Settings",   icon: "⚙", accent: "from-zinc-400 to-zinc-700",                description: "System config" },
 ];
