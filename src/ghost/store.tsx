@@ -235,12 +235,15 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, maximized: !w.maximized, fullscreen: false } : w))), []);
   const toggleFullscreen = useCallback((id: string) =>
     setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, fullscreen: !w.fullscreen } : w))), []);
-  const toggleNotifCenter = useCallback(() => setShowNotifCenter((s) => !s), []);
+  const toggleNotifCenter = useCallback(() => setShowNotifCenter((s) => { if (!s) setShowControlCenter(false); return !s; }), []);
+  const toggleControlCenter = useCallback(() => setShowControlCenter((s) => { if (!s) setShowNotifCenter(false); return !s; }), []);
   const toggleLauncher = useCallback(() => setShowLauncher((s) => !s), []);
-  const pushNotification = useCallback((n: { title: string; body: string }) =>
-    setNotifications((arr) => [{ ...n, id: Math.random().toString(36).slice(2), time: Date.now() }, ...arr].slice(0, 20)), []);
+  const pushNotification = useCallback((n: { title: string; body: string; app?: NotifApp }) =>
+    setNotifications((arr) => [{ app: "system", read: false, ...n, id: Math.random().toString(36).slice(2), time: Date.now() }, ...arr].slice(0, 40)), []);
   const dismissNotification = useCallback((id: string) =>
     setNotifications((arr) => arr.filter((n) => n.id !== id)), []);
+  const clearAllNotifications = useCallback(() => setNotifications([]), []);
+  const markAllNotificationsRead = useCallback(() => setNotifications((arr) => arr.map((n) => ({ ...n, read: true }))), []);
 
   const redeemCode = useCallback((raw: string) => {
     const code = raw.trim().toLowerCase();
