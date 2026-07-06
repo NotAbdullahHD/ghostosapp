@@ -26,6 +26,7 @@ const MusicApp = lazy(() => import("./apps/MusicApp").then((m) => ({ default: m.
 const GhostChatApp = lazy(() => import("./apps/GhostChatApp").then((m) => ({ default: m.GhostChatApp })));
 const StoreApp = lazy(() => import("./apps/StoreApp").then((m) => ({ default: m.StoreApp })));
 const NotesApp = lazy(() => import("./apps/NotesApp").then((m) => ({ default: m.NotesApp })));
+const CalendarApp = lazy(() => import("./apps/CalendarApp").then((m) => ({ default: m.CalendarApp })));
 const TerminalApp = lazy(() => import("./apps/TerminalApp").then((m) => ({ default: m.TerminalApp })));
 const DiscoverApp = lazy(() => import("./apps/DiscoverApp").then((m) => ({ default: m.DiscoverApp })));
 const SocialApp = lazy(() => import("./apps/SocialApp").then((m) => ({ default: m.SocialApp })));
