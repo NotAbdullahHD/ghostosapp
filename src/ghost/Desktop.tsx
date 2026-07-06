@@ -13,6 +13,7 @@ import { AppLauncher } from "./AppLauncher";
 import { LockScreen } from "./LockScreen";
 import { DesktopContextMenu } from "./DesktopContextMenu";
 import { GhostDrop } from "./GhostDrop";
+import { ControlCenter } from "./ControlCenter";
 import type { AppId } from "./apps";
 
 // Lazy-load all app content — only fetches when opened.
