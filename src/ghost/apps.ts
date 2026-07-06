@@ -1,7 +1,7 @@
 export type AppId =
   | "games" | "movies" | "music" | "ghostai" | "browser" | "discover" | "ghostcloud" | "ghostanime"
   | "x" | "tiktok" | "pinterest"
-  | "chat" | "store" | "settings" | "files" | "notes" | "terminal";
+  | "chat" | "store" | "settings" | "files" | "notes" | "calendar" | "terminal";
 
 export interface AppDef {
   id: AppId;
