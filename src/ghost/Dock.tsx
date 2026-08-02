@@ -196,7 +196,7 @@ function DockClock() {
   const time = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const date = now.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
   return (
-    <div className="flex flex-col items-end justify-center px-3 py-1.5 rounded-xl select-none cursor-default">
+    <div className="flex flex-col items-end justify-center px-3 py-1.5 rounded-xl select-none cursor-default whitespace-nowrap min-w-[86px]">
       <span className="text-sm font-medium tabular-nums text-white/90">{time}</span>
       <span className="text-[10px] text-white/45">{date}</span>
     </div>
