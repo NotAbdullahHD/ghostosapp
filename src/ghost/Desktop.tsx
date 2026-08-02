@@ -103,15 +103,15 @@ export function Desktop() {
         {showAmbient && (
           <motion.div key="ambient" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} className="absolute inset-0 pointer-events-none will-change-transform">
             <motion.div className="absolute -inset-20"
-              style={{ x: px, y: py, background: "radial-gradient(ellipse 40% 35% at 20% 30%, rgba(168,85,247,.45), transparent 60%), radial-gradient(ellipse 35% 30% at 80% 70%, rgba(59,130,246,.35), transparent 60%)" }} />
+              style={{ x: px, y: py, background: "radial-gradient(ellipse 45% 40% at 18% 22%, rgba(102,217,255,.14), transparent 62%), radial-gradient(ellipse 40% 35% at 82% 78%, rgba(140,170,210,.10), transparent 62%)" }} />
             <motion.div className="absolute -inset-10 mix-blend-screen"
-              style={{ x: px, y: py, scale: 1.05, background: "radial-gradient(ellipse 30% 25% at 70% 20%, rgba(236,72,153,.25), transparent 60%)" }}
-              animate={{ opacity: [0.6, 0.9, 0.6] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} />
-            <div className="absolute inset-0 opacity-[0.04]"
-              style={{ backgroundImage: "linear-gradient(rgba(192,132,252,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(192,132,252,.5) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
-            <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 120%, rgba(168,85,247,.25), transparent 60%)" }} />
-            <div className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-fuchsia-400/30 to-transparent animate-scan" />
+              style={{ x: px, y: py, scale: 1.05, background: "radial-gradient(ellipse 30% 25% at 70% 18%, rgba(102,217,255,.08), transparent 60%)" }}
+              animate={{ opacity: [0.5, 0.8, 0.5] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }} />
+            <div className="absolute inset-0 opacity-[0.025]"
+              style={{ backgroundImage: "linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)", backgroundSize: "64px 64px" }} />
+            <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 120%, rgba(102,217,255,.08), transparent 60%)" }} />
           </motion.div>
+
         )}
       </AnimatePresence>
 

@@ -22,26 +22,35 @@ export function GhostLogo({ size = 80, glow = true, interactive = false }: { siz
       style={{ width: size, height: size }}
       whileHover={interactive ? { scale: 1.08 } : undefined}
       whileTap={interactive ? { scale: 0.92 } : undefined}
-      animate={glow ? { filter: ["drop-shadow(0 0 18px rgba(192,132,252,.6))", "drop-shadow(0 0 32px rgba(192,132,252,.9))", "drop-shadow(0 0 18px rgba(192,132,252,.6))"] } : undefined}
-      transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+      animate={
+        glow
+          ? {
+              filter: [
+                "drop-shadow(0 0 14px rgba(102,217,255,.28))",
+                "drop-shadow(0 0 26px rgba(102,217,255,.45))",
+                "drop-shadow(0 0 14px rgba(102,217,255,.28))",
+              ],
+            }
+          : undefined
+      }
+      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
     >
       <svg viewBox="0 0 100 100" width={size} height={size}>
         <defs>
-          <linearGradient id="ghostGrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#e9d5ff" />
-            <stop offset="50%" stopColor="#a855f7" />
-            <stop offset="100%" stopColor="#6d28d9" />
+          <linearGradient id="ghostGrad" x1="0" y1="0" x2="0.4" y2="1">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="55%" stopColor="#dff6ff" />
+            <stop offset="100%" stopColor="#66d9ff" />
           </linearGradient>
         </defs>
         <path
           d="M50 8 C26 8 14 24 14 46 V86 L24 78 L34 86 L44 78 L54 86 L64 78 L74 86 L86 78 V46 C86 24 74 8 50 8 Z"
           fill="url(#ghostGrad)"
-          opacity="0.9"
         />
-        <circle cx="38" cy="46" r="6" fill="#0a0612" />
-        <circle cx="62" cy="46" r="6" fill="#0a0612" />
-        <circle cx="38" cy="45" r="2" fill="#fff" />
-        <circle cx="62" cy="45" r="2" fill="#fff" />
+        <circle cx="38" cy="46" r="6" fill="#0b0b0d" />
+        <circle cx="62" cy="46" r="6" fill="#0b0b0d" />
+        <circle cx="38" cy="44.5" r="1.9" fill="#ffffff" opacity="0.9" />
+        <circle cx="62" cy="44.5" r="1.9" fill="#ffffff" opacity="0.9" />
       </svg>
     </motion.div>
   );
