@@ -39,3 +39,26 @@ export function resolveInput(input: string, engine: EngineId = "google"): string
   }
   return toSearchUrl(s, engine);
 }
+
+/**
+ * Proxy provider registry — architecture prep for user-selectable engines
+ * (Scramjet integration planned; see MercuryWorkshop/scramjet).
+ */
+export type ProxyProviderId = "ultraviolet" | "scramjet" | "direct";
+
+export interface ProxyProvider {
+  id: ProxyProviderId;
+  name: string;
+  description: string;
+  available: boolean;
+}
+
+export const PROXY_PROVIDERS: ProxyProvider[] = [
+  { id: "ultraviolet", name: "Ultraviolet", description: "Default GhostOS relay. Broad site support.", available: true },
+  { id: "scramjet", name: "Scramjet", description: "Next-gen interception engine. Coming soon.", available: false },
+  { id: "direct", name: "Direct", description: "No proxy. Only works for embeddable sites.", available: true },
+];
+
+export function getProxyProvider(id: ProxyProviderId): ProxyProvider {
+  return PROXY_PROVIDERS.find((p) => p.id === id) ?? PROXY_PROVIDERS[0];
+}
