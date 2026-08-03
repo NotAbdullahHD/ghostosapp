@@ -76,11 +76,21 @@ export const WALLPAPERS: Wallpaper[] = [
     exclusiveHint: "Whisper to the Ghost. Click the GhostOS logo six times." },
 ];
 
+export type PowerMode = "performance" | "balanced" | "battery";
+export type AnimationQuality = "high" | "reduced" | "off";
+
 export interface SystemSettings {
   idleLockMinutes: number;       // 0 = off
   redirectConfirm: boolean;
   tabCloak: string;              // preset id, "off" = no cloak
   panicKey: string;              // single key to trigger panic
+  /* Performance */
+  powerMode: PowerMode;
+  animationQuality: AnimationQuality;
+  blurEffects: boolean;
+  wallpaperEffects: boolean;
+  motionEffects: boolean;
+  developerMode: boolean;
 }
 
 const DEFAULT_SETTINGS: SystemSettings = {
@@ -88,7 +98,14 @@ const DEFAULT_SETTINGS: SystemSettings = {
   redirectConfirm: false,
   tabCloak: "off",
   panicKey: "`",
+  powerMode: "balanced",
+  animationQuality: "high",
+  blurEffects: true,
+  wallpaperEffects: true,
+  motionEffects: true,
+  developerMode: false,
 };
+
 
 interface GhostCtx {
   booted: boolean;
@@ -333,6 +350,16 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("beforeunload", onBefore);
   }, [settings.redirectConfirm]);
 
+  // Performance preferences applied globally (animation speed + blur).
+  useEffect(() => {
+    if (!isBrowser) return;
+    const root = document.documentElement;
+    root.classList.toggle("ghost-anim-reduced", settings.animationQuality === "reduced");
+    root.classList.toggle("ghost-anim-off", settings.animationQuality === "off");
+    root.classList.toggle("ghost-no-blur", !settings.blurEffects);
+  }, [settings.animationQuality, settings.blurEffects]);
+
+
   const hasFullscreen = windows.some((w) => w.fullscreen && !w.minimized);
 
   const [showGhostDrop, setShowGhostDrop] = useState(false);
@@ -355,8 +382,8 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     settings, updateSettings, triggerPanic, locked, setLocked,
     showGhostDrop, toggleGhostDrop, openGhostDrop, closeGhostDrop, pendingDropFiles, clearPendingDropFiles,
   }), [booted, windows, wallpaper, wallpaperId, setWallpaperById, unlocked, redeemCode, unlockExclusive,
-    notifications, showNotifCenter,
-    toggleNotifCenter, pushNotification, dismissNotification,
+    notifications, showNotifCenter, showControlCenter, toggleControlCenter,
+    toggleNotifCenter, pushNotification, dismissNotification, clearAllNotifications, markAllNotificationsRead,
     openApp, closeWindow, focusWindow, updateWindow, toggleMinimize, toggleMaximize, toggleFullscreen,
     hasFullscreen, showLauncher, toggleLauncher, settings, updateSettings, triggerPanic, locked,
     showGhostDrop, toggleGhostDrop, openGhostDrop, closeGhostDrop, pendingDropFiles, clearPendingDropFiles]);

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useGhost, WALLPAPERS } from "../store";
-import { Volume2, Palette, Image as ImageIcon, Bell, Monitor, Lock, Sparkles, Shield, EyeOff, AlertTriangle, KeyRound, Clock } from "lucide-react";
+import { Volume2, Palette, Image as ImageIcon, Bell, Monitor, Lock, Sparkles, Shield, EyeOff, AlertTriangle, KeyRound, Clock, Gauge, Zap, Battery, Wand2, Code2 } from "lucide-react";
 
 const RARITY_STYLE: Record<string, string> = {
   common:    "text-white/50 ring-white/10",
@@ -13,6 +13,7 @@ const RARITY_STYLE: Record<string, string> = {
 
 const SECTIONS = [
   { id: "wallpaper", name: "Wallpaper", icon: ImageIcon },
+  { id: "performance", name: "Performance", icon: Gauge },
   { id: "privacy",   name: "Privacy",   icon: Shield },
   { id: "appearance", name: "Appearance", icon: Palette },
   { id: "sound", name: "Sound", icon: Volume2 },
@@ -132,6 +133,66 @@ export function SettingsApp() {
               })}
             </div>
             <p className="text-[10px] font-mono text-white/30 mt-5 tracking-widest">Drop a code in the Terminal too: <span className="text-fuchsia-300">redeem &lt;#code&gt;</span></p>
+          </div>
+        )}
+
+        {section === "performance" && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-bold">Performance</h2>
+              <p className="text-xs text-white/50 mt-1">Tune how much work GhostOS does while you use it.</p>
+            </div>
+
+            <Card icon={<Zap className="h-4 w-4 text-[#66d9ff]" />} title="Power Mode" subtitle="Balance responsiveness against battery life.">
+              <div className="flex items-center gap-2 flex-wrap">
+                {([
+                  { id: "performance", label: "Performance", icon: <Zap className="h-3.5 w-3.5" /> },
+                  { id: "balanced", label: "Balanced", icon: <Gauge className="h-3.5 w-3.5" /> },
+                  { id: "battery", label: "Battery Saver", icon: <Battery className="h-3.5 w-3.5" /> },
+                ] as const).map((m) => (
+                  <button key={m.id}
+                    onClick={() => updateSettings(
+                      m.id === "performance"
+                        ? { powerMode: m.id, animationQuality: "high", blurEffects: true, wallpaperEffects: true, motionEffects: true }
+                        : m.id === "balanced"
+                          ? { powerMode: m.id, animationQuality: "high", blurEffects: true, wallpaperEffects: true, motionEffects: false }
+                          : { powerMode: m.id, animationQuality: "reduced", blurEffects: false, wallpaperEffects: false, motionEffects: false }
+                    )}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs ring-1 transition ${
+                      settings.powerMode === m.id ? "ring-[#66d9ff]/60 bg-[#66d9ff]/15 text-white" : "ring-white/10 text-white/60 hover:bg-white/5"
+                    }`}>
+                    {m.icon}{m.label}
+                  </button>
+                ))}
+              </div>
+            </Card>
+
+            <Card icon={<Wand2 className="h-4 w-4 text-[#66d9ff]" />} title="Animation Quality" subtitle="Lower this if the interface ever feels heavy.">
+              <div className="flex items-center gap-2 flex-wrap">
+                {([
+                  { id: "high", label: "High" },
+                  { id: "reduced", label: "Reduced" },
+                  { id: "off", label: "Off" },
+                ] as const).map((a) => (
+                  <button key={a.id} onClick={() => updateSettings({ animationQuality: a.id })}
+                    className={`px-3 py-1.5 rounded-full text-xs ring-1 transition ${
+                      settings.animationQuality === a.id ? "ring-[#66d9ff]/60 bg-[#66d9ff]/15 text-white" : "ring-white/10 text-white/55 hover:bg-white/5"
+                    }`}>{a.label}</button>
+                ))}
+              </div>
+            </Card>
+
+            <Card icon={<Monitor className="h-4 w-4 text-[#66d9ff]" />} title="Visual Effects" subtitle="Blur, wallpaper and motion effects across the desktop.">
+              <div className="space-y-3">
+                <ToggleRow label="Blur effects" on={settings.blurEffects} onChange={(v) => updateSettings({ blurEffects: v })} />
+                <ToggleRow label="Wallpaper effects" on={settings.wallpaperEffects} onChange={(v) => updateSettings({ wallpaperEffects: v })} />
+                <ToggleRow label="Motion effects" on={settings.motionEffects} onChange={(v) => updateSettings({ motionEffects: v })} />
+              </div>
+            </Card>
+
+            <Card icon={<Code2 className="h-4 w-4 text-[#66d9ff]" />} title="Developer Mode" subtitle="Shows diagnostics inside apps that support it.">
+              <ToggleRow label="Developer mode" on={settings.developerMode} onChange={(v) => updateSettings({ developerMode: v })} />
+            </Card>
           </div>
         )}
 
@@ -255,6 +316,15 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
       <motion.span layout className={`absolute top-1 h-5 w-5 rounded-full ${on ? "bg-white shadow-[0_0_12px_rgba(255,255,255,.6)]" : "bg-white/60"}`}
         style={{ left: on ? 24 : 4 }} transition={{ type: "spring", stiffness: 500, damping: 30 }} />
     </button>
+  );
+}
+
+function ToggleRow({ label, on, onChange }: { label: string; on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-xs text-white/70">{label}</span>
+      <Toggle on={on} onChange={onChange} />
+    </div>
   );
 }
 

@@ -60,10 +60,10 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
         if (snapHint === "top") toggleMaximize(win.id);
         else {
           const W = window.innerWidth;
-          const H = window.innerHeight - 36 - 88;
+          const H = window.innerHeight - 8 - 56;
           updateWindow(win.id, {
             x: snapHint === "left" ? 0 : W / 2,
-            y: 36, width: W / 2, height: H,
+            y: 8, width: W / 2, height: H,
           });
         }
       }
@@ -84,17 +84,17 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
   const style = fullscreen
     ? { top: 0, left: 0, width: "100vw", height: "100vh" }
     : maximized
-    ? { top: 36, left: 0, width: "100vw", height: "calc(100vh - 36px - 88px)" }
+    ? { top: 8, left: 0, width: "100vw", height: "calc(100vh - 8px - 56px)" }
     : { top: win.y, left: win.x, width: win.width, height: win.height };
 
   return (
     <>
       {snapHint && !fullscreen && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="fixed pointer-events-none z-[550] rounded-2xl border-2 border-fuchsia-400/60 bg-fuchsia-500/10 backdrop-blur-md"
+          className="fixed pointer-events-none z-[550] rounded-2xl border-2 border-[#66d9ff]/50 bg-[#66d9ff]/10 backdrop-blur-md"
           style={
             snapHint === "top"
-              ? { top: 36, left: 0, width: "100vw", height: "calc(100vh - 36px - 88px)" }
+              ? { top: 8, left: 0, width: "100vw", height: "calc(100vh - 8px - 56px)" }
               : snapHint === "left"
               ? { top: 36, left: 0, width: "50vw", height: "calc(100vh - 36px - 88px)" }
               : { top: 36, left: "50vw", width: "50vw", height: "calc(100vh - 36px - 88px)" }
@@ -103,7 +103,7 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
 
       <motion.div
         key={win.id}
-        initial={{ opacity: 0, scale: 0.9, y: 24, filter: "blur(10px)" }}
+        initial={{ opacity: 0, scale: 0.96, y: 12 }}
         animate={{
           opacity: win.minimized ? 0 : 1,
           scale: win.minimized ? 0.4 : (dragging ? 1.004 : 1),
@@ -111,9 +111,9 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
           filter: dragging ? "blur(0px)" : "blur(0px)",
           transition: dragging
             ? { duration: 0 }
-            : { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
+            : { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
         }}
-        exit={{ opacity: 0, scale: 0.86, y: 40, filter: "blur(8px)", transition: { duration: 0.28, ease: [0.4, 0, 1, 1] } }}
+        exit={{ opacity: 0, scale: 0.94, y: 16, transition: { duration: 0.18, ease: [0.4, 0, 1, 1] } }}
         className={`absolute ${fullscreen ? "" : "glass-strong window-shadow rounded-2xl"} overflow-hidden flex flex-col will-change-transform`}
         style={{ ...style, zIndex: fullscreen ? 9999 : win.z, pointerEvents: win.minimized ? "none" : "auto" }}
         onMouseDown={() => focusWindow(win.id)}
@@ -145,13 +145,13 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
                 <Square className="h-2 w-2 text-emerald-950 opacity-0 group-hover:opacity-100" strokeWidth={3} />
               </button>
             </div>
-            <div className="text-xs font-mono tracking-widest text-white/70 uppercase absolute left-1/2 -translate-x-1/2">{win.title}</div>
+            <div className="text-[12px] text-white/70 absolute left-1/2 -translate-x-1/2">{win.title}</div>
             <button
               onClick={() => toggleFullscreen(win.id)}
-              title="Enter immersive fullscreen"
-              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-mono tracking-widest text-fuchsia-200/80 hover:text-white hover:bg-fuchsia-500/15 ring-1 ring-fuchsia-400/20 transition"
+              title="Fullscreen"
+              className="flex items-center justify-center h-6 w-6 rounded-md text-white/60 hover:text-white hover:bg-white/[0.08] transition-colors duration-150"
             >
-              <Maximize className="h-3 w-3" /> IMMERSE
+              <Maximize className="h-3.5 w-3.5" />
             </button>
           </div>
         )}
@@ -162,10 +162,10 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
             initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
             onClick={() => toggleFullscreen(win.id)}
             title="Exit fullscreen (Esc)"
-            className="group fixed top-3 right-3 z-[10001] flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-xl ring-1 ring-fuchsia-400/30 hover:ring-fuchsia-400/70 hover:bg-black/80 transition shadow-[0_0_24px_rgba(232,121,249,.3)]"
+            className="group fixed top-3 right-3 z-[10001] flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-xl ring-1 ring-white/15 hover:ring-white/30 hover:bg-black/80 transition-colors duration-150"
           >
-            <Minimize2 className="h-3 w-3 text-fuchsia-200" />
-            <span className="text-[10px] font-mono tracking-widest text-fuchsia-200">EXIT · ESC</span>
+            <Minimize2 className="h-3 w-3 text-white/80" />
+            <span className="text-[11px] text-white/80">Exit · Esc</span>
           </motion.button>
         )}
 
