@@ -44,22 +44,21 @@ export function NotificationCenter() {
     <AnimatePresence>
       {showNotifCenter && (
         <>
-          <motion.div className="fixed inset-0 z-[780]" onClick={toggleNotifCenter}
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
+          <div className="fixed inset-0 z-[780]" onClick={toggleNotifCenter} />
           <motion.div
             role="dialog" aria-label="Notification Center"
-            className="fixed right-3 top-11 w-[360px] z-[800] rounded-3xl p-3 window-shadow"
+            className="fixed right-2 bottom-16 w-[340px] z-[800] rounded-2xl p-2"
             style={{
-              background: "linear-gradient(155deg, rgba(30,15,45,0.85), rgba(10,5,20,0.75))",
-              backdropFilter: "blur(40px) saturate(180%)",
-              WebkitBackdropFilter: "blur(40px) saturate(180%)",
+              background: "rgba(20,20,22,0.86)",
+              backdropFilter: "blur(28px) saturate(160%)",
+              WebkitBackdropFilter: "blur(28px) saturate(160%)",
               border: "1px solid rgba(255,255,255,0.08)",
-              boxShadow: "0 30px 80px -20px rgba(0,0,0,.7), 0 0 0 1px rgba(168,85,247,.15), inset 0 1px 0 rgba(255,255,255,.08)",
+              boxShadow: "0 26px 60px -24px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.06)",
             }}
-            initial={{ opacity: 0, y: -20, scale: 0.94 }}
+            initial={{ opacity: 0, y: 10, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -12, scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 320, damping: 28 }}
+            exit={{ opacity: 0, y: 6, scale: 0.985 }}
+            transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
           >
             <div className="flex items-center justify-between px-2 py-2">
               <div>

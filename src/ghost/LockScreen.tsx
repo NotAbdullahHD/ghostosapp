@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { useGhost, WALLPAPERS } from "./store";
-import { ChevronUp } from "lucide-react";
+
 
 export function LockScreen() {
   const { locked, setLocked, wallpaperId, wallpaper } = useGhost();
@@ -101,15 +101,8 @@ export function LockScreen() {
               {now.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" })}
             </motion.div>
 
-            <motion.div
-              className="absolute bottom-16 flex flex-col items-center gap-2"
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <ChevronUp className="h-5 w-5 text-white/55" strokeWidth={2} />
-              <div className="text-[12px] text-white/50">Swipe up to unlock</div>
-            </motion.div>
           </motion.div>
+
         </motion.div>
       )}
     </AnimatePresence>

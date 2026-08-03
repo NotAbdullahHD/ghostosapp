@@ -2,13 +2,10 @@ import { AnimatePresence, motion, useMotionValue } from "framer-motion";
 import { Suspense, lazy, useEffect, useMemo } from "react";
 import { useGhost, WALLPAPERS } from "./store";
 import { AnimatedWallpaperLayer } from "./AnimatedWallpaperLayer";
-import { MenuBar } from "./MenuBar";
 import { Dock } from "./Dock";
+import { SystemTray } from "./SystemTray";
 import { Window } from "./Window";
-import { DesktopIcons } from "./DesktopIcons";
 import { NotificationCenter } from "./NotificationCenter";
-import { FpsMonitor } from "./FpsMonitor";
-import { OnlineStatus } from "./OnlineStatus";
 import { AppLauncher } from "./AppLauncher";
 import { LockScreen } from "./LockScreen";
 import { DesktopContextMenu } from "./DesktopContextMenu";
@@ -67,15 +64,17 @@ function AppLoading() {
 }
 
 export function Desktop() {
-  const { windows, wallpaper, wallpaperId, hasFullscreen, locked } = useGhost();
+  const { windows, wallpaper, wallpaperId, hasFullscreen, locked, settings } = useGhost();
   const activeWallpaper = useMemo(
     () => WALLPAPERS.find((w) => w.id === wallpaperId),
     [wallpaperId]
   );
   const px = useMotionValue(0);
   const py = useMotionValue(0);
+  const parallax = settings.motionEffects;
 
   useEffect(() => {
+    if (!parallax) return;
     // Throttle parallax updates to one per animation frame.
     let raf = 0;
     let nx = 0, ny = 0;
@@ -90,10 +89,10 @@ export function Desktop() {
       window.removeEventListener("mousemove", onMove);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [px, py]);
+  }, [px, py, parallax]);
 
   // Suppress heavy ambient effects while locked or fullscreen for smoother perf.
-  const showAmbient = !hasFullscreen && !locked;
+  const showAmbient = !hasFullscreen && !locked && settings.wallpaperEffects;
 
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ background: wallpaper }}>
@@ -101,17 +100,11 @@ export function Desktop() {
 
       <AnimatePresence>
         {showAmbient && (
-          <motion.div key="ambient" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} className="absolute inset-0 pointer-events-none will-change-transform">
+          <motion.div key="ambient" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="absolute inset-0 pointer-events-none will-change-transform">
             <motion.div className="absolute -inset-20"
-              style={{ x: px, y: py, background: "radial-gradient(ellipse 45% 40% at 18% 22%, rgba(102,217,255,.14), transparent 62%), radial-gradient(ellipse 40% 35% at 82% 78%, rgba(140,170,210,.10), transparent 62%)" }} />
-            <motion.div className="absolute -inset-10 mix-blend-screen"
-              style={{ x: px, y: py, scale: 1.05, background: "radial-gradient(ellipse 30% 25% at 70% 18%, rgba(102,217,255,.08), transparent 60%)" }}
-              animate={{ opacity: [0.5, 0.8, 0.5] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }} />
-            <div className="absolute inset-0 opacity-[0.025]"
-              style={{ backgroundImage: "linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)", backgroundSize: "64px 64px" }} />
-            <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 120%, rgba(102,217,255,.08), transparent 60%)" }} />
+              style={{ x: px, y: py, background: "radial-gradient(ellipse 45% 40% at 18% 22%, rgba(102,217,255,.12), transparent 62%), radial-gradient(ellipse 40% 35% at 82% 78%, rgba(140,170,210,.09), transparent 62%)" }} />
+            <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 120%, rgba(102,217,255,.07), transparent 60%)" }} />
           </motion.div>
-
         )}
       </AnimatePresence>
 
@@ -120,18 +113,16 @@ export function Desktop() {
           <motion.div
             key="chrome"
             initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] } }}
-            exit={{ opacity: 0, transition: { duration: 0.25 } }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] } }}
+            exit={{ opacity: 0, transition: { duration: 0.2 } }}
           >
-            <MenuBar />
-            <DesktopIcons />
-            <OnlineStatus />
-            <FpsMonitor />
             <NotificationCenter />
             <Dock />
+            <SystemTray />
           </motion.div>
         )}
       </AnimatePresence>
+
 
       <AnimatePresence>
         {windows.map((w) => (
