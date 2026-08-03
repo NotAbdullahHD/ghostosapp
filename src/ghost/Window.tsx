@@ -96,8 +96,8 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
             snapHint === "top"
               ? { top: 8, left: 0, width: "100vw", height: "calc(100vh - 8px - 56px)" }
               : snapHint === "left"
-              ? { top: 36, left: 0, width: "50vw", height: "calc(100vh - 36px - 88px)" }
-              : { top: 36, left: "50vw", width: "50vw", height: "calc(100vh - 36px - 88px)" }
+              ? { top: 8, left: 0, width: "50vw", height: "calc(100vh - 8px - 56px)" }
+              : { top: 8, left: "50vw", width: "50vw", height: "calc(100vh - 8px - 56px)" }
           } />
       )}
 
