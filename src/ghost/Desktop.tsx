@@ -22,6 +22,7 @@ const SettingsApp = lazy(() => import("./apps/SettingsApp").then((m) => ({ defau
 const FilesApp = lazy(() => import("./apps/FilesApp").then((m) => ({ default: m.FilesApp })));
 const MusicApp = lazy(() => import("./apps/MusicApp").then((m) => ({ default: m.MusicApp })));
 const GhostChatApp = lazy(() => import("./apps/GhostChatApp").then((m) => ({ default: m.GhostChatApp })));
+const MinecraftApp = lazy(() => import("./apps/MinecraftApp").then((m) => ({ default: m.MinecraftApp })));
 const StoreApp = lazy(() => import("./apps/StoreApp").then((m) => ({ default: m.StoreApp })));
 const NotesApp = lazy(() => import("./apps/NotesApp").then((m) => ({ default: m.NotesApp })));
 const CalendarApp = lazy(() => import("./apps/CalendarApp").then((m) => ({ default: m.CalendarApp })));
@@ -50,6 +51,7 @@ const APP_RENDER: Record<AppId, () => React.ReactElement> = {
   notes: () => <NotesApp />,
   calendar: () => <CalendarApp />,
   terminal: () => <TerminalApp />,
+  minecraft: () => <MinecraftApp />,
 };
 
 function AppLoading() {

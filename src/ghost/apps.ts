@@ -1,7 +1,8 @@
 export type AppId =
   | "games" | "movies" | "music" | "ghostai" | "browser" | "discover" | "ghostcloud" | "ghostanime"
   | "x" | "tiktok" | "pinterest"
-  | "chat" | "store" | "settings" | "files" | "notes" | "calendar" | "terminal";
+  | "chat" | "store" | "settings" | "files" | "notes" | "calendar" | "terminal"
+  | "minecraft";
 
 export interface AppDef {
   id: AppId;
@@ -9,7 +10,10 @@ export interface AppDef {
   icon: string;
   accent: string;
   description: string;
+  /** Installed from Ghost Store — hidden from launcher/dock until installed. */
+  installable?: boolean;
 }
+
 
 export const APPS: AppDef[] = [
   { id: "games",      name: "Games",      icon: "▣", accent: "from-zinc-800 to-zinc-900", description: "Arcade hub" },
@@ -30,4 +34,6 @@ export const APPS: AppDef[] = [
   { id: "calendar",   name: "Calendar",   icon: "◪", accent: "from-zinc-800 to-zinc-900", description: "Schedule & events" },
   { id: "terminal",   name: "Terminal",   icon: "❯", accent: "from-zinc-800 to-zinc-900", description: "Spectral shell" },
   { id: "settings",   name: "Settings",   icon: "⚙", accent: "from-zinc-800 to-zinc-900", description: "System config" },
+  { id: "minecraft",  name: "Minecraft",  icon: "⛏", accent: "from-zinc-800 to-zinc-900", description: "Sandbox world builder", installable: true },
 ];
+

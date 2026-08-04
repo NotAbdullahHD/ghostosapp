@@ -2,7 +2,7 @@ import type { AppId } from "./apps";
 import {
   Gamepad2, Cloud, Sparkles, Bot, Globe, Compass, Clapperboard, Music4,
   MessageSquareText, Store, Folder, StickyNote, CalendarDays, TerminalSquare,
-  Settings2, Video, Image as ImageIcon, type LucideProps,
+  Settings2, Video, Image as ImageIcon, Pickaxe, type LucideProps,
 } from "lucide-react";
 
 function XGlyph({ className, style }: { className?: string; style?: React.CSSProperties }) {
@@ -34,6 +34,7 @@ const ICONS: Record<AppId, IconCmp> = {
   calendar: CalendarDays,
   terminal: TerminalSquare,
   settings: Settings2,
+  minecraft: Pickaxe,
 };
 
 /** Single tinted light per app on a graphite Obsidian tile. */
@@ -56,6 +57,7 @@ const TINTS: Record<AppId, [number, number, number]> = {
   calendar: [255, 150, 150],
   terminal: [200, 210, 225],
   settings: [190, 200, 215],
+  minecraft: [126, 217, 140],
 };
 
 export function AppIcon({
