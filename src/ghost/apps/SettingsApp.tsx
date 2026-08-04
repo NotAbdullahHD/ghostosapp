@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useGhost, WALLPAPERS, SEARCH_ENGINES, PROXY_PROVIDERS } from "../store";
-import { Volume2, Palette, Image as ImageIcon, Bell, Monitor, Lock, Sparkles, Shield, EyeOff, AlertTriangle, KeyRound, Clock, Gauge, Zap, Battery, Wand2, Code2, Globe } from "lucide-react";
+import { Volume2, Palette, Image as ImageIcon, Bell, Monitor, Lock, Sparkles, Shield, EyeOff, AlertTriangle, KeyRound, Clock, Gauge, Zap, Battery, Wand2, Code2, Globe, Search } from "lucide-react";
 
 const RARITY_STYLE: Record<string, string> = {
   common:    "text-white/50 ring-white/10",
