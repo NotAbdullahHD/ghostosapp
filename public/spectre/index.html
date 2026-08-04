@@ -7,6 +7,7 @@
 
 <script src="./uv/uv.bundle.js"></script>
 <script src="./uv/uv.config.js"></script>
+<script src="./scramjet/scramjet.all.js"></script>
 <script src="./baremux/index.js"></script>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -350,6 +351,67 @@ function bootConnection() {
   applyTransport(wispIndex);
 }
 
+/* ===== GhostOS preferences (passed from Settings) ===== */
+const GHOST_PREFS = (() => {
+  const p = new URLSearchParams(location.search);
+  return {
+    engine: p.get("engine") || "google",
+    proxy: p.get("proxy") || "scramjet",
+    home: p.get("home") || "https://www.google.com",
+    newtab: p.get("newtab") || "ghost",
+  };
+})();
+
+const SEARCH_ENGINES = {
+  google: "https://www.google.com/search?q=",
+  duckduckgo: "https://duckduckgo.com/?q=",
+  brave: "https://search.brave.com/search?q=",
+  bing: "https://www.bing.com/search?q=",
+};
+
+/* ===== Modular proxy providers ===== */
+let scramjetController = null;
+let scramjetReady = false;
+
+async function initScramjet() {
+  try {
+    const { ScramjetController } = $scramjetLoadController();
+    scramjetController = new ScramjetController({
+      files: {
+        wasm: "/spectre/scramjet/scramjet.wasm.wasm",
+        all: "/spectre/scramjet/scramjet.all.js",
+        sync: "/spectre/scramjet/scramjet.sync.js",
+      },
+      prefix: "/spectre/scramjet/service/",
+    });
+    await scramjetController.init();
+    await navigator.serviceWorker.register("/spectre/scramjet/sw.js", { scope: "/spectre/scramjet/" });
+    scramjetReady = true;
+    log("Scramjet ready", "ok");
+  } catch (e) {
+    scramjetReady = false;
+    log("Scramjet init failed, falling back to Ultraviolet: " + e, "err");
+  }
+}
+
+const PROVIDERS = {
+  scramjet: {
+    name: "Scramjet",
+    ready: () => scramjetReady,
+    encode: (url) => scramjetController.encodeUrl(url),
+  },
+  ultraviolet: {
+    name: "Ultraviolet",
+    ready: () => true,
+    encode: (url) => __uv$config.prefix + __uv$config.encodeUrl(url),
+  },
+};
+
+function activeProvider() {
+  const wanted = PROVIDERS[GHOST_PREFS.proxy] || PROVIDERS.scramjet;
+  return wanted.ready() ? wanted : PROVIDERS.ultraviolet;
+}
+
 /* ===== Service worker ===== */
 diagSw.textContent = "registering…";
 navigator.serviceWorker
@@ -368,6 +430,7 @@ navigator.serviceWorker
   });
 
 bootConnection();
+initScramjet();
 
 /* ===== Retry / failover controls ===== */
 document.getElementById("diagRetry").onclick = () => {
@@ -453,7 +516,8 @@ function closeTab(id) {
 function normalize(input) {
   const s = input.trim();
   if (!s.includes(".") && !s.startsWith("http")) {
-    return "https://duckduckgo.com/?q=" + encodeURIComponent(s);
+    const base = SEARCH_ENGINES[GHOST_PREFS.engine] || SEARCH_ENGINES.google;
+    return base + encodeURIComponent(s);
   }
   if (!s.startsWith("http")) return "https://" + s;
   return s;
@@ -491,7 +555,9 @@ async function navigate(input, push = true) {
     log("Load timeout for " + url, "err");
   }, 15000);
 
-  tab.iframe.src = __uv$config.prefix + __uv$config.encodeUrl(url);
+  const provider = activeProvider();
+  diagBaremux.textContent = "proxy: " + provider.name;
+  tab.iframe.src = provider.encode(url);
   urlInput.value = url;
   ntp.style.display = "none";
 
@@ -549,7 +615,7 @@ createTab();
       style.textContent = ".viewframe{top:0!important;height:100%!important}";
       document.head.appendChild(style);
     }
-    const url = params.get("url");
+    const url = params.get("url") || (GHOST_PREFS.newtab === "homepage" ? GHOST_PREFS.home : null);
     if (url) {
       // Defer until UV config is ready
       setTimeout(() => navigate(url), 150);
