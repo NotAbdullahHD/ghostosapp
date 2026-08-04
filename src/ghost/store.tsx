@@ -76,6 +76,23 @@ export const WALLPAPERS: Wallpaper[] = [
     exclusiveHint: "Whisper to the Ghost. Click the GhostOS logo six times." },
 ];
 
+export type SearchEngineId = "google" | "duckduckgo" | "brave" | "bing";
+export type ProxyProviderId = "scramjet" | "ultraviolet";
+export type NewTabBehavior = "homepage" | "blank" | "ghost";
+
+export const SEARCH_ENGINES: { id: SearchEngineId; name: string; query: string }[] = [
+  { id: "google", name: "Google", query: "https://www.google.com/search?q=" },
+  { id: "duckduckgo", name: "DuckDuckGo", query: "https://duckduckgo.com/?q=" },
+  { id: "brave", name: "Brave Search", query: "https://search.brave.com/search?q=" },
+  { id: "bing", name: "Bing", query: "https://www.bing.com/search?q=" },
+];
+
+/** Modular proxy backends — new providers only need an entry here. */
+export const PROXY_PROVIDERS: { id: ProxyProviderId; name: string; note: string; available: boolean }[] = [
+  { id: "scramjet", name: "Scramjet", note: "Default · Mercury Workshop rewriter", available: true },
+  { id: "ultraviolet", name: "Ultraviolet", note: "Legacy fallback relay", available: true },
+];
+
 export type PowerMode = "performance" | "balanced" | "battery";
 export type AnimationQuality = "high" | "reduced" | "off";
 
@@ -91,6 +108,11 @@ export interface SystemSettings {
   wallpaperEffects: boolean;
   motionEffects: boolean;
   developerMode: boolean;
+  /* Browser */
+  searchEngine: SearchEngineId;
+  proxyProvider: ProxyProviderId;
+  homepage: string;
+  newTab: NewTabBehavior;
 }
 
 const DEFAULT_SETTINGS: SystemSettings = {
@@ -104,6 +126,10 @@ const DEFAULT_SETTINGS: SystemSettings = {
   wallpaperEffects: true,
   motionEffects: true,
   developerMode: false,
+  searchEngine: "google",
+  proxyProvider: "scramjet",
+  homepage: "https://www.google.com",
+  newTab: "ghost",
 };
 
 
@@ -148,6 +174,9 @@ interface GhostCtx {
   closeGhostDrop: () => void;
   pendingDropFiles: File[];
   clearPendingDropFiles: () => void;
+  installedApps: Record<string, boolean>;
+  installApp: (appId: AppId) => void;
+  uninstallApp: (appId: AppId) => void;
 }
 
 const Ctx = createContext<GhostCtx | null>(null);
@@ -156,6 +185,7 @@ const LS_UNLOCKED = "ghost.unlocked";
 const LS_WALL = "ghost.wallpaperId";
 const LS_WINDOWS = "ghost.windows";
 const LS_SETTINGS = "ghost.settings";
+const LS_INSTALLED = "ghost.installedApps";
 
 const isBrowser = typeof window !== "undefined";
 const ls = {
@@ -193,10 +223,14 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     try { return { ...DEFAULT_SETTINGS, ...JSON.parse(ls.get(LS_SETTINGS) || "{}") }; }
     catch { return DEFAULT_SETTINGS; }
   });
+  const [installedApps, setInstalledApps] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(ls.get(LS_INSTALLED) || "{}"); } catch { return {}; }
+  });
   const zRef = useRef(10);
 
   useEffect(() => { ls.set(LS_UNLOCKED, JSON.stringify(unlocked)); }, [unlocked]);
   useEffect(() => { ls.set(LS_WALL, wallpaperId); }, [wallpaperId]);
+  useEffect(() => { ls.set(LS_INSTALLED, JSON.stringify(installedApps)); }, [installedApps]);
   useEffect(() => { ls.set(LS_SETTINGS, JSON.stringify(settings)); }, [settings]);
   useEffect(() => {
     const id = setTimeout(() => ls.set(LS_WINDOWS, JSON.stringify(windows)), 200);
@@ -281,6 +315,11 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     pushNotification({ title: `EXCLUSIVE UNLOCKED: ${wp.name}`, body: `Hidden cinematic wallpaper revealed.` });
     return true;
   }, [unlocked, pushNotification]);
+
+  const installApp = useCallback((appId: AppId) => setInstalledApps((m) => ({ ...m, [appId]: true })), []);
+  const uninstallApp = useCallback((appId: AppId) => setInstalledApps((m) => {
+    const next = { ...m }; delete next[appId]; return next;
+  }), []);
 
   const updateSettings = useCallback((patch: Partial<SystemSettings>) =>
     setSettings((s) => ({ ...s, ...patch })), []);
@@ -381,7 +420,8 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     hasFullscreen, showLauncher, toggleLauncher,
     settings, updateSettings, triggerPanic, locked, setLocked,
     showGhostDrop, toggleGhostDrop, openGhostDrop, closeGhostDrop, pendingDropFiles, clearPendingDropFiles,
-  }), [booted, windows, wallpaper, wallpaperId, setWallpaperById, unlocked, redeemCode, unlockExclusive,
+    installedApps, installApp, uninstallApp,
+  }), [installedApps, installApp, uninstallApp, booted, windows, wallpaper, wallpaperId, setWallpaperById, unlocked, redeemCode, unlockExclusive,
     notifications, showNotifCenter, showControlCenter, toggleControlCenter,
     toggleNotifCenter, pushNotification, dismissNotification, clearAllNotifications, markAllNotificationsRead,
     openApp, closeWindow, focusWindow, updateWindow, toggleMinimize, toggleMaximize, toggleFullscreen,

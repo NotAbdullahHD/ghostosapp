@@ -3,12 +3,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Globe, Shield, Maximize, RotateCw } from "lucide-react";
 import { useGhost } from "../store";
 
-const BROWSER_URL = "/spectre/index.html";
+
 
 export function BrowserApp() {
-  const { windows, toggleFullscreen } = useGhost();
+  const { windows, toggleFullscreen, settings } = useGhost();
   const [loaded, setLoaded] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+
+  const browserUrl = `/spectre/index.html?engine=${settings.searchEngine}&proxy=${settings.proxyProvider}&newtab=${settings.newTab}&home=${encodeURIComponent(settings.homepage)}`;
 
   const me = windows.find((w) => w.appId === "browser");
   const requestFullscreen = () => { if (me) toggleFullscreen(me.id); };
@@ -22,8 +24,8 @@ export function BrowserApp() {
             <Globe className="h-4 w-4" />
           </div>
           <div>
-            <div className="text-sm font-black tracking-widest bg-gradient-to-r from-cyan-300 to-fuchsia-300 bg-clip-text text-transparent">SPECTRE BROWSER</div>
-            <div className="text-[9px] tracking-[0.4em] text-white/40 font-mono">ULTRAVIOLET RELAY · GHOSTOS NATIVE</div>
+            <div className="text-sm font-black tracking-widest bg-gradient-to-r from-cyan-300 to-fuchsia-300 bg-clip-text text-transparent">GHOST BROWSER</div>
+            <div className="text-[9px] tracking-[0.4em] text-white/40 font-mono">{settings.proxyProvider === "scramjet" ? "SCRAMJET RELAY" : "ULTRAVIOLET RELAY"} · GHOSTOS NATIVE</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -61,8 +63,8 @@ export function BrowserApp() {
         </AnimatePresence>
         <iframe
           key={reloadKey}
-          src={BROWSER_URL}
-          title="Spectre Browser"
+          src={browserUrl}
+          title="Ghost Browser"
           onLoad={() => setLoaded(true)}
           className="absolute inset-0 w-full h-full bg-white"
           allow="autoplay; fullscreen; clipboard-write; encrypted-media; geolocation; camera; microphone; gamepad"

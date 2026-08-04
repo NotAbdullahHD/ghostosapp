@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { useGhost, WALLPAPERS } from "../store";
-import { Volume2, Palette, Image as ImageIcon, Bell, Monitor, Lock, Sparkles, Shield, EyeOff, AlertTriangle, KeyRound, Clock, Gauge, Zap, Battery, Wand2, Code2 } from "lucide-react";
+import { useGhost, WALLPAPERS, SEARCH_ENGINES, PROXY_PROVIDERS } from "../store";
+import { Volume2, Palette, Image as ImageIcon, Bell, Monitor, Lock, Sparkles, Shield, EyeOff, AlertTriangle, KeyRound, Clock, Gauge, Zap, Battery, Wand2, Code2, Globe, Search } from "lucide-react";
 
 const RARITY_STYLE: Record<string, string> = {
   common:    "text-white/50 ring-white/10",
@@ -14,6 +14,7 @@ const RARITY_STYLE: Record<string, string> = {
 const SECTIONS = [
   { id: "wallpaper", name: "Wallpaper", icon: ImageIcon },
   { id: "performance", name: "Performance", icon: Gauge },
+  { id: "browser", name: "Browser", icon: Globe },
   { id: "privacy",   name: "Privacy",   icon: Shield },
   { id: "appearance", name: "Appearance", icon: Palette },
   { id: "sound", name: "Sound", icon: Volume2 },
@@ -192,6 +193,67 @@ export function SettingsApp() {
 
             <Card icon={<Code2 className="h-4 w-4 text-[#66d9ff]" />} title="Developer Mode" subtitle="Shows diagnostics inside apps that support it.">
               <ToggleRow label="Developer mode" on={settings.developerMode} onChange={(v) => updateSettings({ developerMode: v })} />
+            </Card>
+          </div>
+        )}
+
+        {section === "browser" && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-bold">Browser</h2>
+              <p className="text-xs text-white/50 mt-1">Defaults used by the GhostOS Browser.</p>
+            </div>
+
+            <Card icon={<Search className="h-4 w-4 text-[#66d9ff]" />} title="Search Engine" subtitle="Used when you type a term instead of an address.">
+              <div className="grid grid-cols-2 gap-2">
+                {SEARCH_ENGINES.map((e) => (
+                  <button key={e.id} onClick={() => updateSettings({ searchEngine: e.id })}
+                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs ring-1 transition ${
+                      settings.searchEngine === e.id ? "ring-[#66d9ff]/60 bg-[#66d9ff]/15 text-white" : "ring-white/10 text-white/60 hover:bg-white/5"
+                    }`}>
+                    <span>{e.name}{e.id === "google" && <span className="text-white/30"> · Default</span>}</span>
+                    {settings.searchEngine === e.id && <span className="text-[9px] font-mono tracking-widest text-[#66d9ff]">ACTIVE</span>}
+                  </button>
+                ))}
+              </div>
+            </Card>
+
+            <Card icon={<Shield className="h-4 w-4 text-[#66d9ff]" />} title="Proxy Provider" subtitle="The engine that fetches and rewrites sites.">
+              <div className="space-y-2">
+                {PROXY_PROVIDERS.map((p) => (
+                  <button key={p.id} disabled={!p.available} onClick={() => updateSettings({ proxyProvider: p.id })}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs ring-1 transition ${
+                      settings.proxyProvider === p.id ? "ring-[#66d9ff]/60 bg-[#66d9ff]/15 text-white" : "ring-white/10 text-white/60 hover:bg-white/5"
+                    } ${p.available ? "" : "opacity-40 cursor-not-allowed"}`}>
+                    <span className="text-left">
+                      <span className="block text-white/90">{p.name}</span>
+                      <span className="block text-[10px] text-white/40 mt-0.5">{p.note}</span>
+                    </span>
+                    {settings.proxyProvider === p.id && <span className="text-[9px] font-mono tracking-widest text-[#66d9ff]">ACTIVE</span>}
+                  </button>
+                ))}
+              </div>
+            </Card>
+
+            <Card icon={<Globe className="h-4 w-4 text-[#66d9ff]" />} title="Homepage" subtitle="Loaded when the browser opens.">
+              <input value={settings.homepage} onChange={(e) => updateSettings({ homepage: e.target.value })}
+                placeholder="https://www.google.com"
+                className="w-full px-3 py-2 rounded-lg bg-black/40 ring-1 ring-white/10 outline-none text-xs font-mono focus:ring-[#66d9ff]/40" />
+            </Card>
+
+            <Card icon={<Monitor className="h-4 w-4 text-[#66d9ff]" />} title="New Tab" subtitle="What a new tab shows.">
+              <div className="flex items-center gap-2 flex-wrap">
+                {([
+                  { id: "ghost", label: "Ghost Start Page" },
+                  { id: "homepage", label: "Homepage" },
+                  { id: "blank", label: "Blank" },
+                ] as const).map((n) => (
+                  <button key={n.id} onClick={() => updateSettings({ newTab: n.id })}
+                    className={`px-3 py-1.5 rounded-full text-xs ring-1 transition ${
+                      settings.newTab === n.id ? "ring-[#66d9ff]/60 bg-[#66d9ff]/15 text-white" : "ring-white/10 text-white/55 hover:bg-white/5"
+                    }`}>{n.label}</button>
+                ))}
+              </div>
             </Card>
           </div>
         )}

@@ -9,7 +9,7 @@ import { GhostLogo } from "./GhostLogo";
 const LS_RECENT = "ghost.recentApps.v1";
 
 export function AppLauncher() {
-  const { showLauncher, toggleLauncher, openApp, setLocked } = useGhost();
+  const { showLauncher, toggleLauncher, openApp, setLocked, installedApps } = useGhost();
   const [q, setQ] = useState("");
   const [showAll, setShowAll] = useState(false);
   const [recent, setRecent] = useState<string[]>(() => {
@@ -37,8 +37,10 @@ export function AppLauncher() {
 
   const searching = q.trim().length > 0;
   const filtered = useMemo(
-    () => APPS.filter((a) => a.name.toLowerCase().includes(q.toLowerCase()) || a.description.toLowerCase().includes(q.toLowerCase())),
-    [q]
+    () => APPS
+      .filter((a) => !a.installable || installedApps[a.id])
+      .filter((a) => a.name.toLowerCase().includes(q.toLowerCase()) || a.description.toLowerCase().includes(q.toLowerCase())),
+    [q, installedApps]
   );
   const pinned = showAll || searching ? filtered : filtered.slice(0, 12);
   const recentApps = recent.map((id) => APPS.find((a) => a.id === id)).filter(Boolean).slice(0, 4) as typeof APPS;
