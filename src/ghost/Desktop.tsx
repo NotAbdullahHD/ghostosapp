@@ -58,8 +58,8 @@ const APP_RENDER: Record<AppId, () => React.ReactElement> = {
 function AppLoading() {
   return (
     <div className="h-full w-full flex items-center justify-center">
-      <div className="flex items-center gap-3 text-[10px] font-mono tracking-[0.35em] text-fuchsia-200/70">
-        <span className="h-2 w-2 rounded-full bg-fuchsia-400 animate-ghost-pulse" />
+      <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.3em] text-white/35">
+        <span className="h-2 w-2 rounded-full bg-[var(--ice)] animate-ghost-pulse" />
         LOADING
       </div>
     </div>
