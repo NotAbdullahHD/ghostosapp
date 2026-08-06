@@ -122,6 +122,7 @@ export function Desktop() {
             <NotificationCenter />
             <Dock />
             <SystemTray />
+            <NowPlayingWidget />
           </motion.div>
         )}
       </AnimatePresence>
