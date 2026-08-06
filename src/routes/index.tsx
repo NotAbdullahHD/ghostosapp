@@ -3,6 +3,7 @@ import { AnimatePresence } from "framer-motion";
 import { GhostProvider, useGhost } from "@/ghost/store";
 import { BootScreen } from "@/ghost/BootScreen";
 import { Desktop } from "@/ghost/Desktop";
+import { MusicProvider } from "@/ghost/music";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -39,7 +40,9 @@ function Shell() {
 function Index() {
   return (
     <GhostProvider>
-      <Shell />
+      <MusicProvider>
+        <Shell />
+      </MusicProvider>
     </GhostProvider>
   );
 }
