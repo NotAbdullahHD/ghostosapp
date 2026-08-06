@@ -1,307 +1,259 @@
 import { useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Play, Pause, SkipBack, SkipForward, Heart, Shuffle, Repeat, Volume2,
-  Search, Home, Compass, Library, Radio, ListMusic, Mic2, Music2, Plus, MoreHorizontal,
+  Search, Home, Compass, Library, Radio, ListMusic, Plus, MoreHorizontal, Music2,
 } from "lucide-react";
-
-interface Track { id: string; t: string; a: string; album: string; d: string; c: string; }
-
-const TRACKS: Track[] = [
-  { id: "1", t: "Spectral Dawn",   a: "VOID//KIN",      album: "Ghost Signals",  d: "3:42", c: "from-fuchsia-600 to-violet-900" },
-  { id: "2", t: "Neon Veins",      a: "Kuroshio",       album: "Deep Current",   d: "4:11", c: "from-cyan-500 to-blue-900" },
-  { id: "3", t: "Hollow Circuit",  a: "Ghost Atlas",    album: "Static Empire",  d: "5:02", c: "from-emerald-500 to-teal-900" },
-  { id: "4", t: "Midnight Matrix", a: "Static Empress", album: "Static Empire",  d: "3:28", c: "from-rose-500 to-fuchsia-900" },
-  { id: "5", t: "Echo Garden",     a: "Pale Signal",    album: "Chapel of Air",  d: "6:14", c: "from-amber-500 to-orange-900" },
-  { id: "6", t: "Pulse 808",       a: "DJ Specter",     album: "Nightclub Ghosts", d: "2:55", c: "from-indigo-500 to-purple-900" },
-  { id: "7", t: "Cassette Dream",  a: "Halo Machine",   album: "Analog Youth",   d: "4:33", c: "from-pink-500 to-fuchsia-800" },
-  { id: "8", t: "Lonely Satellite",a: "VOID//KIN",      album: "Ghost Signals",  d: "3:19", c: "from-violet-500 to-indigo-800" },
-];
-
-const ALBUMS = [
-  { id: "a1", name: "Ghost Signals",  artist: "VOID//KIN",     year: 2025, c: "from-fuchsia-500 to-violet-900" },
-  { id: "a2", name: "Deep Current",   artist: "Kuroshio",      year: 2024, c: "from-cyan-500 to-blue-900" },
-  { id: "a3", name: "Static Empire",  artist: "Ghost Atlas",   year: 2024, c: "from-emerald-500 to-teal-900" },
-  { id: "a4", name: "Chapel of Air",  artist: "Pale Signal",   year: 2023, c: "from-amber-500 to-orange-900" },
-  { id: "a5", name: "Analog Youth",   artist: "Halo Machine",  year: 2025, c: "from-pink-500 to-fuchsia-800" },
-  { id: "a6", name: "Nightclub Ghosts", artist: "DJ Specter",  year: 2022, c: "from-indigo-500 to-purple-900" },
-];
-
-const PLAYLISTS = ["Late Night Drive", "Cyber Lo-Fi", "Neon Workouts", "Study Ghosts", "Rain & Static"];
+import { ALBUMS, PLAYLISTS, TRACKS, fmtTime, useMusic, type Track } from "../music";
 
 type Tab = "home" | "browse" | "library" | "search" | "radio";
 
+/** Ghost Music — native GhostOS music client (Obsidian design language). */
 export function MusicApp() {
   const [tab, setTab] = useState<Tab>("home");
   const [q, setQ] = useState("");
-  const [playing, setPlaying] = useState(true);
-  const [active, setActive] = useState(0);
   const [showQueue, setShowQueue] = useState(false);
-  const [showLyrics, setShowLyrics] = useState(false);
-  const [liked, setLiked] = useState<Record<string, boolean>>({});
-  const [volume, setVolume] = useState(70);
-
-  const cur = TRACKS[active];
+  const m = useMusic();
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return TRACKS;
-    return TRACKS.filter((t) => t.t.toLowerCase().includes(s) || t.a.toLowerCase().includes(s) || t.album.toLowerCase().includes(s));
+    return TRACKS.filter((t) =>
+      t.title.toLowerCase().includes(s) || t.artist.toLowerCase().includes(s) || t.album.toLowerCase().includes(s));
   }, [q]);
 
-  const play = (i: number) => { setActive(i); setPlaying(true); };
-
   return (
-    <div className="h-full flex flex-col bg-black text-white">
-      <div className="flex-1 flex min-h-0">
+    <div className="flex h-full flex-col bg-[#0b0b0d] text-white/90">
+      <div className="flex min-h-0 flex-1">
         {/* Sidebar */}
-        <div className="w-56 border-r border-white/5 flex flex-col">
-          <div className="p-4 flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg gradient-neon flex items-center justify-center shadow-lg shadow-fuchsia-500/30">
-              <Music2 className="h-4 w-4" />
+        <aside className="flex w-52 flex-col border-r border-white/[0.07] bg-[#101012]">
+          <div className="flex items-center gap-2.5 px-4 py-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--ice)]/15 ring-1 ring-[var(--ice)]/30">
+              <Music2 className="h-4 w-4 text-[var(--ice)]" />
             </div>
             <div>
-              <div className="text-sm font-bold">Monochrome</div>
-              <div className="text-[9px] font-mono tracking-widest text-fuchsia-300/70">GHOSTOS · MUSIC</div>
+              <div className="text-[13px] font-semibold tracking-tight">Ghost Music</div>
+              <div className="text-[10px] text-white/35">Library</div>
             </div>
           </div>
 
-          <nav className="px-2 space-y-0.5">
-            {[
-              { k: "home",    l: "Home",       i: <Home className="h-3.5 w-3.5" /> },
-              { k: "browse",  l: "Browse",     i: <Compass className="h-3.5 w-3.5" /> },
-              { k: "library", l: "Library",    i: <Library className="h-3.5 w-3.5" /> },
-              { k: "radio",   l: "Radio",      i: <Radio className="h-3.5 w-3.5" /> },
-              { k: "search",  l: "Search",     i: <Search className="h-3.5 w-3.5" /> },
-            ].map((it) => (
-              <button key={it.k} onClick={() => setTab(it.k as Tab)}
-                className={`w-full flex items-center gap-2 text-left px-3 py-1.5 rounded-lg text-xs transition ${
-                  tab === it.k ? "bg-white/8 text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
-                }`}>
+          <nav className="space-y-0.5 px-2">
+            {([
+              { k: "home", l: "Home", i: <Home className="h-3.5 w-3.5" /> },
+              { k: "browse", l: "Browse", i: <Compass className="h-3.5 w-3.5" /> },
+              { k: "library", l: "Library", i: <Library className="h-3.5 w-3.5" /> },
+              { k: "radio", l: "Radio", i: <Radio className="h-3.5 w-3.5" /> },
+              { k: "search", l: "Search", i: <Search className="h-3.5 w-3.5" /> },
+            ] as const).map((it) => (
+              <button
+                key={it.k}
+                onClick={() => setTab(it.k)}
+                className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[12px] transition ${
+                  tab === it.k
+                    ? "bg-white/[0.07] text-white ring-1 ring-white/10"
+                    : "text-white/50 hover:bg-white/[0.04] hover:text-white/90"
+                }`}
+              >
                 {it.i}{it.l}
               </button>
             ))}
           </nav>
 
-          <div className="px-4 mt-5">
-            <div className="text-[10px] font-mono tracking-widest text-white/40 mb-1 flex items-center justify-between">
-              PLAYLISTS <button className="text-white/40 hover:text-white"><Plus className="h-3 w-3" /></button>
+          <div className="mt-6 px-4">
+            <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-white/30">
+              Playlists
+              <button className="text-white/30 transition hover:text-white/70"><Plus className="h-3 w-3" /></button>
             </div>
             <div className="space-y-0.5">
               {PLAYLISTS.map((p) => (
-                <button key={p} className="w-full flex items-center gap-2 text-left px-2 py-1 rounded text-[11px] text-white/60 hover:bg-white/5 hover:text-white transition">
+                <button key={p} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[11.5px] text-white/45 transition hover:bg-white/[0.04] hover:text-white/90">
                   <ListMusic className="h-3 w-3 opacity-60" />
                   <span className="truncate">{p}</span>
                 </button>
               ))}
             </div>
           </div>
-        </div>
+        </aside>
 
         {/* Main */}
-        <div className="flex-1 min-w-0 flex flex-col relative overflow-hidden">
-          {/* Ambient hue derived from current track */}
-          <div className={`absolute inset-0 opacity-40 pointer-events-none bg-gradient-to-br ${cur.c}`} style={{ filter: "blur(90px)" }} />
-          <div className="relative flex-1 min-h-0 overflow-y-auto scrollbar-hide">
-            {tab === "search" && (
+        <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="relative min-h-0 flex-1 overflow-y-auto scrollbar-hide">
+            {tab === "search" ? (
               <div className="p-6">
-                <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/5 ring-1 ring-white/10 max-w-md">
-                  <Search className="h-3.5 w-3.5 text-white/50" />
-                  <input value={q} onChange={(e) => setQ(e.target.value)} autoFocus
+                <div className="flex max-w-md items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5">
+                  <Search className="h-3.5 w-3.5 text-white/40" />
+                  <input
+                    value={q} onChange={(e) => setQ(e.target.value)} autoFocus
                     placeholder="Search tracks, artists, albums"
-                    className="bg-transparent outline-none text-xs flex-1 placeholder:text-white/30" />
+                    className="flex-1 bg-transparent text-[12.5px] outline-none placeholder:text-white/25"
+                  />
                 </div>
-                <TrackList tracks={filtered} activeId={cur.id} playing={playing} liked={liked} onToggleLike={(id) => setLiked((s) => ({ ...s, [id]: !s[id] }))} onPlay={(i) => play(TRACKS.findIndex((t) => t.id === filtered[i].id))} />
+                <div className="mt-5">
+                  <TrackList tracks={filtered} />
+                </div>
               </div>
-            )}
-
-            {tab !== "search" && (
+            ) : (
               <div className="p-6">
-                <div className="text-[10px] tracking-[0.4em] text-emerald-300/70 font-mono">
-                  {tab === "library" ? "YOUR LIBRARY" : tab === "radio" ? "GHOST RADIO" : tab === "browse" ? "BROWSE" : "FEATURED · TONIGHT"}
+                <div className="text-[10px] uppercase tracking-[0.24em] text-[var(--ice)]/70">
+                  {tab === "library" ? "Your library" : tab === "radio" ? "Ghost radio" : tab === "browse" ? "Browse" : "Featured"}
                 </div>
-                <h1 className="text-3xl font-bold mt-1">
+                <h1 className="mt-1.5 text-[26px] font-semibold tracking-tight text-white">
                   {tab === "library" ? "Everything you love"
                     : tab === "radio" ? "Stations for the mood"
                     : tab === "browse" ? "New this week"
-                    : "Tonight's Frequency"}
+                    : "Tonight's frequency"}
                 </h1>
 
-                {/* Recently Played */}
-                <div className="mt-6">
-                  <SectionTitle title="Recently Played" />
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <Section title="Recently played">
+                  <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
                     {TRACKS.slice(0, 6).map((t, i) => (
-                      <motion.button key={t.id} whileHover={{ y: -2 }} onClick={() => play(i)}
-                        className="flex items-center gap-3 rounded-xl bg-white/5 ring-1 ring-white/10 p-2 hover:bg-white/10 transition text-left">
-                        <div className={`h-11 w-11 rounded-md bg-gradient-to-br ${t.c} shadow-lg`} />
+                      <button
+                        key={t.id} onClick={() => m.playIndex(i)}
+                        className="group flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.03] p-2 text-left transition hover:border-white/15 hover:bg-white/[0.06]"
+                      >
+                        <div className={`h-11 w-11 rounded-lg bg-gradient-to-br ${t.art}`} />
                         <div className="min-w-0 flex-1">
-                          <div className="text-xs font-bold truncate">{t.t}</div>
-                          <div className="text-[10px] font-mono text-white/50 truncate">{t.a}</div>
+                          <div className="truncate text-[12px] font-medium">{t.title}</div>
+                          <div className="truncate text-[10.5px] text-white/40">{t.artist}</div>
                         </div>
-                        <button onClick={(e) => { e.stopPropagation(); play(i); }}
-                          className="h-8 w-8 rounded-full bg-fuchsia-500 text-white flex items-center justify-center hover:scale-105 transition shadow-lg shadow-fuchsia-500/40">
-                          <Play className="h-3.5 w-3.5 fill-white" />
-                        </button>
-                      </motion.button>
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-black opacity-0 transition group-hover:opacity-100">
+                          <Play className="h-3.5 w-3.5 fill-black" />
+                        </span>
+                      </button>
                     ))}
                   </div>
-                </div>
+                </Section>
 
-                {/* Albums */}
-                <div className="mt-8">
-                  <SectionTitle title="Albums" />
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <Section title="Albums">
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
                     {ALBUMS.map((a) => (
-                      <motion.div key={a.id} whileHover={{ y: -4, scale: 1.02 }}
-                        className="rounded-xl overflow-hidden ring-1 ring-white/10 bg-black/30 group">
-                        <div className={`aspect-square bg-gradient-to-br ${a.c} relative`}>
-                          <div className="absolute inset-0 opacity-30 mix-blend-overlay"
-                               style={{ backgroundImage: "radial-gradient(circle at 30% 30%, white, transparent 60%)" }} />
-                          <button className="absolute bottom-3 right-3 h-11 w-11 rounded-full bg-emerald-400 text-black flex items-center justify-center shadow-xl shadow-emerald-500/40 opacity-0 group-hover:opacity-100 transition">
-                            <Play className="h-5 w-5 fill-black" />
+                      <motion.div
+                        key={a.id} whileHover={{ y: -3 }}
+                        className="group overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.02]"
+                      >
+                        <div className={`relative aspect-square bg-gradient-to-br ${a.art}`}>
+                          <button className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-black opacity-0 shadow-lg transition group-hover:opacity-100">
+                            <Play className="h-4 w-4 fill-black" />
                           </button>
                         </div>
                         <div className="p-3">
-                          <div className="text-sm font-bold truncate">{a.name}</div>
-                          <div className="text-[10px] font-mono text-white/50 truncate">{a.artist} · {a.year}</div>
+                          <div className="truncate text-[12.5px] font-medium">{a.name}</div>
+                          <div className="truncate text-[10.5px] text-white/40">{a.artist} · {a.year}</div>
                         </div>
                       </motion.div>
                     ))}
                   </div>
-                </div>
+                </Section>
 
-                {/* Artists */}
-                <div className="mt-8">
-                  <SectionTitle title="Artists" />
-                  <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-                    {Array.from(new Set(TRACKS.map((t) => t.a))).map((name, i) => (
-                      <div key={name} className="flex-shrink-0 w-28 text-center">
-                        <div className={`h-28 w-28 rounded-full bg-gradient-to-br ${TRACKS[i % TRACKS.length].c} shadow-xl ring-1 ring-white/10`} />
-                        <div className="text-xs font-bold mt-2 truncate">{name}</div>
-                        <div className="text-[10px] font-mono text-white/40">Artist</div>
+                <Section title="Artists">
+                  <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
+                    {Array.from(new Set(TRACKS.map((t) => t.artist))).map((name, i) => (
+                      <div key={name} className="w-24 flex-shrink-0 text-center">
+                        <div className={`h-24 w-24 rounded-full bg-gradient-to-br ${TRACKS[i % TRACKS.length].art} ring-1 ring-white/10`} />
+                        <div className="mt-2 truncate text-[12px] font-medium">{name}</div>
+                        <div className="text-[10px] text-white/30">Artist</div>
                       </div>
                     ))}
                   </div>
-                </div>
+                </Section>
 
-                {/* Track list */}
-                <div className="mt-8">
-                  <SectionTitle title="Library" />
-                  <TrackList tracks={TRACKS} activeId={cur.id} playing={playing} liked={liked} onToggleLike={(id) => setLiked((s) => ({ ...s, [id]: !s[id] }))} onPlay={play} />
-                </div>
+                <Section title="All tracks">
+                  <TrackList tracks={TRACKS} />
+                </Section>
               </div>
             )}
           </div>
-        </div>
+        </main>
 
-        {/* Right panel: queue / lyrics */}
-        <AnimatePresence>
-          {(showQueue || showLyrics) && (
-            <motion.div
-              initial={{ width: 0, opacity: 0 }} animate={{ width: 288, opacity: 1 }} exit={{ width: 0, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 320, damping: 32 }}
-              className="border-l border-white/5 overflow-hidden flex-shrink-0">
-              <div className="w-72 h-full flex flex-col">
-                <div className="flex border-b border-white/5">
-                  <button onClick={() => { setShowQueue(true); setShowLyrics(false); }}
-                    className={`flex-1 py-2 text-[10px] font-mono tracking-widest ${showQueue ? "text-white bg-white/5" : "text-white/50"}`}>QUEUE</button>
-                  <button onClick={() => { setShowLyrics(true); setShowQueue(false); }}
-                    className={`flex-1 py-2 text-[10px] font-mono tracking-widest ${showLyrics ? "text-white bg-white/5" : "text-white/50"}`}>LYRICS</button>
-                </div>
-                <div className="flex-1 overflow-y-auto scrollbar-hide p-3">
-                  {showQueue && (
-                    <div className="space-y-1.5">
-                      {TRACKS.map((t, i) => (
-                        <button key={t.id} onClick={() => play(i)}
-                          className={`w-full flex items-center gap-2 rounded-lg p-2 text-left transition ${
-                            i === active ? "bg-fuchsia-500/15 ring-1 ring-fuchsia-400/30" : "hover:bg-white/5"
-                          }`}>
-                          <div className={`h-8 w-8 rounded bg-gradient-to-br ${t.c}`} />
-                          <div className="min-w-0 flex-1">
-                            <div className="text-xs font-bold truncate">{t.t}</div>
-                            <div className="text-[10px] font-mono text-white/50 truncate">{t.a}</div>
-                          </div>
-                          <div className="text-[10px] font-mono text-white/40">{t.d}</div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {showLyrics && (
-                    <div className="text-sm font-mono text-white/70 leading-relaxed space-y-3">
-                      <p className="text-white text-base font-bold">{cur.t}</p>
-                      <p className="text-white/40 italic">— lyrics soon —</p>
-                      <p>Static in the sky tonight,</p>
-                      <p>City breathing neon light.</p>
-                      <p>Chase the pulse, we never sleep,</p>
-                      <p>Ghosts we made, ours to keep.</p>
-                      <p className="text-white/40 italic mt-4">Lyric sync will arrive in a future GhostOS update.</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Queue */}
+        {showQueue && (
+          <aside className="w-64 flex-shrink-0 overflow-y-auto scrollbar-hide border-l border-white/[0.07] bg-[#101012] p-3">
+            <div className="mb-2 px-1 text-[10px] uppercase tracking-[0.18em] text-white/30">Queue</div>
+            <div className="space-y-1">
+              {TRACKS.map((t, i) => (
+                <button
+                  key={t.id} onClick={() => m.playIndex(i)}
+                  className={`flex w-full items-center gap-2 rounded-lg p-2 text-left transition ${
+                    i === m.index ? "bg-[var(--ice)]/10 ring-1 ring-[var(--ice)]/25" : "hover:bg-white/[0.05]"
+                  }`}
+                >
+                  <div className={`h-8 w-8 rounded-md bg-gradient-to-br ${t.art}`} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[11.5px] font-medium">{t.title}</div>
+                    <div className="truncate text-[10px] text-white/40">{t.artist}</div>
+                  </div>
+                  <div className="text-[10px] tabular-nums text-white/30">{fmtTime(t.duration)}</div>
+                </button>
+              ))}
+            </div>
+          </aside>
+        )}
       </div>
 
-      {/* Now Playing bar */}
-      <div className="border-t border-white/5 relative"
-           style={{
-             background: "linear-gradient(180deg, rgba(0,0,0,.5), rgba(0,0,0,.85))",
-             backdropFilter: "blur(30px)",
-             WebkitBackdropFilter: "blur(30px)",
-           }}>
+      {/* Transport bar */}
+      <div className="border-t border-white/[0.07] bg-[#0e0e10]">
         <div className="flex items-center gap-4 px-4 py-3">
-          {/* Now playing */}
-          <div className="flex items-center gap-3 w-64 min-w-0">
-            <motion.div layout className={`h-12 w-12 rounded-md bg-gradient-to-br ${cur.c} ring-1 ring-white/15 shadow-lg`} />
-            <div className="min-w-0">
-              <div className="text-xs font-bold truncate">{cur.t}</div>
-              <div className="text-[10px] text-white/50 font-mono truncate">{cur.a} · {cur.album}</div>
-            </div>
-            <button onClick={() => setLiked((s) => ({ ...s, [cur.id]: !s[cur.id] }))}
-              className={`transition ${liked[cur.id] ? "text-rose-400" : "text-white/50 hover:text-rose-400"}`}>
-              <Heart className={`h-4 w-4 ${liked[cur.id] ? "fill-rose-400" : ""}`} />
-            </button>
+          <div className="flex w-60 min-w-0 items-center gap-3">
+            {m.track ? (
+              <>
+                <div className={`h-11 w-11 rounded-lg bg-gradient-to-br ${m.track.art} ring-1 ring-white/10`} />
+                <div className="min-w-0">
+                  <div className="truncate text-[12px] font-medium">{m.track.title}</div>
+                  <div className="truncate text-[10.5px] text-white/40">{m.track.artist} · {m.track.album}</div>
+                </div>
+                <button
+                  onClick={() => m.toggleLike(m.track!.id)}
+                  className={`transition ${m.liked[m.track.id] ? "text-[var(--ice)]" : "text-white/35 hover:text-white/80"}`}
+                >
+                  <Heart className={`h-4 w-4 ${m.liked[m.track.id] ? "fill-current" : ""}`} />
+                </button>
+              </>
+            ) : (
+              <div className="text-[11.5px] text-white/30">Nothing playing</div>
+            )}
           </div>
 
-          {/* Transport */}
-          <div className="flex-1 flex flex-col items-center gap-1">
-            <div className="flex items-center gap-4 text-white/70">
-              <Shuffle className="h-3.5 w-3.5 hover:text-white cursor-pointer" />
-              <button onClick={() => play((active - 1 + TRACKS.length) % TRACKS.length)}><SkipBack className="h-4 w-4 hover:text-white" /></button>
-              <button onClick={() => setPlaying((p) => !p)}
-                className="h-9 w-9 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition shadow-lg shadow-white/20">
-                {playing ? <Pause className="h-4 w-4 fill-black" /> : <Play className="h-4 w-4 fill-black" />}
+          <div className="flex flex-1 flex-col items-center gap-1.5">
+            <div className="flex items-center gap-5 text-white/55">
+              <button onClick={() => m.setShuffle(!m.shuffle)} className={m.shuffle ? "text-[var(--ice)]" : "hover:text-white"}>
+                <Shuffle className="h-3.5 w-3.5" />
               </button>
-              <button onClick={() => play((active + 1) % TRACKS.length)}><SkipForward className="h-4 w-4 hover:text-white" /></button>
-              <Repeat className="h-3.5 w-3.5 hover:text-white cursor-pointer" />
+              <button onClick={m.prev} className="hover:text-white"><SkipBack className="h-4 w-4" /></button>
+              <button
+                onClick={() => (m.track ? m.toggle() : m.playIndex(0))}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-black transition hover:scale-105"
+              >
+                {m.playing ? <Pause className="h-4 w-4 fill-black" /> : <Play className="h-4 w-4 fill-black" />}
+              </button>
+              <button onClick={m.next} className="hover:text-white"><SkipForward className="h-4 w-4" /></button>
+              <button onClick={() => m.setRepeat(!m.repeat)} className={m.repeat ? "text-[var(--ice)]" : "hover:text-white"}>
+                <Repeat className="h-3.5 w-3.5" />
+              </button>
             </div>
-            <div className="w-full max-w-md flex items-center gap-2 text-[10px] font-mono text-white/40">
-              <span className="tabular-nums">1:24</span>
-              <div className="flex-1 h-1 rounded-full bg-white/10 overflow-hidden">
-                <motion.div animate={{ width: playing ? ["33%", "100%"] : "33%" }}
-                  transition={{ duration: 180, ease: "linear", repeat: playing ? Infinity : 0 }}
-                  className="h-full bg-gradient-to-r from-fuchsia-400 to-violet-500" />
-              </div>
-              <span className="tabular-nums">{cur.d}</span>
+            <div className="flex w-full max-w-md items-center gap-2 text-[10px] tabular-nums text-white/35">
+              <span>{fmtTime(m.position)}</span>
+              <input
+                type="range" min={0} max={m.track?.duration ?? 100} value={m.position}
+                onChange={(e) => m.seek(Number(e.target.value))}
+                className="h-1 flex-1 accent-[var(--ice)]"
+              />
+              <span>{m.track ? fmtTime(m.track.duration) : "0:00"}</span>
             </div>
           </div>
 
-          {/* Right */}
-          <div className="w-64 flex items-center justify-end gap-3 text-white/60">
-            <button onClick={() => { setShowLyrics(false); setShowQueue((s) => !s); }}
-              className={`h-8 w-8 rounded-md flex items-center justify-center transition ${showQueue ? "bg-white/10 text-white" : "hover:text-white"}`}>
+          <div className="flex w-60 items-center justify-end gap-3 text-white/50">
+            <button
+              onClick={() => setShowQueue((s) => !s)}
+              className={`flex h-8 w-8 items-center justify-center rounded-lg transition ${showQueue ? "bg-white/10 text-white" : "hover:text-white"}`}
+            >
               <ListMusic className="h-4 w-4" />
             </button>
-            <button onClick={() => { setShowQueue(false); setShowLyrics((s) => !s); }}
-              className={`h-8 w-8 rounded-md flex items-center justify-center transition ${showLyrics ? "bg-white/10 text-white" : "hover:text-white"}`}>
-              <Mic2 className="h-4 w-4" />
-            </button>
             <Volume2 className="h-4 w-4" />
-            <input type="range" min={0} max={100} value={volume} onChange={(e) => setVolume(Number(e.target.value))}
-              className="w-24 accent-fuchsia-500" />
+            <input
+              type="range" min={0} max={100} value={m.volume}
+              onChange={(e) => m.setVolume(Number(e.target.value))}
+              className="h-1 w-24 accent-[var(--ice)]"
+            />
           </div>
         </div>
       </div>
@@ -309,46 +261,51 @@ export function MusicApp() {
   );
 }
 
-function SectionTitle({ title }: { title: string }) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between mb-3">
-      <h2 className="text-lg font-bold">{title}</h2>
-      <button className="text-[10px] font-mono tracking-widest text-white/40 hover:text-white">SEE ALL</button>
-    </div>
+    <section className="mt-8">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-[15px] font-semibold tracking-tight text-white/90">{title}</h2>
+        <button className="text-[10px] uppercase tracking-[0.18em] text-white/30 transition hover:text-white/70">See all</button>
+      </div>
+      {children}
+    </section>
   );
 }
 
-function TrackList({ tracks, activeId, playing, liked, onToggleLike, onPlay }: {
-  tracks: Track[]; activeId: string; playing: boolean; liked: Record<string, boolean>;
-  onToggleLike: (id: string) => void; onPlay: (i: number) => void;
-}) {
+function TrackList({ tracks }: { tracks: Track[] }) {
+  const m = useMusic();
   return (
-    <div className="rounded-2xl overflow-hidden ring-1 ring-white/5">
-      {tracks.map((t, i) => {
-        const isActive = t.id === activeId;
+    <div className="overflow-hidden rounded-xl border border-white/[0.07]">
+      {tracks.map((t) => {
+        const isActive = m.track?.id === t.id;
         return (
-          <div key={t.id}
-            className={`group flex items-center gap-3 px-3 py-2 border-b border-white/5 last:border-0 transition ${
-              isActive ? "bg-fuchsia-500/10" : "hover:bg-white/5"
-            }`}>
-            <button onClick={() => onPlay(i)}
-              className="h-8 w-8 rounded-md flex items-center justify-center text-white/70 group-hover:text-white">
-              {isActive && playing
-                ? <Pause className="h-3.5 w-3.5" />
-                : <Play className="h-3.5 w-3.5 fill-current" />}
+          <div
+            key={t.id}
+            className={`group flex items-center gap-3 border-b border-white/[0.05] px-3 py-2 transition last:border-0 ${
+              isActive ? "bg-[var(--ice)]/[0.07]" : "hover:bg-white/[0.04]"
+            }`}
+          >
+            <button
+              onClick={() => m.playTrack(t.id)}
+              className="flex h-8 w-8 items-center justify-center rounded-md text-white/55 transition group-hover:text-white"
+            >
+              {isActive && m.playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 fill-current" />}
             </button>
-            <div className={`h-8 w-8 rounded bg-gradient-to-br ${t.c} flex-shrink-0`} />
+            <div className={`h-8 w-8 flex-shrink-0 rounded-md bg-gradient-to-br ${t.art}`} />
             <div className="min-w-0 flex-1">
-              <div className={`text-xs font-bold truncate ${isActive ? "text-fuchsia-200" : ""}`}>{t.t}</div>
-              <div className="text-[10px] font-mono text-white/50 truncate">{t.a}</div>
+              <div className={`truncate text-[12px] font-medium ${isActive ? "text-[var(--ice)]" : ""}`}>{t.title}</div>
+              <div className="truncate text-[10.5px] text-white/40">{t.artist}</div>
             </div>
-            <div className="hidden md:block text-[10px] font-mono text-white/40 w-32 truncate">{t.album}</div>
-            <button onClick={() => onToggleLike(t.id)}
-              className={`opacity-0 group-hover:opacity-100 transition ${liked[t.id] ? "text-rose-400 opacity-100" : "text-white/50 hover:text-rose-400"}`}>
-              <Heart className={`h-3.5 w-3.5 ${liked[t.id] ? "fill-rose-400" : ""}`} />
+            <div className="hidden w-32 truncate text-[10.5px] text-white/30 md:block">{t.album}</div>
+            <button
+              onClick={() => m.toggleLike(t.id)}
+              className={`transition ${m.liked[t.id] ? "text-[var(--ice)]" : "text-white/30 opacity-0 hover:text-white group-hover:opacity-100"}`}
+            >
+              <Heart className={`h-3.5 w-3.5 ${m.liked[t.id] ? "fill-current" : ""}`} />
             </button>
-            <div className="text-[10px] font-mono text-white/40 tabular-nums w-10 text-right">{t.d}</div>
-            <button className="text-white/40 opacity-0 group-hover:opacity-100 transition hover:text-white">
+            <div className="w-10 text-right text-[10.5px] tabular-nums text-white/30">{fmtTime(t.duration)}</div>
+            <button className="text-white/30 opacity-0 transition hover:text-white group-hover:opacity-100">
               <MoreHorizontal className="h-3.5 w-3.5" />
             </button>
           </div>
