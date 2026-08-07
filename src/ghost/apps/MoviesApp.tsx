@@ -525,6 +525,9 @@ function GhostFlixPlayer({ movie, onExit }: { movie: OmdbMovie; onExit: () => vo
               onRetry={retryFromStart}
               onBack={onExit}
               onSettings={() => setShowSettings(true)}
+              onReload={reloadCurrent}
+              url={stream?.url}
+
             />
           )}
         </AnimatePresence>
