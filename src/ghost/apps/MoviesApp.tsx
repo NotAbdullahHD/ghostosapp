@@ -617,10 +617,11 @@ function StageOverlay({
 }
 
 function ErrorOverlay({
-  title, message, onRetry, onBack, onSettings,
+  title, message, onRetry, onBack, onSettings, onReload, url,
 }: {
   title: string; message: string;
   onRetry: () => void; onBack: () => void; onSettings: () => void;
+  onReload: () => void; url?: string;
 }) {
   return (
     <motion.div
@@ -635,19 +636,28 @@ function ErrorOverlay({
         <h3 className="mt-1 text-xl font-black tracking-wide text-white">{title}</h3>
         <p className="mt-3 text-sm text-white/70 leading-relaxed">{message}</p>
         <p className="mt-2 text-xs text-white/40">Please try again later, or switch playback provider in Settings.</p>
-        <div className="mt-5 grid grid-cols-3 gap-2">
+        <div className="mt-5 grid grid-cols-2 gap-2">
           <button onClick={onRetry} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-gradient-to-r from-red-500 to-rose-700 text-white text-xs font-bold tracking-wider hover:brightness-110 transition">
             <RefreshCw className="h-3.5 w-3.5" /> RETRY
           </button>
+          <button onClick={onReload} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/5 ring-1 ring-white/15 text-white text-xs font-bold tracking-wider hover:bg-white/10 transition">
+            <RotateCw className="h-3.5 w-3.5" /> RELOAD SOURCE
+          </button>
+          {url && (
+            <button onClick={() => window.open(url, "_blank", "noopener,noreferrer")} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/5 ring-1 ring-white/15 text-white text-xs font-bold tracking-wider hover:bg-white/10 transition">
+              <Maximize2 className="h-3.5 w-3.5" /> NEW TAB
+            </button>
+          )}
           <button onClick={onSettings} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/5 ring-1 ring-white/15 text-white text-xs font-bold tracking-wider hover:bg-white/10 transition">
             <SettingsIcon className="h-3.5 w-3.5" /> PROVIDERS
           </button>
-          <button onClick={onBack} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/5 ring-1 ring-white/15 text-white/80 text-xs font-bold tracking-wider hover:bg-white/10 transition">
-            <ArrowLeft className="h-3.5 w-3.5" /> BACK
+          <button onClick={onBack} className="col-span-2 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/5 ring-1 ring-white/15 text-white/80 text-xs font-bold tracking-wider hover:bg-white/10 transition">
+            <ArrowLeft className="h-3.5 w-3.5" /> BACK TO DESKTOP
           </button>
         </div>
       </div>
     </motion.div>
+
   );
 }
 
