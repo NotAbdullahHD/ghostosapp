@@ -9,6 +9,15 @@
 // The player asks the current provider for a URL. If the provider rejects
 // with `fallback: true`, the player automatically walks to the next enabled
 // provider. If none succeed, a clean GhostOS error screen is shown.
+//
+// Audit notes (verified against the live endpoints):
+//  - Every host below responds 200 with a real player document and sends NO
+//    X-Frame-Options / frame-ancestors header, so embedding is permitted.
+//  - These players refuse to run inside a sandboxed frame (they need their own
+//    origin for storage + the HLS worker). Providers therefore declare
+//    `unsandboxed: true`; the frame is still cross-origin, so it cannot reach
+//    GhostOS' DOM, cookies or storage.
+//  - vidsrc.xyz / embed.su / moviesapi.club no longer resolve and were removed.
 
 import { proxify } from "../proxy";
 
@@ -23,6 +32,8 @@ export interface PlaybackResolved {
   url: string;
   /** Iframe sandbox override — optional. */
   sandbox?: string;
+  /** Drop the sandbox attribute entirely (provider requires its own origin). */
+  unsandboxed?: boolean;
   /** Iframe allow override — optional. */
   allow?: string;
   /** Per-provider load timeout (ms). */
@@ -44,8 +55,26 @@ export interface PlaybackProvider {
   resolve(req: PlaybackRequest): Promise<PlaybackResult>;
 }
 
+const IMDB_RE = /^tt\d{6,}$/;
+
+/** Rejects malformed IDs before we ever build a URL (kills "Invalid URL string"). */
+function validImdb(id: string | undefined | null): string | null {
+  const clean = (id ?? "").trim();
+  return IMDB_RE.test(clean) ? clean : null;
+}
+
+/** Final sanity check — never hand a malformed string to an iframe. */
+function safeUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" ? u.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 // ---------------------------------------------------------------------------
-// TMDB lookup (needed for providers that only accept TMDB IDs, e.g. toustream).
+// TMDB lookup (needed for providers that only accept TMDB IDs).
 // Cached, best-effort, degrades gracefully.
 // ---------------------------------------------------------------------------
 const TMDB_KEY = "8265bd1679663a7ea12ac168da84d2e8";
@@ -56,23 +85,21 @@ async function imdbToTmdb(imdbID: string): Promise<string | null> {
   const url = `https://api.themoviedb.org/3/find/${encodeURIComponent(
     imdbID,
   )}?api_key=${TMDB_KEY}&external_source=imdb_id`;
-  try {
-    const res = await fetch(url);
+  const read = async (target: string) => {
+    const res = await fetch(target);
     if (!res.ok) throw new Error(`TMDB ${res.status}`);
-    const json = (await res.json()) as {
-      movie_results?: { id?: number }[];
-    };
+    const json = (await res.json()) as { movie_results?: { id?: number }[] };
     const id = json?.movie_results?.[0]?.id;
-    const tmdb = id ? String(id) : null;
+    return id ? String(id) : null;
+  };
+  try {
+    const tmdb = await read(url);
     tmdbCache.set(imdbID, tmdb);
     return tmdb;
   } catch {
-    // Try proxied path once — some networks block TMDB directly.
     try {
-      const res = await fetch(proxify(url));
-      const json = (await res.json()) as { movie_results?: { id?: number }[] };
-      const id = json?.movie_results?.[0]?.id;
-      const tmdb = id ? String(id) : null;
+      // Some networks block TMDB directly — retry through the GhostOS relay.
+      const tmdb = await read(proxify(url));
       tmdbCache.set(imdbID, tmdb);
       return tmdb;
     } catch {
@@ -82,95 +109,98 @@ async function imdbToTmdb(imdbID: string): Promise<string | null> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Providers
-// ---------------------------------------------------------------------------
+interface Spec {
+  id: string;
+  label: string;
+  description: string;
+  kind: "imdb" | "tmdb";
+  build: (id: string) => string;
+  timeoutMs?: number;
+}
 
-const vidsrcTo: PlaybackProvider = {
-  id: "vidsrc-to",
-  label: "VidSrc.to",
-  description: "High-availability relay with multiple mirrors.",
-  async resolve({ imdbID }) {
-    return {
-      ok: true,
-      url: `https://vidsrc.to/embed/movie/${encodeURIComponent(imdbID)}`,
-    };
-  },
-};
+function makeProvider(spec: Spec): PlaybackProvider {
+  return {
+    id: spec.id,
+    label: spec.label,
+    description: spec.description,
+    async resolve({ imdbID, title }) {
+      const imdb = validImdb(imdbID);
+      if (!imdb) {
+        return { ok: false, fallback: false, message: `${title} has no valid IMDb ID — playback unavailable.` };
+      }
 
-const vidsrcXyz: PlaybackProvider = {
-  id: "vidsrc-xyz",
-  label: "VidSrc.xyz",
-  description: "Fast fallback mirror with wide catalogue coverage.",
-  async resolve({ imdbID }) {
-    return {
-      ok: true,
-      url: `https://vidsrc.xyz/embed/movie?imdb=${encodeURIComponent(imdbID)}`,
-    };
-  },
-};
+      let key = imdb;
+      if (spec.kind === "tmdb") {
+        const tmdb = await imdbToTmdb(imdb);
+        if (!tmdb) return { ok: false, fallback: true, message: `No TMDB match for ${title}.` };
+        key = tmdb;
+      }
 
-const vidlink: PlaybackProvider = {
-  id: "vidlink",
-  label: "VidLink.pro",
-  description: "Clean player, occasional rate limits.",
-  async resolve({ imdbID }) {
-    return {
-      ok: true,
-      url: `https://vidlink.pro/movie/${encodeURIComponent(imdbID)}`,
-    };
-  },
-};
+      const url = safeUrl(spec.build(encodeURIComponent(key)));
+      if (!url) return { ok: false, fallback: true, message: `${spec.label} produced an invalid URL.` };
 
-const twoEmbed: PlaybackProvider = {
-  id: "2embed",
-  label: "2Embed",
-  description: "Broad catalogue, works well as final fallback.",
-  async resolve({ imdbID }) {
-    return {
-      ok: true,
-      url: `https://www.2embed.cc/embed/${encodeURIComponent(imdbID)}`,
-    };
-  },
-};
-
-const toustream: PlaybackProvider = {
-  id: "toustream",
-  label: "Toustream",
-  description: "TMDB-based stream, routed via NET22 relay.",
-  async resolve({ imdbID, title }) {
-    const tmdb = await imdbToTmdb(imdbID);
-    if (!tmdb) {
       return {
-        ok: false,
-        fallback: true,
-        message: `No TMDB match for ${title}.`,
+        ok: true,
+        url,
+        unsandboxed: true,
+        allow:
+          "autoplay; fullscreen; encrypted-media; picture-in-picture; clipboard-write; accelerometer; gyroscope",
+        timeoutMs: spec.timeoutMs ?? 15_000,
       };
-    }
-    const target = `https://toustream.xyz/tou/movies/${encodeURIComponent(tmdb)}`;
-    return {
-      ok: true,
-      // Route through the GhostOS proxy so mixed-origin / referrer checks
-      // don't block the embed.
-      url: proxify(target),
-      timeoutMs: 16_000,
-    };
-  },
-};
+    },
+  };
+}
 
 // Ordered list — first entry is the default. Order can be customized per user.
 export const ALL_PROVIDERS: PlaybackProvider[] = [
-  vidsrcTo,
-  vidsrcXyz,
-  vidlink,
-  toustream,
-  twoEmbed,
+  makeProvider({
+    id: "vidlink",
+    label: "VidLink.pro",
+    description: "Primary source. Fast HLS player with wide catalogue coverage.",
+    kind: "tmdb",
+    build: (id) => `https://vidlink.pro/movie/${id}`,
+  }),
+  makeProvider({
+    id: "videasy",
+    label: "Videasy",
+    description: "Modern player, strong 1080p availability.",
+    kind: "tmdb",
+    build: (id) => `https://player.videasy.to/movie/${id}`,
+  }),
+  makeProvider({
+    id: "vidfast",
+    label: "VidFast",
+    description: "Low-latency mirror with automatic quality switching.",
+    kind: "tmdb",
+    build: (id) => `https://vidfast.vc/movie/${id}`,
+  }),
+  makeProvider({
+    id: "vidsrc-su",
+    label: "VidSrc.su",
+    description: "IMDb-native relay, good fallback coverage.",
+    kind: "imdb",
+    build: (id) => `https://vidsrc.su/embed/movie/${id}`,
+  }),
+  makeProvider({
+    id: "vidsrc-to",
+    label: "VidSrc.to",
+    description: "High-availability relay with multiple mirrors.",
+    kind: "imdb",
+    build: (id) => `https://vidsrc.to/embed/movie/${id}`,
+  }),
+  makeProvider({
+    id: "2embed",
+    label: "2Embed",
+    description: "Broad catalogue, works well as the final fallback.",
+    kind: "imdb",
+    build: (id) => `https://www.2embed.cc/embed/${id}`,
+  }),
 ];
 
 // ---------------------------------------------------------------------------
 // User preferences (persisted).
 // ---------------------------------------------------------------------------
-const PREF_KEY = "ghostflix.providers.v1";
+const PREF_KEY = "ghostflix.providers.v2";
 
 export interface ProviderPrefs {
   /** Ordered provider IDs. First is preferred. Unknown IDs ignored. */

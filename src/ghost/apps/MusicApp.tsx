@@ -1,26 +1,58 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Play, Pause, SkipBack, SkipForward, Heart, Shuffle, Repeat, Volume2,
   Search, Home, Compass, Library, Radio, ListMusic, Plus, MoreHorizontal, Music2,
+  Loader2, AlertTriangle, RotateCw,
 } from "lucide-react";
-import { ALBUMS, PLAYLISTS, TRACKS, fmtTime, useMusic, type Track } from "../music";
+import { PLAYLISTS, fmtTime, searchTracks, useMusic, type Track } from "../music";
 
 type Tab = "home" | "browse" | "library" | "search" | "radio";
+
+function Cover({ track, className }: { track: Track; className: string }) {
+  if (track.cover) {
+    return (
+      <img
+        src={track.cover}
+        alt={`${track.title} cover art`}
+        loading="lazy"
+        className={`${className} object-cover`}
+      />
+    );
+  }
+  return <div className={`${className} bg-gradient-to-br ${track.art}`} />;
+}
 
 /** Ghost Music — native GhostOS music client (Obsidian design language). */
 export function MusicApp() {
   const [tab, setTab] = useState<Tab>("home");
   const [q, setQ] = useState("");
   const [showQueue, setShowQueue] = useState(false);
+  const [results, setResults] = useState<Track[] | null>(null);
+  const [searching, setSearching] = useState(false);
   const m = useMusic();
 
-  const filtered = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    if (!s) return TRACKS;
-    return TRACKS.filter((t) =>
-      t.title.toLowerCase().includes(s) || t.artist.toLowerCase().includes(s) || t.album.toLowerCase().includes(s));
+  // Real remote search (debounced).
+  useEffect(() => {
+    const s = q.trim();
+    if (!s) { setResults(null); setSearching(false); return; }
+    setSearching(true);
+    const id = window.setTimeout(() => {
+      searchTracks(s)
+        .then(setResults)
+        .catch(() => setResults([]))
+        .finally(() => setSearching(false));
+    }, 400);
+    return () => window.clearTimeout(id);
   }, [q]);
+
+  const artists = useMemo(() => {
+    const seen = new Map<string, Track>();
+    for (const t of m.tracks) if (!seen.has(t.artist)) seen.set(t.artist, t);
+    return [...seen.values()].slice(0, 12);
+  }, [m.tracks]);
+
+  const albums = useMemo(() => m.tracks.slice(0, 8), [m.tracks]);
 
   return (
     <div className="flex h-full flex-col bg-[#0b0b0d] text-white/90">
@@ -66,7 +98,11 @@ export function MusicApp() {
             </div>
             <div className="space-y-0.5">
               {PLAYLISTS.map((p) => (
-                <button key={p} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[11.5px] text-white/45 transition hover:bg-white/[0.04] hover:text-white/90">
+                <button
+                  key={p}
+                  onClick={() => { setTab("search"); setQ(p === "Trending Now" ? "" : p); }}
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[11.5px] text-white/45 transition hover:bg-white/[0.04] hover:text-white/90"
+                >
                   <ListMusic className="h-3 w-3 opacity-60" />
                   <span className="truncate">{p}</span>
                 </button>
@@ -87,9 +123,16 @@ export function MusicApp() {
                     placeholder="Search tracks, artists, albums"
                     className="flex-1 bg-transparent text-[12.5px] outline-none placeholder:text-white/25"
                   />
+                  {searching && <Loader2 className="h-3.5 w-3.5 animate-spin text-white/40" />}
                 </div>
                 <div className="mt-5">
-                  <TrackList tracks={filtered} />
+                  {results && results.length === 0 && !searching ? (
+                    <div className="rounded-xl border border-white/[0.07] p-6 text-center text-[12px] text-white/40">
+                      No results for “{q}”.
+                    </div>
+                  ) : (
+                    <TrackList tracks={results ?? m.tracks} />
+                  )}
                 </div>
               </div>
             ) : (
@@ -104,62 +147,87 @@ export function MusicApp() {
                     : "Tonight's frequency"}
                 </h1>
 
-                <Section title="Recently played">
-                  <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-                    {TRACKS.slice(0, 6).map((t, i) => (
-                      <button
-                        key={t.id} onClick={() => m.playIndex(i)}
-                        className="group flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.03] p-2 text-left transition hover:border-white/15 hover:bg-white/[0.06]"
-                      >
-                        <div className={`h-11 w-11 rounded-lg bg-gradient-to-br ${t.art}`} />
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-[12px] font-medium">{t.title}</div>
-                          <div className="truncate text-[10.5px] text-white/40">{t.artist}</div>
-                        </div>
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-black opacity-0 transition group-hover:opacity-100">
-                          <Play className="h-3.5 w-3.5 fill-black" />
-                        </span>
-                      </button>
-                    ))}
+                {m.loading && (
+                  <div className="mt-10 flex items-center justify-center gap-2 text-[12px] text-white/40">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Loading catalogue…
                   </div>
-                </Section>
+                )}
 
-                <Section title="Albums">
-                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-                    {ALBUMS.map((a) => (
-                      <motion.div
-                        key={a.id} whileHover={{ y: -3 }}
-                        className="group overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.02]"
-                      >
-                        <div className={`relative aspect-square bg-gradient-to-br ${a.art}`}>
-                          <button className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-black opacity-0 shadow-lg transition group-hover:opacity-100">
-                            <Play className="h-4 w-4 fill-black" />
+                {!m.loading && m.error && (
+                  <div className="mt-10 flex flex-col items-center gap-3 rounded-xl border border-white/[0.07] p-8 text-center">
+                    <AlertTriangle className="h-5 w-5 text-amber-300" />
+                    <div className="text-[12.5px] text-white/70">{m.error}</div>
+                    <button
+                      onClick={m.reload}
+                      className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-[11.5px] transition hover:bg-white/20"
+                    >
+                      <RotateCw className="h-3 w-3" /> Retry
+                    </button>
+                  </div>
+                )}
+
+                {!m.loading && !m.error && (
+                  <>
+                    <Section title="Recently played">
+                      <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                        {m.tracks.slice(0, 6).map((t, i) => (
+                          <button
+                            key={t.id} onClick={() => m.playIndex(i)}
+                            className="group flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.03] p-2 text-left transition hover:border-white/15 hover:bg-white/[0.06]"
+                          >
+                            <Cover track={t} className="h-11 w-11 rounded-lg" />
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-[12px] font-medium">{t.title}</div>
+                              <div className="truncate text-[10.5px] text-white/40">{t.artist}</div>
+                            </div>
+                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-black opacity-0 transition group-hover:opacity-100">
+                              <Play className="h-3.5 w-3.5 fill-black" />
+                            </span>
                           </button>
-                        </div>
-                        <div className="p-3">
-                          <div className="truncate text-[12.5px] font-medium">{a.name}</div>
-                          <div className="truncate text-[10.5px] text-white/40">{a.artist} · {a.year}</div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </Section>
-
-                <Section title="Artists">
-                  <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
-                    {Array.from(new Set(TRACKS.map((t) => t.artist))).map((name, i) => (
-                      <div key={name} className="w-24 flex-shrink-0 text-center">
-                        <div className={`h-24 w-24 rounded-full bg-gradient-to-br ${TRACKS[i % TRACKS.length].art} ring-1 ring-white/10`} />
-                        <div className="mt-2 truncate text-[12px] font-medium">{name}</div>
-                        <div className="text-[10px] text-white/30">Artist</div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </Section>
+                    </Section>
 
-                <Section title="All tracks">
-                  <TrackList tracks={TRACKS} />
-                </Section>
+                    <Section title="Albums">
+                      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+                        {albums.map((a) => (
+                          <motion.button
+                            key={a.id} whileHover={{ y: -3 }}
+                            onClick={() => m.playTrack(a.id)}
+                            className="group overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.02] text-left"
+                          >
+                            <div className="relative aspect-square">
+                              <Cover track={a} className="h-full w-full" />
+                              <span className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-black opacity-0 shadow-lg transition group-hover:opacity-100">
+                                <Play className="h-4 w-4 fill-black" />
+                              </span>
+                            </div>
+                            <div className="p-3">
+                              <div className="truncate text-[12.5px] font-medium">{a.title}</div>
+                              <div className="truncate text-[10.5px] text-white/40">{a.artist} · {a.album}</div>
+                            </div>
+                          </motion.button>
+                        ))}
+                      </div>
+                    </Section>
+
+                    <Section title="Artists">
+                      <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
+                        {artists.map((t) => (
+                          <div key={t.artist} className="w-24 flex-shrink-0 text-center">
+                            <Cover track={t} className="h-24 w-24 rounded-full ring-1 ring-white/10" />
+                            <div className="mt-2 truncate text-[12px] font-medium">{t.artist}</div>
+                            <div className="text-[10px] text-white/30">Artist</div>
+                          </div>
+                        ))}
+                      </div>
+                    </Section>
+
+                    <Section title="All tracks">
+                      <TrackList tracks={m.tracks} />
+                    </Section>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -170,14 +238,14 @@ export function MusicApp() {
           <aside className="w-64 flex-shrink-0 overflow-y-auto scrollbar-hide border-l border-white/[0.07] bg-[#101012] p-3">
             <div className="mb-2 px-1 text-[10px] uppercase tracking-[0.18em] text-white/30">Queue</div>
             <div className="space-y-1">
-              {TRACKS.map((t, i) => (
+              {m.tracks.map((t, i) => (
                 <button
                   key={t.id} onClick={() => m.playIndex(i)}
                   className={`flex w-full items-center gap-2 rounded-lg p-2 text-left transition ${
                     i === m.index ? "bg-[var(--ice)]/10 ring-1 ring-[var(--ice)]/25" : "hover:bg-white/[0.05]"
                   }`}
                 >
-                  <div className={`h-8 w-8 rounded-md bg-gradient-to-br ${t.art}`} />
+                  <Cover track={t} className="h-8 w-8 rounded-md" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[11.5px] font-medium">{t.title}</div>
                     <div className="truncate text-[10px] text-white/40">{t.artist}</div>
@@ -192,11 +260,16 @@ export function MusicApp() {
 
       {/* Transport bar */}
       <div className="border-t border-white/[0.07] bg-[#0e0e10]">
+        {m.playbackError && (
+          <div className="flex items-center justify-center gap-2 border-b border-amber-400/20 bg-amber-400/[0.06] px-4 py-1.5 text-[11px] text-amber-200">
+            <AlertTriangle className="h-3 w-3" /> {m.playbackError}
+          </div>
+        )}
         <div className="flex items-center gap-4 px-4 py-3">
           <div className="flex w-60 min-w-0 items-center gap-3">
             {m.track ? (
               <>
-                <div className={`h-11 w-11 rounded-lg bg-gradient-to-br ${m.track.art} ring-1 ring-white/10`} />
+                <Cover track={m.track} className="h-11 w-11 rounded-lg ring-1 ring-white/10" />
                 <div className="min-w-0">
                   <div className="truncate text-[12px] font-medium">{m.track.title}</div>
                   <div className="truncate text-[10.5px] text-white/40">{m.track.artist} · {m.track.album}</div>
@@ -221,9 +294,12 @@ export function MusicApp() {
               <button onClick={m.prev} className="hover:text-white"><SkipBack className="h-4 w-4" /></button>
               <button
                 onClick={() => (m.track ? m.toggle() : m.playIndex(0))}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-black transition hover:scale-105"
+                disabled={!m.tracks.length}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-black transition hover:scale-105 disabled:opacity-40"
               >
-                {m.playing ? <Pause className="h-4 w-4 fill-black" /> : <Play className="h-4 w-4 fill-black" />}
+                {m.buffering
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : m.playing ? <Pause className="h-4 w-4 fill-black" /> : <Play className="h-4 w-4 fill-black" />}
               </button>
               <button onClick={m.next} className="hover:text-white"><SkipForward className="h-4 w-4" /></button>
               <button onClick={() => m.setRepeat(!m.repeat)} className={m.repeat ? "text-[var(--ice)]" : "hover:text-white"}>
@@ -233,11 +309,11 @@ export function MusicApp() {
             <div className="flex w-full max-w-md items-center gap-2 text-[10px] tabular-nums text-white/35">
               <span>{fmtTime(m.position)}</span>
               <input
-                type="range" min={0} max={m.track?.duration ?? 100} value={m.position}
+                type="range" min={0} max={Math.max(1, m.duration)} step={0.5} value={Math.min(m.position, m.duration || 0)}
                 onChange={(e) => m.seek(Number(e.target.value))}
                 className="h-1 flex-1 accent-[var(--ice)]"
               />
-              <span>{m.track ? fmtTime(m.track.duration) : "0:00"}</span>
+              <span>{fmtTime(m.duration)}</span>
             </div>
           </div>
 
@@ -287,12 +363,17 @@ function TrackList({ tracks }: { tracks: Track[] }) {
             }`}
           >
             <button
-              onClick={() => m.playTrack(t.id)}
+              onClick={() => {
+                if (m.tracks.some((x) => x.id === t.id)) m.playTrack(t.id);
+                else m.setQueue(tracks, tracks.findIndex((x) => x.id === t.id));
+              }}
               className="flex h-8 w-8 items-center justify-center rounded-md text-white/55 transition group-hover:text-white"
             >
-              {isActive && m.playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 fill-current" />}
+              {isActive && m.buffering
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : isActive && m.playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 fill-current" />}
             </button>
-            <div className={`h-8 w-8 flex-shrink-0 rounded-md bg-gradient-to-br ${t.art}`} />
+            <Cover track={t} className="h-8 w-8 flex-shrink-0 rounded-md" />
             <div className="min-w-0 flex-1">
               <div className={`truncate text-[12px] font-medium ${isActive ? "text-[var(--ice)]" : ""}`}>{t.title}</div>
               <div className="truncate text-[10.5px] text-white/40">{t.artist}</div>

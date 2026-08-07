@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Play, Plus, Info, Search, Maximize2, X, Loader2, ArrowLeft, RotateCw, Star,
-  Activity, Settings as SettingsIcon, Volume2, VolumeX, Pause, Subtitles,
-  Languages, ChevronUp, ChevronDown, AlertTriangle, CheckCircle2, RefreshCw,
+  Activity, Settings as SettingsIcon,
+  ChevronUp, ChevronDown, AlertTriangle, CheckCircle2, RefreshCw,
 } from "lucide-react";
+
 import {
   CATEGORIES, FEATURED_ID, type OmdbMovie, fetchMovie, fetchMovies,
   searchMovies, isValidImdbId,
@@ -270,6 +271,7 @@ interface ResolvedStream {
   provider: PlaybackProvider;
   url: string;
   sandbox?: string;
+  unsandboxed?: boolean;
   allow?: string;
   timeoutMs: number;
 }
@@ -284,13 +286,8 @@ function GhostFlixPlayer({ movie, onExit }: { movie: OmdbMovie; onExit: () => vo
   const [fullscreen, setFullscreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showDiag, setShowDiag] = useState(false);
-
-  // Cinematic control-bar (visual overlay — real playback stays inside the embed).
-  const [muted, setMuted] = useState(false);
-  const [playing, setPlaying] = useState(true);
-  const [showSubs, setShowSubs] = useState(false);
-  const [progress, setProgress] = useState(0);
   const hostRef = useRef<HTMLDivElement>(null);
+
 
   const iframeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeAttemptRef = useRef(0);
@@ -370,9 +367,11 @@ function GhostFlixPlayer({ movie, onExit }: { movie: OmdbMovie; onExit: () => vo
         provider,
         url: result.url,
         sandbox: result.sandbox,
+        unsandboxed: result.unsandboxed,
         allow: result.allow,
-        timeoutMs: result.timeoutMs ?? 12_000,
+        timeoutMs: result.timeoutMs ?? 15_000,
       });
+
       setStage("starting-playback");
     },
     [providers, movie.imdbID, movie.Title, movie.Year],
@@ -422,14 +421,11 @@ function GhostFlixPlayer({ movie, onExit }: { movie: OmdbMovie; onExit: () => vo
     attemptProvider(providerIdx);
   };
 
-  // Fake progress simulation for the visual control bar.
-  useEffect(() => {
-    if (stage !== "playing" || !playing) return;
-    const interval = setInterval(() => {
-      setProgress((p) => (p >= 100 ? 100 : p + 0.15));
-    }, 500);
-    return () => clearInterval(interval);
-  }, [stage, playing]);
+  // NOTE: transport controls (play/pause/seek/volume) live inside the provider's
+  // own cross-origin player. GhostOS cannot drive them, so no simulated
+  // controls or progress bars are rendered here.
+
+
 
   // Fullscreen — real browser fullscreen on the host node.
   useEffect(() => {
@@ -495,11 +491,19 @@ function GhostFlixPlayer({ movie, onExit }: { movie: OmdbMovie; onExit: () => vo
             onLoad={handleIframeLoad}
             onError={handleIframeError}
             className="absolute inset-0 w-full h-full bg-black"
-            sandbox={stream.sandbox ?? "allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox allow-orientation-lock allow-pointer-lock allow-top-navigation-by-user-activation allow-downloads allow-modals"}
-            allow={stream.allow ?? "autoplay; fullscreen; encrypted-media; picture-in-picture; clipboard-write; gamepad; accelerometer; gyroscope"}
-            referrerPolicy="no-referrer"
+            {...(stream.unsandboxed
+              ? {}
+              : {
+                  sandbox:
+                    stream.sandbox ??
+                    "allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox allow-orientation-lock allow-pointer-lock allow-downloads allow-modals",
+                })}
+            allow={stream.allow ?? "autoplay; fullscreen; encrypted-media; picture-in-picture; clipboard-write; accelerometer; gyroscope"}
+            allowFullScreen
+            referrerPolicy="origin"
           />
         )}
+
 
         <AnimatePresence>
           {stage !== "playing" && stage !== "error" && (
@@ -521,24 +525,20 @@ function GhostFlixPlayer({ movie, onExit }: { movie: OmdbMovie; onExit: () => vo
               onRetry={retryFromStart}
               onBack={onExit}
               onSettings={() => setShowSettings(true)}
+              onReload={reloadCurrent}
+              url={stream?.url}
+
             />
           )}
         </AnimatePresence>
 
-        {/* Cinematic control bar (visual overlay). */}
+        {/* Provider badge — the player's own controls handle transport. */}
         {stage === "playing" && (
-          <ControlBar
-            playing={playing}
-            onPlayToggle={() => setPlaying((p) => !p)}
-            muted={muted}
-            onMuteToggle={() => setMuted((m) => !m)}
-            showSubs={showSubs}
-            onSubsToggle={() => setShowSubs((s) => !s)}
-            progress={progress}
-            onSeek={setProgress}
-            onFullscreen={() => setFullscreen((f) => !f)}
-          />
+          <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-black/60 px-3 py-1 text-[10px] font-mono tracking-widest text-white/50 backdrop-blur">
+            {currentProvider?.label ?? "STREAM"}
+          </div>
         )}
+
 
         <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-red-500/10" />
       </div>
@@ -620,10 +620,11 @@ function StageOverlay({
 }
 
 function ErrorOverlay({
-  title, message, onRetry, onBack, onSettings,
+  title, message, onRetry, onBack, onSettings, onReload, url,
 }: {
   title: string; message: string;
   onRetry: () => void; onBack: () => void; onSettings: () => void;
+  onReload: () => void; url?: string;
 }) {
   return (
     <motion.div
@@ -638,68 +639,33 @@ function ErrorOverlay({
         <h3 className="mt-1 text-xl font-black tracking-wide text-white">{title}</h3>
         <p className="mt-3 text-sm text-white/70 leading-relaxed">{message}</p>
         <p className="mt-2 text-xs text-white/40">Please try again later, or switch playback provider in Settings.</p>
-        <div className="mt-5 grid grid-cols-3 gap-2">
+        <div className="mt-5 grid grid-cols-2 gap-2">
           <button onClick={onRetry} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-gradient-to-r from-red-500 to-rose-700 text-white text-xs font-bold tracking-wider hover:brightness-110 transition">
             <RefreshCw className="h-3.5 w-3.5" /> RETRY
           </button>
+          <button onClick={onReload} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/5 ring-1 ring-white/15 text-white text-xs font-bold tracking-wider hover:bg-white/10 transition">
+            <RotateCw className="h-3.5 w-3.5" /> RELOAD SOURCE
+          </button>
+          {url && (
+            <button onClick={() => window.open(url, "_blank", "noopener,noreferrer")} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/5 ring-1 ring-white/15 text-white text-xs font-bold tracking-wider hover:bg-white/10 transition">
+              <Maximize2 className="h-3.5 w-3.5" /> NEW TAB
+            </button>
+          )}
           <button onClick={onSettings} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/5 ring-1 ring-white/15 text-white text-xs font-bold tracking-wider hover:bg-white/10 transition">
             <SettingsIcon className="h-3.5 w-3.5" /> PROVIDERS
           </button>
-          <button onClick={onBack} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/5 ring-1 ring-white/15 text-white/80 text-xs font-bold tracking-wider hover:bg-white/10 transition">
-            <ArrowLeft className="h-3.5 w-3.5" /> BACK
+          <button onClick={onBack} className="col-span-2 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/5 ring-1 ring-white/15 text-white/80 text-xs font-bold tracking-wider hover:bg-white/10 transition">
+            <ArrowLeft className="h-3.5 w-3.5" /> BACK TO DESKTOP
           </button>
         </div>
       </div>
     </motion.div>
+
   );
 }
 
-function ControlBar({
-  playing, onPlayToggle, muted, onMuteToggle, showSubs, onSubsToggle,
-  progress, onSeek, onFullscreen,
-}: {
-  playing: boolean; onPlayToggle: () => void;
-  muted: boolean; onMuteToggle: () => void;
-  showSubs: boolean; onSubsToggle: () => void;
-  progress: number; onSeek: (p: number) => void;
-  onFullscreen: () => void;
-}) {
-  return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-4">
-      <div className="pointer-events-auto rounded-xl bg-black/40 backdrop-blur-xl ring-1 ring-white/10 shadow-[0_0_30px_rgba(0,0,0,.6)] p-3">
-        <div className="flex items-center gap-3">
-          <button onClick={onPlayToggle} className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
-            {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 fill-white" />}
-          </button>
+// (Removed the simulated control bar: transport lives in the provider player.)
 
-          <input
-            type="range" min={0} max={100} value={progress}
-            onChange={(e) => onSeek(Number(e.target.value))}
-            className="flex-1 h-1 accent-rose-400 cursor-pointer"
-            aria-label="Progress"
-          />
-
-          <span className="text-[10px] font-mono text-white/60 w-10 text-right">
-            {Math.floor(progress)}%
-          </span>
-
-          <button onClick={onMuteToggle} className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition" title={muted ? "Unmute" : "Mute"}>
-            {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-          </button>
-          <button onClick={onSubsToggle} className={`h-9 w-9 rounded-full flex items-center justify-center transition ${showSubs ? "bg-rose-500/40 text-white" : "bg-white/10 hover:bg-white/20 text-white/80"}`} title="Subtitles">
-            <Subtitles className="h-4 w-4" />
-          </button>
-          <button className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 transition" title="Audio track">
-            <Languages className="h-4 w-4" />
-          </button>
-          <button onClick={onFullscreen} className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition" title="Fullscreen">
-            <Maximize2 className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // SETTINGS — provider preferences
