@@ -367,9 +367,11 @@ function GhostFlixPlayer({ movie, onExit }: { movie: OmdbMovie; onExit: () => vo
         provider,
         url: result.url,
         sandbox: result.sandbox,
+        unsandboxed: result.unsandboxed,
         allow: result.allow,
-        timeoutMs: result.timeoutMs ?? 12_000,
+        timeoutMs: result.timeoutMs ?? 15_000,
       });
+
       setStage("starting-playback");
     },
     [providers, movie.imdbID, movie.Title, movie.Year],
