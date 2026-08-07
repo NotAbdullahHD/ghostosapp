@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Pause, Play, SkipBack, SkipForward, X } from "lucide-react";
+import { Loader2, Pause, Play, SkipBack, SkipForward, X } from "lucide-react";
 import { useMusic, fmtTime } from "./music";
 import { useGhost } from "./store";
 
@@ -9,11 +9,13 @@ import { useGhost } from "./store";
  * window is closed or minimized.
  */
 export function NowPlayingWidget() {
-  const { track, playing, position, toggle, next, prev, stop } = useMusic();
+  const { track, playing, position, duration, buffering, toggle, next, prev, stop } = useMusic();
   const { openApp, hasFullscreen } = useGhost();
 
   const visible = !!track && !hasFullscreen;
-  const progress = track ? Math.min(100, (position / track.duration) * 100) : 0;
+  const total = duration || track?.duration || 0;
+  const progress = total ? Math.min(100, (position / total) * 100) : 0;
+
 
   return (
     <AnimatePresence>
@@ -29,9 +31,16 @@ export function NowPlayingWidget() {
             <div className="flex items-start gap-3">
               <button
                 onClick={() => openApp("music", "Ghost Music")}
-                className={`h-12 w-12 flex-shrink-0 rounded-xl bg-gradient-to-br ${track.art} ring-1 ring-white/10 transition group-hover:ring-[var(--ice)]/40`}
+                className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl ring-1 ring-white/10 transition group-hover:ring-[var(--ice)]/40"
                 aria-label="Open Ghost Music"
-              />
+              >
+                {track.cover ? (
+                  <img src={track.cover} alt={`${track.title} cover art`} className="h-full w-full object-cover" />
+                ) : (
+                  <span className={`block h-full w-full bg-gradient-to-br ${track.art}`} />
+                )}
+              </button>
+
               <button
                 onClick={() => openApp("music", "Ghost Music")}
                 className="min-w-0 flex-1 text-left"
@@ -52,11 +61,11 @@ export function NowPlayingWidget() {
               <span>{fmtTime(position)}</span>
               <div className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/10">
                 <div
-                  className="h-full rounded-full bg-[var(--ice)] transition-[width] duration-1000 ease-linear"
+                  className="h-full rounded-full bg-[var(--ice)]"
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <span>{fmtTime(track.duration)}</span>
+              <span>{fmtTime(total)}</span>
             </div>
 
             <div className="mt-2 flex items-center justify-center gap-5 text-white/60">
@@ -68,8 +77,11 @@ export function NowPlayingWidget() {
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-black transition hover:scale-105"
                 aria-label={playing ? "Pause" : "Play"}
               >
-                {playing ? <Pause className="h-4 w-4 fill-black" /> : <Play className="h-4 w-4 fill-black" />}
+                {buffering
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : playing ? <Pause className="h-4 w-4 fill-black" /> : <Play className="h-4 w-4 fill-black" />}
               </button>
+
               <button onClick={next} className="transition hover:text-white" aria-label="Next track">
                 <SkipForward className="h-4 w-4" />
               </button>
