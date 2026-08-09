@@ -516,7 +516,7 @@ function GhostFlixPlayer({ movie, onExit }: { movie: OmdbMovie; onExit: () => vo
       <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-red-950/60 via-black to-ice/60 border-b border-white/5">
         <div className="flex items-center gap-2 min-w-0">
           <button onClick={onExit} className="p-1.5 rounded hover:bg-white/10 text-white/70"><ArrowLeft className="h-3.5 w-3.5" /></button>
-          <div className="text-sm font-black tracking-widest bg-gradient-to-r from-red-500 to-rose-300 bg-clip-text text-transparent">GHOSTFLIX</div>
+          <div className="text-sm font-black tracking-widest text-foreground">GHOSTFLIX</div>
           <span className="text-[9px] font-mono text-white/40 tracking-widest hidden sm:inline">·</span>
           <span className="text-xs font-bold text-white/85 truncate max-w-[40vw]">{movie.Title}</span>
           <span className="text-[10px] font-mono text-white/40">{movie.Year}</span>
@@ -536,7 +536,7 @@ function GhostFlixPlayer({ movie, onExit }: { movie: OmdbMovie; onExit: () => vo
           <button onClick={() => setShowDiag((s) => !s)} className={`p-1.5 rounded hover:bg-white/10 ${showDiag ? "text-emerald-300" : "text-white/70"}`}><Activity className="h-3.5 w-3.5" /></button>
           <button onClick={reloadCurrent} className="p-1.5 rounded hover:bg-white/10 text-white/70"><RotateCw className="h-3.5 w-3.5" /></button>
           <button onClick={() => setFullscreen((f) => !f)} className="p-1.5 rounded hover:bg-white/10 text-white/70"><Maximize2 className="h-3.5 w-3.5" /></button>
-          <button onClick={onExit} className="p-1.5 rounded hover:bg-red-500/20 text-red-300"><X className="h-3.5 w-3.5" /></button>
+          <button onClick={onExit} className="p-1.5 rounded hover:bg-destructive/20 text-destructive"><X className="h-3.5 w-3.5" /></button>
         </div>
       </div>
 
@@ -609,7 +609,7 @@ function GhostFlixPlayer({ movie, onExit }: { movie: OmdbMovie; onExit: () => vo
         )}
 
 
-        <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-red-500/10" />
+        <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/5" />
       </div>
 
       <AnimatePresence>
@@ -646,7 +646,7 @@ function StageOverlay({
     >
       <motion.div
         initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="text-5xl sm:text-6xl font-black tracking-widest bg-gradient-to-r from-red-500 to-rose-300 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(220,38,38,.6)]"
+        className="text-5xl sm:text-6xl font-black tracking-widest text-foreground "
       >
         GHOSTFLIX
       </motion.div>
@@ -654,7 +654,7 @@ function StageOverlay({
 
       <div className="mt-8 h-0.5 w-72 bg-white/10 rounded-full overflow-hidden">
         <motion.div
-          className="h-full bg-gradient-to-r from-red-500 to-rose-300"
+          className="h-full bg-gradient-to-r from-[var(--ice)] to-[#a8ecff]"
           initial={false}
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.4, ease: "easeInOut" }}
@@ -662,7 +662,7 @@ function StageOverlay({
       </div>
 
       <div className="mt-4 flex items-center gap-2 text-[11px] tracking-[0.4em] font-mono text-white/70">
-        <Loader2 className="h-3 w-3 animate-spin text-rose-300" />
+        <Loader2 className="h-3 w-3 animate-spin text-[var(--ice)]" />
         {label}
       </div>
 
@@ -676,7 +676,7 @@ function StageOverlay({
             {i < idx ? (
               <CheckCircle2 className="h-3 w-3 text-emerald-400" />
             ) : i === idx ? (
-              <Loader2 className="h-3 w-3 animate-spin text-rose-300" />
+              <Loader2 className="h-3 w-3 animate-spin text-[var(--ice)]" />
             ) : (
               <span className="h-3 w-3 rounded-full border border-white/20" />
             )}
@@ -700,16 +700,16 @@ function ErrorOverlay({
       initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
       className="absolute inset-0 z-40 flex items-center justify-center bg-black/95 backdrop-blur-md p-6"
     >
-      <div className="relative max-w-md w-full rounded-2xl bg-gradient-to-br from-black via-zinc-950 to-black ring-1 ring-rose-400/40 shadow-[0_0_40px_rgba(244,63,94,.35)] p-7 text-center">
-        <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-red-500 to-rose-700 flex items-center justify-center ring-1 ring-white/15">
+      <div className="relative max-w-md w-full rounded-2xl bg-gradient-to-br from-black via-zinc-950 to-black ring-1 ring-white/10 shadow-[0_0_40px_rgba(0,0,0,.6)] p-7 text-center">
+        <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-[var(--ice)] to-[#2b8fbd] flex items-center justify-center ring-1 ring-white/15">
           <AlertTriangle className="h-7 w-7 text-white" />
         </div>
-        <div className="mt-5 text-[10px] tracking-[0.5em] font-mono text-rose-300">MOVIE UNAVAILABLE</div>
+        <div className="mt-5 text-[10px] tracking-[0.5em] font-mono text-[var(--ice)]">MOVIE UNAVAILABLE</div>
         <h3 className="mt-1 text-xl font-black tracking-wide text-white">{title}</h3>
         <p className="mt-3 text-sm text-white/70 leading-relaxed">{message}</p>
         <p className="mt-2 text-xs text-white/40">Please try again later, or switch playback provider in Settings.</p>
         <div className="mt-5 grid grid-cols-2 gap-2">
-          <button onClick={onRetry} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-gradient-to-r from-red-500 to-rose-700 text-white text-xs font-bold tracking-wider hover:brightness-110 transition">
+          <button onClick={onRetry} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-gradient-to-r from-[var(--ice)] to-[#2b8fbd] text-white text-xs font-bold tracking-wider hover:brightness-110 transition">
             <RefreshCw className="h-3.5 w-3.5" /> RETRY
           </button>
           <button onClick={onReload} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/5 ring-1 ring-white/15 text-white text-xs font-bold tracking-wider hover:bg-white/10 transition">
@@ -783,7 +783,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
       >
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-[10px] tracking-[0.4em] font-mono text-rose-300">GHOSTFLIX SETTINGS</div>
+            <div className="text-[10px] tracking-[0.4em] font-mono text-[var(--ice)]">GHOSTFLIX SETTINGS</div>
             <h3 className="mt-1 text-lg font-black tracking-wide">Playback Provider</h3>
           </div>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-white/60"><X className="h-4 w-4" /></button>
@@ -808,7 +808,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
                   <button onClick={() => move(p.id, 1)} disabled={i === arr.length - 1} className="h-7 w-7 rounded hover:bg-white/10 disabled:opacity-30 flex items-center justify-center"><ChevronDown className="h-3.5 w-3.5" /></button>
                   <button
                     onClick={() => toggle(p.id)}
-                    className={`ml-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest ${disabled ? "bg-white/5 text-white/50" : "bg-rose-500/30 text-rose-100 ring-1 ring-rose-400/40"}`}
+                    className={`ml-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest ${disabled ? "bg-white/5 text-white/50" : "bg-rose-500/30 text-rose-100 ring-1 ring-white/10"}`}
                   >
                     {disabled ? "OFF" : "ON"}
                   </button>
@@ -820,7 +820,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
 
         <div className="mt-5 flex items-center justify-between">
           <button onClick={reset} className="text-[11px] font-mono text-white/50 hover:text-white/80 tracking-widest">RESET TO DEFAULTS</button>
-          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gradient-to-r from-red-500 to-rose-700 text-white text-xs font-bold tracking-widest hover:brightness-110">DONE</button>
+          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gradient-to-r from-[var(--ice)] to-[#2b8fbd] text-white text-xs font-bold tracking-widest hover:brightness-110">DONE</button>
         </div>
       </motion.div>
     </motion.div>
