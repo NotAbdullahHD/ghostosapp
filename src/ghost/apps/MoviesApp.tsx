@@ -263,7 +263,7 @@ export function MoviesApp() {
 
 
       <div className="px-6 py-8 text-center">
-        <div className="text-[10px] tracking-[0.4em] text-white/30 font-mono">GHOSTFLIX · ENCRYPTED STREAM · NET22 RELAY</div>
+        <div className="text-[10px] tracking-[0.4em] text-muted-foreground font-mono">GHOSTFLIX · ENCRYPTED STREAM</div>
       </div>
 
       <AnimatePresence>
