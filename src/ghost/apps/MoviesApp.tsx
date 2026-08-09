@@ -15,16 +15,25 @@ import {
   type PlaybackProvider, type ProviderPrefs,
 } from "../providers/playback";
 
-const COLORS = [
-  "from-purple-700 to-indigo-950",
-  "from-red-700 to-black",
-  "from-pink-600 to-rose-950",
-  "from-blue-700 to-slate-950",
-  "from-orange-600 to-red-950",
-  "from-teal-600 to-emerald-950",
-  "from-fuchsia-700 to-purple-950",
-  "from-amber-600 to-rose-950",
-];
+import { ProfileGate } from "./FlixProfiles";
+import {
+  loadProfiles, saveProfiles, loadActiveProfileId, saveActiveProfileId,
+  type FlixProfile,
+} from "../profiles";
+
+/** Neutral Obsidian poster placeholders — no per-card random colours. */
+const CARD_BG = "from-white/[0.07] to-white/[0.02]";
+
+/** Titles hidden when the active profile has Kids Mode enabled. */
+const KID_UNSAFE_RATINGS = ["R", "NC-17", "TV-MA", "X"];
+function allowedForProfile(m: OmdbMovie, profile: FlixProfile | null) {
+  if (!profile?.kids) return true;
+  const rated = (m.Rated ?? "").toUpperCase();
+  if (KID_UNSAFE_RATINGS.includes(rated)) return false;
+  const genre = (m.Genre ?? "").toLowerCase();
+  return !/horror|thriller/.test(genre);
+}
+
 
 export function MoviesApp() {
   const [active, setActive] = useState<OmdbMovie | null>(null);
@@ -40,6 +49,37 @@ export function MoviesApp() {
   const [searchResults, setSearchResults] = useState<OmdbMovie[]>([]);
   const [searching, setSearching] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+
+  // Viewing profiles ("Who's watching?")
+  const [profiles, setProfiles] = useState<FlixProfile[]>([]);
+  const [profileId, setProfileId] = useState<string | null>(null);
+  const [profilesReady, setProfilesReady] = useState(false);
+  const profile = useMemo(
+    () => profiles.find((p) => p.id === profileId) ?? null,
+    [profiles, profileId]
+  );
+
+  useEffect(() => {
+    const list = loadProfiles();
+    setProfiles(list);
+    const activeId = loadActiveProfileId();
+    if (activeId && list.some((p) => p.id === activeId)) setProfileId(activeId);
+    setProfilesReady(true);
+  }, []);
+
+  const persistProfiles = (list: FlixProfile[]) => {
+    setProfiles(list);
+    saveProfiles(list);
+    if (profileId && !list.some((p) => p.id === profileId)) {
+      setProfileId(null);
+      saveActiveProfileId(null);
+    }
+  };
+
+  const chooseProfile = (p: FlixProfile) => {
+    setProfileId(p.id);
+    saveActiveProfileId(p.id);
+  };
 
   useEffect(() => {
     let alive = true;
@@ -68,11 +108,36 @@ export function MoviesApp() {
     return () => clearTimeout(t);
   }, [query, showSearch]);
 
+  const visibleRows = useMemo(
+    () => rows
+      .map((r) => ({ ...r, items: r.items.filter((m) => allowedForProfile(m, profile)) }))
+      .filter((r) => !profile?.kids || r.items.length > 0),
+    [rows, profile]
+  );
+  const visibleSearch = useMemo(
+    () => searchResults.filter((m) => allowedForProfile(m, profile)),
+    [searchResults, profile]
+  );
+
   const open = (m: OmdbMovie) => {
     if (!isValidImdbId(m.imdbID)) return;
     setActive(m);
     setLaunched(true);
   };
+
+  if (!profilesReady) {
+    return <div className="h-full bg-background" />;
+  }
+
+  if (!profile) {
+    return (
+      <ProfileGate
+        profiles={profiles}
+        onSelect={chooseProfile}
+        onSave={persistProfiles}
+      />
+    );
+  }
 
   if (launched && active) {
     return (
@@ -83,10 +148,11 @@ export function MoviesApp() {
     );
   }
 
+
   return (
-    <div className="h-full overflow-y-auto scrollbar-hide bg-black text-white relative">
+    <div className="h-full overflow-y-auto scrollbar-hide bg-background text-foreground relative">
       <div className="relative h-80 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-red-900 via-black to-purple-950" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#15171a] via-background to-black" />
         {featured?.Poster && featured.Poster !== "N/A" && (
           <div
             className="absolute inset-0 opacity-50"
@@ -98,18 +164,12 @@ export function MoviesApp() {
             }}
           />
         )}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_40%,rgba(255,80,80,.45),transparent_55%)]" />
-        <motion.div
-          className="absolute inset-0 opacity-25"
-          style={{ backgroundImage: "linear-gradient(rgba(255,80,80,.4) 1px, transparent 1px)", backgroundSize: "100% 4px" }}
-          animate={{ backgroundPositionY: ["0px", "200px"] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_40%,rgba(102,217,255,.18),transparent_55%)]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
 
         <div className="absolute top-4 left-6 flex items-center gap-3">
-          <div className="text-2xl font-black tracking-widest bg-gradient-to-r from-red-500 to-rose-300 bg-clip-text text-transparent">GHOSTFLIX</div>
-          <span className="text-[9px] tracking-[0.4em] font-mono text-white/40">// NET22 STREAM CORE</span>
+          <div className="text-2xl font-black tracking-widest text-foreground">GHOSTFLIX</div>
+          <span className="text-[9px] tracking-[0.4em] font-mono text-muted-foreground">// STREAM CORE</span>
         </div>
 
         <div className="absolute top-4 right-6 flex items-center gap-2">
@@ -119,28 +179,36 @@ export function MoviesApp() {
           <button onClick={() => setShowSettings(true)} className="px-3 py-1.5 rounded-full glass text-xs flex items-center gap-1.5">
             <SettingsIcon className="h-3 w-3" /> Settings
           </button>
+          <button
+            onClick={() => { setProfileId(null); saveActiveProfileId(null); }}
+            title={`${profile.name} — switch profile`}
+            className="flex h-8 items-center gap-2 rounded-full glass px-2.5 text-xs"
+          >
+            <span className="text-base leading-none">{profile.avatar}</span>
+            <span className="max-w-[7rem] truncate text-foreground/80">{profile.name}</span>
+          </button>
         </div>
 
         <div className="absolute bottom-6 left-6 max-w-lg">
-          <span className="text-[10px] tracking-[0.3em] text-red-400 font-mono">GHOSTFLIX FEATURED</span>
-          <h1 className="text-5xl font-black mt-2 leading-none drop-shadow-[0_0_20px_rgba(220,38,38,.4)]">
+          <span className="text-[10px] tracking-[0.3em] text-[var(--ice)] font-mono">GHOSTFLIX FEATURED</span>
+          <h1 className="text-5xl font-black mt-2 leading-none">
             {featured?.Title ?? "LOADING…"}
           </h1>
-          <p className="text-sm text-white/70 mt-3 line-clamp-2">
-            {featured?.Plot ?? "Routing through NET22 relay…"}
+          <p className="text-sm text-foreground/70 mt-3 line-clamp-2">
+            {featured?.Plot ?? "Preparing stream relay…"}
           </p>
           <div className="flex items-center gap-2 mt-5">
             <motion.button
               whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.98 }}
               onClick={() => featured && open(featured)}
               disabled={!featured || !isValidImdbId(featured.imdbID)}
-              className="flex items-center gap-2 px-6 py-2.5 rounded bg-white text-black font-bold text-sm shadow-[0_0_30px_rgba(255,255,255,.3)] disabled:opacity-50">
-              <Play className="h-4 w-4 fill-black" /> Watch on GhostFlix
+              className="flex items-center gap-2 px-6 py-2.5 rounded bg-foreground text-background font-bold text-sm disabled:opacity-50">
+              <Play className="h-4 w-4 fill-current" /> Watch on GhostFlix
             </motion.button>
-            <button className="flex items-center gap-2 px-4 py-2.5 rounded glass text-white text-sm">
+            <button className="flex items-center gap-2 px-4 py-2.5 rounded glass text-foreground text-sm">
               <Plus className="h-4 w-4" /> My List
             </button>
-            <button className="flex items-center gap-2 px-4 py-2.5 rounded glass text-white text-sm">
+            <button className="flex items-center gap-2 px-4 py-2.5 rounded glass text-foreground text-sm">
               <Info className="h-4 w-4" /> Info
             </button>
           </div>
@@ -151,27 +219,27 @@ export function MoviesApp() {
         {showSearch && (
           <motion.div
             initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            className="px-6 py-4 border-b border-white/5 bg-black/60 backdrop-blur"
+            className="px-6 py-4 border-b border-border bg-background/60 backdrop-blur"
           >
             <div className="flex items-center gap-2">
-              <Search className="h-4 w-4 text-white/40" />
+              <Search className="h-4 w-4 text-muted-foreground" />
               <input
                 autoFocus value={query} onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search movies on GhostFlix…"
-                className="flex-1 bg-transparent outline-none text-sm text-white placeholder-white/30"
+                className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground"
               />
-              <button onClick={() => { setShowSearch(false); setQuery(""); }} className="text-white/40 hover:text-white">
+              <button onClick={() => { setShowSearch(false); setQuery(""); }} className="text-muted-foreground hover:text-foreground">
                 <X className="h-4 w-4" />
               </button>
             </div>
             {query.trim().length >= 2 && (
               <div className="mt-4">
-                {searching && <div className="text-[10px] font-mono text-white/40 tracking-widest">SEARCHING NET22…</div>}
-                {!searching && searchResults.length === 0 && (
-                  <div className="text-[10px] font-mono text-white/40 tracking-widest">NO RESULTS</div>
+                {searching && <div className="text-[10px] font-mono text-muted-foreground tracking-widest">SEARCHING…</div>}
+                {!searching && visibleSearch.length === 0 && (
+                  <div className="text-[10px] font-mono text-muted-foreground tracking-widest">NO RESULTS</div>
                 )}
                 <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-                  {searchResults.map((m, i) => <MovieCard key={m.imdbID} movie={m} idx={i} onClick={() => open(m)} />)}
+                  {visibleSearch.map((m, i) => <MovieCard key={m.imdbID} movie={m} idx={i} onClick={() => open(m)} />)}
                 </div>
               </div>
             )}
@@ -179,11 +247,11 @@ export function MoviesApp() {
         )}
       </AnimatePresence>
 
-      {rows.map((row, ri) => (
+      {visibleRows.map((row, ri) => (
         <div key={ri} className="px-6 py-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-white/85 tracking-wider">{row.label}</h2>
-            <span className="text-[10px] font-mono text-white/30 tracking-widest">EXPLORE →</span>
+            <h2 className="text-sm font-bold text-foreground/85 tracking-wider">{row.label}</h2>
+            <span className="text-[10px] font-mono text-muted-foreground tracking-widest">EXPLORE →</span>
           </div>
           <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
             {row.items.length === 0
@@ -193,8 +261,9 @@ export function MoviesApp() {
         </div>
       ))}
 
+
       <div className="px-6 py-8 text-center">
-        <div className="text-[10px] tracking-[0.4em] text-white/30 font-mono">GHOSTFLIX · ENCRYPTED STREAM · NET22 RELAY</div>
+        <div className="text-[10px] tracking-[0.4em] text-muted-foreground font-mono">GHOSTFLIX · ENCRYPTED STREAM</div>
       </div>
 
       <AnimatePresence>
@@ -214,7 +283,7 @@ function MovieCard({ movie, idx, onClick }: { movie: OmdbMovie; idx: number; onC
       disabled={!playable}
       className="relative shrink-0 w-44 aspect-[2/3] rounded-lg overflow-hidden cursor-pointer ring-1 ring-white/10 group disabled:cursor-not-allowed"
     >
-      <div className={`absolute inset-0 bg-gradient-to-br ${COLORS[idx % COLORS.length]}`} />
+      <div className={`absolute inset-0 bg-gradient-to-br ${CARD_BG}`} />
       {hasPoster && (
         <img src={movie.Poster} alt={movie.Title} loading="lazy"
           className="absolute inset-0 w-full h-full object-cover" />
@@ -239,7 +308,7 @@ function MovieCard({ movie, idx, onClick }: { movie: OmdbMovie; idx: number; onC
 function SkeletonCard({ idx }: { idx: number }) {
   return (
     <div className="relative shrink-0 w-44 aspect-[2/3] rounded-lg overflow-hidden ring-1 ring-white/10">
-      <div className={`absolute inset-0 bg-gradient-to-br ${COLORS[idx % COLORS.length]} opacity-40`} />
+      <div className={`absolute inset-0 bg-gradient-to-br ${CARD_BG} opacity-40`} />
       <motion.div
         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
         animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.4, repeat: Infinity, ease: "linear" }}
@@ -444,10 +513,10 @@ function GhostFlixPlayer({ movie, onExit }: { movie: OmdbMovie; onExit: () => vo
       className={`${fullscreen ? "fixed inset-0 z-[9999]" : "h-full"} bg-black text-white flex flex-col`}
     >
       {/* Top chrome */}
-      <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-red-950/60 via-black to-purple-950/60 border-b border-white/5">
+      <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-[#141416] via-background to-[#141416] border-b border-white/5">
         <div className="flex items-center gap-2 min-w-0">
           <button onClick={onExit} className="p-1.5 rounded hover:bg-white/10 text-white/70"><ArrowLeft className="h-3.5 w-3.5" /></button>
-          <div className="text-sm font-black tracking-widest bg-gradient-to-r from-red-500 to-rose-300 bg-clip-text text-transparent">GHOSTFLIX</div>
+          <div className="text-sm font-black tracking-widest text-foreground">GHOSTFLIX</div>
           <span className="text-[9px] font-mono text-white/40 tracking-widest hidden sm:inline">·</span>
           <span className="text-xs font-bold text-white/85 truncate max-w-[40vw]">{movie.Title}</span>
           <span className="text-[10px] font-mono text-white/40">{movie.Year}</span>
@@ -458,16 +527,17 @@ function GhostFlixPlayer({ movie, onExit }: { movie: OmdbMovie; onExit: () => vo
         <div className="flex items-center gap-1">
           <button
             onClick={() => currentProvider && setProviderIdx((i) => (i + 1) % Math.max(providers.length, 1))}
-            title={`Provider: ${currentProvider?.label ?? "none"}`}
+            title="Switch stream source"
             className="px-2 py-1 rounded hover:bg-white/10 text-[10px] font-mono text-white/60 tracking-widest"
           >
-            {currentProvider?.label ?? "—"} · {providerIdx + 1}/{providers.length}
+            SWITCH SOURCE
           </button>
+
           <button onClick={() => setShowSettings(true)} className="p-1.5 rounded hover:bg-white/10 text-white/70"><SettingsIcon className="h-3.5 w-3.5" /></button>
           <button onClick={() => setShowDiag((s) => !s)} className={`p-1.5 rounded hover:bg-white/10 ${showDiag ? "text-emerald-300" : "text-white/70"}`}><Activity className="h-3.5 w-3.5" /></button>
           <button onClick={reloadCurrent} className="p-1.5 rounded hover:bg-white/10 text-white/70"><RotateCw className="h-3.5 w-3.5" /></button>
           <button onClick={() => setFullscreen((f) => !f)} className="p-1.5 rounded hover:bg-white/10 text-white/70"><Maximize2 className="h-3.5 w-3.5" /></button>
-          <button onClick={onExit} className="p-1.5 rounded hover:bg-red-500/20 text-red-300"><X className="h-3.5 w-3.5" /></button>
+          <button onClick={onExit} className="p-1.5 rounded hover:bg-destructive/20 text-destructive"><X className="h-3.5 w-3.5" /></button>
         </div>
       </div>
 
@@ -540,7 +610,7 @@ function GhostFlixPlayer({ movie, onExit }: { movie: OmdbMovie; onExit: () => vo
         )}
 
 
-        <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-red-500/10" />
+        <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/5" />
       </div>
 
       <AnimatePresence>
@@ -577,7 +647,7 @@ function StageOverlay({
     >
       <motion.div
         initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="text-5xl sm:text-6xl font-black tracking-widest bg-gradient-to-r from-red-500 to-rose-300 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(220,38,38,.6)]"
+        className="text-5xl sm:text-6xl font-black tracking-widest text-foreground "
       >
         GHOSTFLIX
       </motion.div>
@@ -585,7 +655,7 @@ function StageOverlay({
 
       <div className="mt-8 h-0.5 w-72 bg-white/10 rounded-full overflow-hidden">
         <motion.div
-          className="h-full bg-gradient-to-r from-red-500 to-rose-300"
+          className="h-full bg-gradient-to-r from-[var(--ice)] to-[#a8ecff]"
           initial={false}
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.4, ease: "easeInOut" }}
@@ -593,7 +663,7 @@ function StageOverlay({
       </div>
 
       <div className="mt-4 flex items-center gap-2 text-[11px] tracking-[0.4em] font-mono text-white/70">
-        <Loader2 className="h-3 w-3 animate-spin text-rose-300" />
+        <Loader2 className="h-3 w-3 animate-spin text-[var(--ice)]" />
         {label}
       </div>
 
@@ -607,7 +677,7 @@ function StageOverlay({
             {i < idx ? (
               <CheckCircle2 className="h-3 w-3 text-emerald-400" />
             ) : i === idx ? (
-              <Loader2 className="h-3 w-3 animate-spin text-rose-300" />
+              <Loader2 className="h-3 w-3 animate-spin text-[var(--ice)]" />
             ) : (
               <span className="h-3 w-3 rounded-full border border-white/20" />
             )}
@@ -631,16 +701,16 @@ function ErrorOverlay({
       initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
       className="absolute inset-0 z-40 flex items-center justify-center bg-black/95 backdrop-blur-md p-6"
     >
-      <div className="relative max-w-md w-full rounded-2xl bg-gradient-to-br from-black via-zinc-950 to-black ring-1 ring-rose-400/40 shadow-[0_0_40px_rgba(244,63,94,.35)] p-7 text-center">
-        <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-red-500 to-rose-700 flex items-center justify-center ring-1 ring-white/15">
+      <div className="relative max-w-md w-full rounded-2xl bg-gradient-to-br from-black via-zinc-950 to-black ring-1 ring-white/10 shadow-[0_0_40px_rgba(0,0,0,.6)] p-7 text-center">
+        <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-[var(--ice)] to-[#2b8fbd] flex items-center justify-center ring-1 ring-white/15">
           <AlertTriangle className="h-7 w-7 text-white" />
         </div>
-        <div className="mt-5 text-[10px] tracking-[0.5em] font-mono text-rose-300">MOVIE UNAVAILABLE</div>
+        <div className="mt-5 text-[10px] tracking-[0.5em] font-mono text-[var(--ice)]">MOVIE UNAVAILABLE</div>
         <h3 className="mt-1 text-xl font-black tracking-wide text-white">{title}</h3>
         <p className="mt-3 text-sm text-white/70 leading-relaxed">{message}</p>
         <p className="mt-2 text-xs text-white/40">Please try again later, or switch playback provider in Settings.</p>
         <div className="mt-5 grid grid-cols-2 gap-2">
-          <button onClick={onRetry} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-gradient-to-r from-red-500 to-rose-700 text-white text-xs font-bold tracking-wider hover:brightness-110 transition">
+          <button onClick={onRetry} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-gradient-to-r from-[var(--ice)] to-[#2b8fbd] text-white text-xs font-bold tracking-wider hover:brightness-110 transition">
             <RefreshCw className="h-3.5 w-3.5" /> RETRY
           </button>
           <button onClick={onReload} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/5 ring-1 ring-white/15 text-white text-xs font-bold tracking-wider hover:bg-white/10 transition">
@@ -714,7 +784,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
       >
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-[10px] tracking-[0.4em] font-mono text-rose-300">GHOSTFLIX SETTINGS</div>
+            <div className="text-[10px] tracking-[0.4em] font-mono text-[var(--ice)]">GHOSTFLIX SETTINGS</div>
             <h3 className="mt-1 text-lg font-black tracking-wide">Playback Provider</h3>
           </div>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-white/60"><X className="h-4 w-4" /></button>
@@ -739,7 +809,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
                   <button onClick={() => move(p.id, 1)} disabled={i === arr.length - 1} className="h-7 w-7 rounded hover:bg-white/10 disabled:opacity-30 flex items-center justify-center"><ChevronDown className="h-3.5 w-3.5" /></button>
                   <button
                     onClick={() => toggle(p.id)}
-                    className={`ml-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest ${disabled ? "bg-white/5 text-white/50" : "bg-rose-500/30 text-rose-100 ring-1 ring-rose-400/40"}`}
+                    className={`ml-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest ${disabled ? "bg-white/5 text-white/50" : "bg-[var(--ice-soft)] text-[var(--ice)] ring-1 ring-[var(--ice)]/40"}`}
                   >
                     {disabled ? "OFF" : "ON"}
                   </button>
@@ -751,7 +821,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
 
         <div className="mt-5 flex items-center justify-between">
           <button onClick={reset} className="text-[11px] font-mono text-white/50 hover:text-white/80 tracking-widest">RESET TO DEFAULTS</button>
-          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gradient-to-r from-red-500 to-rose-700 text-white text-xs font-bold tracking-widest hover:brightness-110">DONE</button>
+          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gradient-to-r from-[var(--ice)] to-[#2b8fbd] text-white text-xs font-bold tracking-widest hover:brightness-110">DONE</button>
         </div>
       </motion.div>
     </motion.div>

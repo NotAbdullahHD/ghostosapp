@@ -7,9 +7,9 @@ import {
 } from "lucide-react";
 
 const APP_META: Record<NotifApp, { label: string; icon: React.ReactNode; tint: string }> = {
-  system:    { label: "GhostOS",    icon: <Bell className="h-3.5 w-3.5" />,           tint: "from-fuchsia-500 to-violet-600" },
+  system:    { label: "GhostOS",    icon: <Bell className="h-3.5 w-3.5" />,           tint: "from-ice to-ice" },
   chat:      { label: "GhostChat",  icon: <MessageCircle className="h-3.5 w-3.5" />,  tint: "from-cyan-400 to-blue-600" },
-  ghostdrop: { label: "GhostDrop",  icon: <Radio className="h-3.5 w-3.5" />,          tint: "from-fuchsia-400 to-pink-600" },
+  ghostdrop: { label: "GhostDrop",  icon: <Radio className="h-3.5 w-3.5" />,          tint: "from-ice to-ice" },
   movies:    { label: "GhostFlix",  icon: <Film className="h-3.5 w-3.5" />,           tint: "from-rose-500 to-red-700" },
   games:     { label: "Games Hub",  icon: <Gamepad2 className="h-3.5 w-3.5" />,       tint: "from-emerald-500 to-teal-700" },
   downloads: { label: "Downloads",  icon: <Download className="h-3.5 w-3.5" />,       tint: "from-amber-400 to-orange-600" },
@@ -75,7 +75,7 @@ export function NotificationCenter() {
                       READ
                     </button>
                     <button onClick={clearAllNotifications}
-                      className="text-[10px] font-mono tracking-widest text-fuchsia-300 hover:text-white px-2 py-1 rounded hover:bg-white/10 transition">
+                      className="text-[10px] font-mono tracking-widest text-ice hover:text-white px-2 py-1 rounded hover:bg-white/10 transition">
                       CLEAR
                     </button>
                   </>
@@ -129,7 +129,7 @@ export function NotificationCenter() {
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
                                   <div className="text-xs font-bold text-white truncate flex-1">{n.title}</div>
-                                  {!n.read && <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-400 shadow-[0_0_8px_rgba(232,121,249,.9)] flex-shrink-0" />}
+                                  {!n.read && <span className="h-1.5 w-1.5 rounded-full bg-ice shadow-[0_0_8px_rgba(102,217,255,.9)] flex-shrink-0" />}
                                   <span className="text-[10px] font-mono text-white/40 flex-shrink-0">{timeAgo(n.time)}</span>
                                 </div>
                                 <div className="text-xs text-white/70 mt-0.5 leading-snug">{n.body}</div>
