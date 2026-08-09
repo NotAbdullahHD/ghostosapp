@@ -223,7 +223,7 @@ function MovieCard({ movie, idx, onClick }: { movie: OmdbMovie; idx: number; onC
       disabled={!playable}
       className="relative shrink-0 w-44 aspect-[2/3] rounded-lg overflow-hidden cursor-pointer ring-1 ring-white/10 group disabled:cursor-not-allowed"
     >
-      <div className={`absolute inset-0 bg-gradient-to-br ${COLORS[idx % COLORS.length]}`} />
+      <div className={`absolute inset-0 bg-gradient-to-br ${CARD_BG}`} />
       {hasPoster && (
         <img src={movie.Poster} alt={movie.Title} loading="lazy"
           className="absolute inset-0 w-full h-full object-cover" />
@@ -248,7 +248,7 @@ function MovieCard({ movie, idx, onClick }: { movie: OmdbMovie; idx: number; onC
 function SkeletonCard({ idx }: { idx: number }) {
   return (
     <div className="relative shrink-0 w-44 aspect-[2/3] rounded-lg overflow-hidden ring-1 ring-white/10">
-      <div className={`absolute inset-0 bg-gradient-to-br ${COLORS[idx % COLORS.length]} opacity-40`} />
+      <div className={`absolute inset-0 bg-gradient-to-br ${CARD_BG} opacity-40`} />
       <motion.div
         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
         animate={{ x: ["-100%", "100%"] }} transition={{ duration: 1.4, repeat: Infinity, ease: "linear" }}
