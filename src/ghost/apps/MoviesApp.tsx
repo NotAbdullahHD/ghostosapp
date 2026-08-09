@@ -50,6 +50,37 @@ export function MoviesApp() {
   const [searching, setSearching] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
+  // Viewing profiles ("Who's watching?")
+  const [profiles, setProfiles] = useState<FlixProfile[]>([]);
+  const [profileId, setProfileId] = useState<string | null>(null);
+  const [profilesReady, setProfilesReady] = useState(false);
+  const profile = useMemo(
+    () => profiles.find((p) => p.id === profileId) ?? null,
+    [profiles, profileId]
+  );
+
+  useEffect(() => {
+    const list = loadProfiles();
+    setProfiles(list);
+    const activeId = loadActiveProfileId();
+    if (activeId && list.some((p) => p.id === activeId)) setProfileId(activeId);
+    setProfilesReady(true);
+  }, []);
+
+  const persistProfiles = (list: FlixProfile[]) => {
+    setProfiles(list);
+    saveProfiles(list);
+    if (profileId && !list.some((p) => p.id === profileId)) {
+      setProfileId(null);
+      saveActiveProfileId(null);
+    }
+  };
+
+  const chooseProfile = (p: FlixProfile) => {
+    setProfileId(p.id);
+    saveActiveProfileId(p.id);
+  };
+
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -77,11 +108,36 @@ export function MoviesApp() {
     return () => clearTimeout(t);
   }, [query, showSearch]);
 
+  const visibleRows = useMemo(
+    () => rows
+      .map((r) => ({ ...r, items: r.items.filter((m) => allowedForProfile(m, profile)) }))
+      .filter((r) => !profile?.kids || r.items.length > 0),
+    [rows, profile]
+  );
+  const visibleSearch = useMemo(
+    () => searchResults.filter((m) => allowedForProfile(m, profile)),
+    [searchResults, profile]
+  );
+
   const open = (m: OmdbMovie) => {
     if (!isValidImdbId(m.imdbID)) return;
     setActive(m);
     setLaunched(true);
   };
+
+  if (!profilesReady) {
+    return <div className="h-full bg-background" />;
+  }
+
+  if (!profile) {
+    return (
+      <ProfileGate
+        profiles={profiles}
+        onSelect={chooseProfile}
+        onSave={persistProfiles}
+      />
+    );
+  }
 
   if (launched && active) {
     return (
@@ -91,6 +147,7 @@ export function MoviesApp() {
       />
     );
   }
+
 
   return (
     <div className="h-full overflow-y-auto scrollbar-hide bg-black text-white relative">
