@@ -203,8 +203,8 @@ export function GhostDrop() {
             style={{
               background: "linear-gradient(180deg, rgba(20,10,35,0.92), rgba(10,5,20,0.94))",
               backdropFilter: "blur(28px)",
-              border: "1px solid rgba(232,121,249,0.18)",
-              boxShadow: "0 40px 120px -20px rgba(0,0,0,.9), 0 0 80px -30px rgba(168,85,247,.5)",
+              border: "1px solid rgba(102,217,255,0.18)",
+              boxShadow: "0 40px 120px -20px rgba(0,0,0,.9), 0 0 80px -30px rgba(102,217,255,.5)",
             }}
             initial={{ x: 440, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -215,12 +215,12 @@ export function GhostDrop() {
             <div className="px-5 pt-5 pb-3 border-b border-white/5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-fuchsia-500 via-violet-600 to-blue-600 flex items-center justify-center ring-1 ring-white/10 shadow-[0_10px_30px_-8px_rgba(168,85,247,0.6)]">
+                  <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-ice via-ice to-blue-600 flex items-center justify-center ring-1 ring-white/10 shadow-[0_10px_30px_-8px_rgba(102,217,255,0.6)]">
                     <Radio className="h-5 w-5 text-white" />
                   </div>
                   <div>
                     <div className="text-base font-bold tracking-tight">GhostDrop</div>
-                    <div className="text-[10px] font-mono tracking-widest text-fuchsia-300/70">SPECTRAL TRANSFER</div>
+                    <div className="text-[10px] font-mono tracking-widest text-ice/70">SPECTRAL TRANSFER</div>
                   </div>
                 </div>
                 <button onClick={closeGhostDrop}
@@ -250,20 +250,20 @@ export function GhostDrop() {
                     }}
                     onClick={() => inputRef.current?.click()}
                     animate={{
-                      borderColor: dragOver ? "rgba(232,121,249,.9)" : "rgba(255,255,255,.1)",
+                      borderColor: dragOver ? "rgba(102,217,255,.9)" : "rgba(255,255,255,.1)",
                       boxShadow: dragOver
-                        ? "0 0 60px -10px rgba(232,121,249,.6), inset 0 0 40px rgba(168,85,247,.15)"
+                        ? "0 0 60px -10px rgba(102,217,255,.6), inset 0 0 40px rgba(102,217,255,.15)"
                         : "0 0 0 rgba(0,0,0,0)",
                     }}
                     transition={{ duration: 0.25 }}
-                    className="relative cursor-pointer rounded-2xl border border-dashed p-6 text-center bg-gradient-to-br from-fuchsia-500/5 to-violet-500/5"
+                    className="relative cursor-pointer rounded-2xl border border-dashed p-6 text-center bg-gradient-to-br from-ice/5 to-ice/5"
                   >
                     <input ref={inputRef} type="file" multiple hidden
                       onChange={(e) => e.target.files && handleFiles(e.target.files)} />
                     <motion.div
                       animate={dragOver ? { scale: 1.08, y: -2 } : { scale: 1, y: 0 }}
                       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-fuchsia-500 to-violet-600 flex items-center justify-center shadow-[0_10px_40px_-10px_rgba(232,121,249,.7)]"
+                      className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-ice to-ice flex items-center justify-center shadow-[0_10px_40px_-10px_rgba(102,217,255,.7)]"
                     >
                       <Upload className="h-6 w-6" />
                     </motion.div>
@@ -347,7 +347,7 @@ function TabBtn({ active, onClick, icon, label }: { active: boolean; onClick: ()
   return (
     <button onClick={onClick} className="relative py-2 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1.5 text-white/70 hover:text-white transition">
       {active && (
-        <motion.div layoutId="ghostdrop-tab" className="absolute inset-0 rounded-xl bg-gradient-to-br from-fuchsia-500/30 to-violet-600/20 ring-1 ring-fuchsia-400/40" />
+        <motion.div layoutId="ghostdrop-tab" className="absolute inset-0 rounded-xl bg-gradient-to-br from-ice/30 to-ice/20 ring-1 ring-ice/40" />
       )}
       <span className="relative flex items-center gap-1.5">{icon}{label}</span>
     </button>
@@ -363,7 +363,7 @@ function TransferRow({ item, onRemove }: { item: DropItem; onRemove: () => void 
         <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
           item.phase === "ready" ? "bg-emerald-500/15 text-emerald-300" :
           item.phase === "failed" ? "bg-rose-500/15 text-rose-300" :
-          "bg-fuchsia-500/15 text-fuchsia-300"
+          "bg-ice/15 text-ice"
         }`}>
           {iconFor(item.type, item.name)}
         </div>
@@ -372,14 +372,14 @@ function TransferRow({ item, onRemove }: { item: DropItem; onRemove: () => void 
           <div className="text-[10px] text-white/50 font-mono flex items-center gap-2">
             <span>{fmtBytes(item.size)}</span>
             <span>·</span>
-            <span className={item.phase === "failed" ? "text-rose-300" : item.phase === "ready" ? "text-emerald-300" : "text-fuchsia-300"}>
+            <span className={item.phase === "failed" ? "text-rose-300" : item.phase === "ready" ? "text-emerald-300" : "text-ice"}>
               {phaseLabel(item.phase)}
             </span>
             {active && item.speed > 0 && <><span>·</span><span>{fmtBytes(item.speed)}/s</span></>}
           </div>
         </div>
         {item.phase === "ready" && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
-        {active && <Loader2 className="h-4 w-4 text-fuchsia-300 animate-spin" />}
+        {active && <Loader2 className="h-4 w-4 text-ice animate-spin" />}
         <button onClick={onRemove} className="h-7 w-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/40">
           <X className="h-3.5 w-3.5" />
         </button>
@@ -391,7 +391,7 @@ function TransferRow({ item, onRemove }: { item: DropItem; onRemove: () => void 
           className={`h-full ${
             item.phase === "failed" ? "bg-rose-500" :
             item.phase === "ready"  ? "bg-gradient-to-r from-emerald-400 to-teal-400" :
-            "bg-gradient-to-r from-fuchsia-400 via-violet-500 to-blue-500"
+            "bg-gradient-to-r from-ice via-ice to-blue-500"
           }`}
         />
       </div>
@@ -419,9 +419,9 @@ function QRShowcase({ item }: { item: DropItem }) {
   return (
     <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className="rounded-2xl p-4 bg-gradient-to-br from-fuchsia-500/10 via-violet-500/5 to-blue-500/10 border border-fuchsia-400/20">
+      className="rounded-2xl p-4 bg-gradient-to-br from-ice/10 via-ice/5 to-blue-500/10 border border-ice/20">
       <div className="flex items-center gap-2 mb-3">
-        <QrCode className="h-4 w-4 text-fuchsia-300" />
+        <QrCode className="h-4 w-4 text-ice" />
         <div className="text-xs font-semibold">Scan with your phone</div>
         {remaining > 0 && (
           <div className="ml-auto text-[10px] font-mono text-white/50">
@@ -452,7 +452,7 @@ function QRShowcase({ item }: { item: DropItem }) {
         </button>
         {item.url && (
           <a href={item.url} target="_blank" rel="noreferrer"
-            className="flex-1 py-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5">
+            className="flex-1 py-2 rounded-xl bg-gradient-to-r from-ice to-ice text-xs font-semibold flex items-center justify-center gap-1.5">
             <ExternalLink className="h-3 w-3" />Open
           </a>
         )}
@@ -476,7 +476,7 @@ function HistoryRow({ item, onRemove }: { item: DropItem; onRemove: () => void }
       <div className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
         item.phase === "ready" ? "bg-emerald-500/15 text-emerald-300" :
         item.phase === "failed" ? "bg-rose-500/15 text-rose-300" :
-        "bg-fuchsia-500/15 text-fuchsia-300"
+        "bg-ice/15 text-ice"
       }`}>{item.phase}</div>
       <button onClick={onRemove} className="h-7 w-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/40">
         <X className="h-3.5 w-3.5" />
@@ -494,11 +494,11 @@ function DevicesTab() {
   ];
   return (
     <div className="space-y-3">
-      <div className="rounded-2xl p-4 bg-gradient-to-br from-fuchsia-500/10 to-blue-500/10 border border-white/5 text-center">
+      <div className="rounded-2xl p-4 bg-gradient-to-br from-ice/10 to-blue-500/10 border border-white/5 text-center">
         <motion.div
           animate={{ scale: [1, 1.06, 1], opacity: [0.7, 1, 0.7] }}
           transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-          className="mx-auto h-14 w-14 rounded-full bg-gradient-to-br from-fuchsia-500 to-violet-600 flex items-center justify-center shadow-[0_0_40px_rgba(232,121,249,.5)]"
+          className="mx-auto h-14 w-14 rounded-full bg-gradient-to-br from-ice to-ice flex items-center justify-center shadow-[0_0_40px_rgba(102,217,255,.5)]"
         >
           <Wifi className="h-6 w-6" />
         </motion.div>
@@ -508,7 +508,7 @@ function DevicesTab() {
       <div className="text-[10px] font-mono tracking-[0.3em] text-white/50 px-1">DEVICES</div>
       {devices.map((d) => (
         <div key={d.name} className="rounded-xl bg-white/5 p-3 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center text-fuchsia-300">
+          <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center text-ice">
             {d.kind === "phone" ? <Smartphone className="h-4 w-4" /> :
              d.kind === "radar" ? <Radio className="h-4 w-4" /> :
              <Send className="h-4 w-4" />}

@@ -513,7 +513,7 @@ function GhostFlixPlayer({ movie, onExit }: { movie: OmdbMovie; onExit: () => vo
       className={`${fullscreen ? "fixed inset-0 z-[9999]" : "h-full"} bg-black text-white flex flex-col`}
     >
       {/* Top chrome */}
-      <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-red-950/60 via-black to-purple-950/60 border-b border-white/5">
+      <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-red-950/60 via-black to-ice/60 border-b border-white/5">
         <div className="flex items-center gap-2 min-w-0">
           <button onClick={onExit} className="p-1.5 rounded hover:bg-white/10 text-white/70"><ArrowLeft className="h-3.5 w-3.5" /></button>
           <div className="text-sm font-black tracking-widest bg-gradient-to-r from-red-500 to-rose-300 bg-clip-text text-transparent">GHOSTFLIX</div>
