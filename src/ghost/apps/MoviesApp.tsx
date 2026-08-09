@@ -513,7 +513,7 @@ function GhostFlixPlayer({ movie, onExit }: { movie: OmdbMovie; onExit: () => vo
       className={`${fullscreen ? "fixed inset-0 z-[9999]" : "h-full"} bg-black text-white flex flex-col`}
     >
       {/* Top chrome */}
-      <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-red-950/60 via-black to-ice/60 border-b border-white/5">
+      <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-[#141416] via-background to-[#141416] border-b border-white/5">
         <div className="flex items-center gap-2 min-w-0">
           <button onClick={onExit} className="p-1.5 rounded hover:bg-white/10 text-white/70"><ArrowLeft className="h-3.5 w-3.5" /></button>
           <div className="text-sm font-black tracking-widest text-foreground">GHOSTFLIX</div>
@@ -808,7 +808,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
                   <button onClick={() => move(p.id, 1)} disabled={i === arr.length - 1} className="h-7 w-7 rounded hover:bg-white/10 disabled:opacity-30 flex items-center justify-center"><ChevronDown className="h-3.5 w-3.5" /></button>
                   <button
                     onClick={() => toggle(p.id)}
-                    className={`ml-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest ${disabled ? "bg-white/5 text-white/50" : "bg-rose-500/30 text-rose-100 ring-1 ring-white/10"}`}
+                    className={`ml-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest ${disabled ? "bg-white/5 text-white/50" : "bg-[var(--ice-soft)] text-[var(--ice)] ring-1 ring-[var(--ice)]/40"}`}
                   >
                     {disabled ? "OFF" : "ON"}
                   </button>
