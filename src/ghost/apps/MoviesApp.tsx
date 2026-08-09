@@ -527,11 +527,12 @@ function GhostFlixPlayer({ movie, onExit }: { movie: OmdbMovie; onExit: () => vo
         <div className="flex items-center gap-1">
           <button
             onClick={() => currentProvider && setProviderIdx((i) => (i + 1) % Math.max(providers.length, 1))}
-            title={`Provider: ${currentProvider?.label ?? "none"}`}
+            title="Switch stream source"
             className="px-2 py-1 rounded hover:bg-white/10 text-[10px] font-mono text-white/60 tracking-widest"
           >
-            {currentProvider?.label ?? "—"} · {providerIdx + 1}/{providers.length}
+            SWITCH SOURCE
           </button>
+
           <button onClick={() => setShowSettings(true)} className="p-1.5 rounded hover:bg-white/10 text-white/70"><SettingsIcon className="h-3.5 w-3.5" /></button>
           <button onClick={() => setShowDiag((s) => !s)} className={`p-1.5 rounded hover:bg-white/10 ${showDiag ? "text-emerald-300" : "text-white/70"}`}><Activity className="h-3.5 w-3.5" /></button>
           <button onClick={reloadCurrent} className="p-1.5 rounded hover:bg-white/10 text-white/70"><RotateCw className="h-3.5 w-3.5" /></button>
