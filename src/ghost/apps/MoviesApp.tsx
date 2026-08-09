@@ -15,16 +15,25 @@ import {
   type PlaybackProvider, type ProviderPrefs,
 } from "../providers/playback";
 
-const COLORS = [
-  "from-purple-700 to-indigo-950",
-  "from-red-700 to-black",
-  "from-pink-600 to-rose-950",
-  "from-blue-700 to-slate-950",
-  "from-orange-600 to-red-950",
-  "from-teal-600 to-emerald-950",
-  "from-fuchsia-700 to-purple-950",
-  "from-amber-600 to-rose-950",
-];
+import { ProfileGate } from "./FlixProfiles";
+import {
+  loadProfiles, saveProfiles, loadActiveProfileId, saveActiveProfileId,
+  type FlixProfile,
+} from "../profiles";
+
+/** Neutral Obsidian poster placeholders — no per-card random colours. */
+const CARD_BG = "from-white/[0.07] to-white/[0.02]";
+
+/** Titles hidden when the active profile has Kids Mode enabled. */
+const KID_UNSAFE_RATINGS = ["R", "NC-17", "TV-MA", "X"];
+function allowedForProfile(m: OmdbMovie, profile: FlixProfile | null) {
+  if (!profile?.kids) return true;
+  const rated = (m.Rated ?? "").toUpperCase();
+  if (KID_UNSAFE_RATINGS.includes(rated)) return false;
+  const genre = (m.Genre ?? "").toLowerCase();
+  return !/horror|thriller/.test(genre);
+}
+
 
 export function MoviesApp() {
   const [active, setActive] = useState<OmdbMovie | null>(null);
