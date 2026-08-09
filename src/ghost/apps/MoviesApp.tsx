@@ -150,9 +150,9 @@ export function MoviesApp() {
 
 
   return (
-    <div className="h-full overflow-y-auto scrollbar-hide bg-black text-white relative">
+    <div className="h-full overflow-y-auto scrollbar-hide bg-background text-foreground relative">
       <div className="relative h-80 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-red-900 via-black to-purple-950" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#15171a] via-background to-black" />
         {featured?.Poster && featured.Poster !== "N/A" && (
           <div
             className="absolute inset-0 opacity-50"
@@ -164,18 +164,12 @@ export function MoviesApp() {
             }}
           />
         )}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_40%,rgba(255,80,80,.45),transparent_55%)]" />
-        <motion.div
-          className="absolute inset-0 opacity-25"
-          style={{ backgroundImage: "linear-gradient(rgba(255,80,80,.4) 1px, transparent 1px)", backgroundSize: "100% 4px" }}
-          animate={{ backgroundPositionY: ["0px", "200px"] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_40%,rgba(102,217,255,.18),transparent_55%)]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
 
         <div className="absolute top-4 left-6 flex items-center gap-3">
-          <div className="text-2xl font-black tracking-widest bg-gradient-to-r from-red-500 to-rose-300 bg-clip-text text-transparent">GHOSTFLIX</div>
-          <span className="text-[9px] tracking-[0.4em] font-mono text-white/40">// NET22 STREAM CORE</span>
+          <div className="text-2xl font-black tracking-widest text-foreground">GHOSTFLIX</div>
+          <span className="text-[9px] tracking-[0.4em] font-mono text-muted-foreground">// STREAM CORE</span>
         </div>
 
         <div className="absolute top-4 right-6 flex items-center gap-2">
@@ -185,28 +179,36 @@ export function MoviesApp() {
           <button onClick={() => setShowSettings(true)} className="px-3 py-1.5 rounded-full glass text-xs flex items-center gap-1.5">
             <SettingsIcon className="h-3 w-3" /> Settings
           </button>
+          <button
+            onClick={() => { setProfileId(null); saveActiveProfileId(null); }}
+            title={`${profile.name} — switch profile`}
+            className="flex h-8 items-center gap-2 rounded-full glass px-2.5 text-xs"
+          >
+            <span className="text-base leading-none">{profile.avatar}</span>
+            <span className="max-w-[7rem] truncate text-foreground/80">{profile.name}</span>
+          </button>
         </div>
 
         <div className="absolute bottom-6 left-6 max-w-lg">
-          <span className="text-[10px] tracking-[0.3em] text-red-400 font-mono">GHOSTFLIX FEATURED</span>
-          <h1 className="text-5xl font-black mt-2 leading-none drop-shadow-[0_0_20px_rgba(220,38,38,.4)]">
+          <span className="text-[10px] tracking-[0.3em] text-[var(--ice)] font-mono">GHOSTFLIX FEATURED</span>
+          <h1 className="text-5xl font-black mt-2 leading-none">
             {featured?.Title ?? "LOADING…"}
           </h1>
-          <p className="text-sm text-white/70 mt-3 line-clamp-2">
-            {featured?.Plot ?? "Routing through NET22 relay…"}
+          <p className="text-sm text-foreground/70 mt-3 line-clamp-2">
+            {featured?.Plot ?? "Preparing stream relay…"}
           </p>
           <div className="flex items-center gap-2 mt-5">
             <motion.button
               whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.98 }}
               onClick={() => featured && open(featured)}
               disabled={!featured || !isValidImdbId(featured.imdbID)}
-              className="flex items-center gap-2 px-6 py-2.5 rounded bg-white text-black font-bold text-sm shadow-[0_0_30px_rgba(255,255,255,.3)] disabled:opacity-50">
-              <Play className="h-4 w-4 fill-black" /> Watch on GhostFlix
+              className="flex items-center gap-2 px-6 py-2.5 rounded bg-foreground text-background font-bold text-sm disabled:opacity-50">
+              <Play className="h-4 w-4 fill-current" /> Watch on GhostFlix
             </motion.button>
-            <button className="flex items-center gap-2 px-4 py-2.5 rounded glass text-white text-sm">
+            <button className="flex items-center gap-2 px-4 py-2.5 rounded glass text-foreground text-sm">
               <Plus className="h-4 w-4" /> My List
             </button>
-            <button className="flex items-center gap-2 px-4 py-2.5 rounded glass text-white text-sm">
+            <button className="flex items-center gap-2 px-4 py-2.5 rounded glass text-foreground text-sm">
               <Info className="h-4 w-4" /> Info
             </button>
           </div>
@@ -217,27 +219,27 @@ export function MoviesApp() {
         {showSearch && (
           <motion.div
             initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            className="px-6 py-4 border-b border-white/5 bg-black/60 backdrop-blur"
+            className="px-6 py-4 border-b border-border bg-background/60 backdrop-blur"
           >
             <div className="flex items-center gap-2">
-              <Search className="h-4 w-4 text-white/40" />
+              <Search className="h-4 w-4 text-muted-foreground" />
               <input
                 autoFocus value={query} onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search movies on GhostFlix…"
-                className="flex-1 bg-transparent outline-none text-sm text-white placeholder-white/30"
+                className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground"
               />
-              <button onClick={() => { setShowSearch(false); setQuery(""); }} className="text-white/40 hover:text-white">
+              <button onClick={() => { setShowSearch(false); setQuery(""); }} className="text-muted-foreground hover:text-foreground">
                 <X className="h-4 w-4" />
               </button>
             </div>
             {query.trim().length >= 2 && (
               <div className="mt-4">
-                {searching && <div className="text-[10px] font-mono text-white/40 tracking-widest">SEARCHING NET22…</div>}
-                {!searching && searchResults.length === 0 && (
-                  <div className="text-[10px] font-mono text-white/40 tracking-widest">NO RESULTS</div>
+                {searching && <div className="text-[10px] font-mono text-muted-foreground tracking-widest">SEARCHING…</div>}
+                {!searching && visibleSearch.length === 0 && (
+                  <div className="text-[10px] font-mono text-muted-foreground tracking-widest">NO RESULTS</div>
                 )}
                 <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-                  {searchResults.map((m, i) => <MovieCard key={m.imdbID} movie={m} idx={i} onClick={() => open(m)} />)}
+                  {visibleSearch.map((m, i) => <MovieCard key={m.imdbID} movie={m} idx={i} onClick={() => open(m)} />)}
                 </div>
               </div>
             )}
@@ -245,11 +247,11 @@ export function MoviesApp() {
         )}
       </AnimatePresence>
 
-      {rows.map((row, ri) => (
+      {visibleRows.map((row, ri) => (
         <div key={ri} className="px-6 py-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-white/85 tracking-wider">{row.label}</h2>
-            <span className="text-[10px] font-mono text-white/30 tracking-widest">EXPLORE →</span>
+            <h2 className="text-sm font-bold text-foreground/85 tracking-wider">{row.label}</h2>
+            <span className="text-[10px] font-mono text-muted-foreground tracking-widest">EXPLORE →</span>
           </div>
           <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
             {row.items.length === 0
@@ -258,6 +260,7 @@ export function MoviesApp() {
           </div>
         </div>
       ))}
+
 
       <div className="px-6 py-8 text-center">
         <div className="text-[10px] tracking-[0.4em] text-white/30 font-mono">GHOSTFLIX · ENCRYPTED STREAM · NET22 RELAY</div>
