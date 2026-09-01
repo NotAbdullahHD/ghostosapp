@@ -132,6 +132,18 @@ const DEFAULT_SETTINGS: SystemSettings = {
   newTab: "ghost",
 };
 
+export interface DesktopIcon { appId: AppId; x: number; y: number }
+
+export type WidgetId = "quick" | "status" | "nowplaying" | "updates";
+
+export const DEFAULT_PINNED: AppId[] = [
+  "browser", "ghostcloud", "games", "movies", "music", "chat", "files", "settings",
+];
+
+const DEFAULT_WIDGETS: Record<WidgetId, boolean> = {
+  quick: true, status: true, nowplaying: true, updates: true,
+};
+
 
 interface GhostCtx {
   booted: boolean;
