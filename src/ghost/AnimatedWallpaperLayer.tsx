@@ -5,6 +5,16 @@ import type { Wallpaper } from "./store";
 export function AnimatedWallpaperLayer({ wallpaper }: { wallpaper: Wallpaper | undefined }) {
   if (!wallpaper) return null;
 
+  if (wallpaper.image) {
+    return (
+      <div
+        className="pointer-events-none absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url(${wallpaper.image})` }}
+      />
+    );
+  }
+
+
   // Live video wallpapers take precedence
   if (wallpaper.video) {
     return (

@@ -1,20 +1,22 @@
 import { motion } from "framer-motion";
+import { useRef, useState } from "react";
 import { useGhost } from "./store";
 import { APPS, type AppDef, type AppId } from "./apps";
 import { AppIcon } from "./AppIcon";
 import { LayoutGrid } from "lucide-react";
-
-// Pinned apps — the essentials.
-const PINNED: AppId[] = ["browser", "ghostcloud", "games", "movies", "music", "chat", "files", "settings"];
+import { isOverDock } from "./DesktopIcons";
 
 export function Dock() {
-  const { openApp, windows, toggleLauncher, showLauncher, focusWindow, toggleMinimize } = useGhost();
+  const {
+    openApp, windows, toggleLauncher, showLauncher, focusWindow, toggleMinimize,
+    pinned, unpinApp, addDesktopIcon,
+  } = useGhost();
 
-  const pinned = PINNED.map((id) => APPS.find((a) => a.id === id)).filter(Boolean) as AppDef[];
+  const pinnedApps = pinned.map((id) => APPS.find((a) => a.id === id)).filter(Boolean) as AppDef[];
   // Running apps that are not pinned appear after a divider.
   const running = windows
     .map((w) => APPS.find((a) => a.id === w.appId))
-    .filter((a): a is AppDef => !!a && !PINNED.includes(a.id))
+    .filter((a): a is AppDef => !!a && !pinned.includes(a.id))
     .filter((a, i, arr) => arr.findIndex((b) => b.id === a.id) === i);
 
   const activate = (appId: AppId, name: string) => {
@@ -30,14 +32,15 @@ export function Dock() {
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       className="fixed bottom-2 left-1/2 -translate-x-1/2 z-[600]"
+      data-dock
+      data-no-ctx
     >
       <div
         className="rounded-2xl px-2 py-1.5 flex items-end gap-1"
         style={{
-          background: "rgba(20,20,22,0.62)",
-          backdropFilter: "blur(28px) saturate(160%)",
-          WebkitBackdropFilter: "blur(28px) saturate(160%)",
-          border: "1px solid rgba(255,255,255,0.08)",
+          background: "rgba(20,20,22,0.38)",
+          backdropFilter: "blur(30px) saturate(170%)",
+          border: "1px solid rgba(255,255,255,0.07)",
           boxShadow: "0 18px 44px -22px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.06)",
         }}
       >
@@ -47,13 +50,26 @@ export function Dock() {
 
         <Divider />
 
-        {pinned.map((app) => (
-          <DockApp key={app.id} app={app} open={windows.some((w) => w.appId === app.id)} onClick={() => activate(app.id, app.name)} />
+        {pinnedApps.map((app) => (
+          <DockApp
+            key={app.id}
+            app={app}
+            open={windows.some((w) => w.appId === app.id)}
+            minimized={windows.some((w) => w.appId === app.id && w.minimized)}
+            onClick={() => activate(app.id, app.name)}
+            onDropOutside={(x, y) => { unpinApp(app.id); addDesktopIcon(app.id, x - 38, y - 30); }}
+          />
         ))}
 
         {running.length > 0 && <Divider />}
         {running.map((app) => (
-          <DockApp key={app.id} app={app} open onClick={() => activate(app.id, app.name)} />
+          <DockApp
+            key={app.id}
+            app={app}
+            open
+            minimized={windows.some((w) => w.appId === app.id && w.minimized)}
+            onClick={() => activate(app.id, app.name)}
+          />
         ))}
       </div>
     </motion.div>
@@ -64,19 +80,63 @@ function Divider() {
   return <span className="self-stretch w-px mx-1 my-1.5 bg-white/10" />;
 }
 
-function DockApp({ app, open, onClick }: { app: AppDef; open: boolean; onClick: () => void }) {
+function DockApp({
+  app, open, minimized, onClick, onDropOutside,
+}: {
+  app: AppDef;
+  open: boolean;
+  minimized?: boolean;
+  onClick: () => void;
+  onDropOutside?: (x: number, y: number) => void;
+}) {
+  const down = useRef<{ x: number; y: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0 || !onDropOutside) return;
+    down.current = { x: e.clientX, y: e.clientY };
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!down.current) return;
+    if (Math.hypot(e.clientX - down.current.x, e.clientY - down.current.y) > 8) setDragging(true);
+  };
+  const onPointerUp = (e: React.PointerEvent) => {
+    const started = down.current;
+    down.current = null;
+    if (dragging && started && onDropOutside && !isOverDock(e.clientX, e.clientY)) {
+      setDragging(false);
+      onDropOutside(e.clientX, e.clientY);
+      return;
+    }
+    setDragging(false);
+    onClick();
+  };
+
   return (
-    <button onClick={onClick} className="group relative flex flex-col items-center" title={app.name}>
-      <span className="h-9 w-9 rounded-xl flex items-center justify-center transition-colors duration-150 group-hover:bg-white/[0.08]">
+    <button
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      className="group relative flex flex-col items-center"
+      title={app.name}
+      style={{ touchAction: "none" }}
+    >
+      <motion.span
+        whileHover={{ scale: 1.18, y: -4 }}
+        transition={{ type: "spring", stiffness: 380, damping: 24 }}
+        className="h-9 w-9 rounded-xl flex items-center justify-center"
+        style={{ opacity: dragging ? 0.5 : 1 }}
+      >
         <AppIcon id={app.id} size={34} className="!w-[34px] !h-[34px]" />
-      </span>
+      </motion.span>
       <Tooltip>{app.name}</Tooltip>
       <span
         className="mt-[3px] h-[3px] rounded-full transition-all duration-200"
         style={{
-          width: open ? 14 : 0,
+          width: open ? (minimized ? 6 : 14) : 0,
           background: "#66d9ff",
-          opacity: open ? 1 : 0,
+          opacity: open ? (minimized ? 0.55 : 1) : 0,
         }}
       />
     </button>
@@ -86,12 +146,14 @@ function DockApp({ app, open, onClick }: { app: AppDef; open: boolean; onClick: 
 function DockButton({ label, active, onClick, children }: { label: string; active?: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button onClick={onClick} className="group relative flex flex-col items-center" title={label}>
-      <span
-        className="h-9 w-9 rounded-xl flex items-center justify-center transition-colors duration-150"
+      <motion.span
+        whileHover={{ scale: 1.15, y: -3 }}
+        transition={{ type: "spring", stiffness: 380, damping: 24 }}
+        className="h-9 w-9 rounded-xl flex items-center justify-center"
         style={{ background: active ? "#66d9ff" : "rgba(255,255,255,0.06)" }}
       >
         {children}
-      </span>
+      </motion.span>
       <Tooltip>{label}</Tooltip>
       <span className="mt-[3px] h-[3px] w-0 rounded-full" />
     </button>

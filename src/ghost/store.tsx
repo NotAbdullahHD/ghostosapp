@@ -32,6 +32,7 @@ export interface Wallpaper {
   rarity: "common" | "rare" | "epic" | "legendary" | "mythic";
   css: string;
   video?: string;
+  image?: string;
   poster?: string;
   animated?: "city" | "rain" | "grid" | "aurora" | "glitch";
   /** redeem code required to unlock (shown only as "REQUIRES CODE", never revealed in UI). */
@@ -68,6 +69,13 @@ export const WALLPAPERS: Wallpaper[] = [
   { id: "gojo", name: "GOJO · INFINITY", rarity: "legendary",
     css: "linear-gradient(180deg,#000510 0%,#001a30 100%)",
     video: "/wallpapers/gojo.mp4", code: "#s1xeyes" },
+
+  // Static image wallpapers
+  { id: "neon-drift", name: "NEON DRIFT", rarity: "common",
+    css: "linear-gradient(180deg,#05060a 0%,#0d1018 100%)", image: "/wallpapers/fx-neon.png" },
+  { id: "vinyl", name: "VINYL", rarity: "common",
+    css: "linear-gradient(180deg,#08070a 0%,#141018 100%)", image: "/wallpapers/fx-vinyl.jpg" },
+
 
   // EXCLUSIVE — no code, hidden unlock only
   { id: "yuta", name: "YUTA · CURSED KING", rarity: "mythic",
@@ -132,6 +140,18 @@ const DEFAULT_SETTINGS: SystemSettings = {
   newTab: "ghost",
 };
 
+export interface DesktopIcon { appId: AppId; x: number; y: number }
+
+export type WidgetId = "quick" | "status" | "nowplaying" | "updates";
+
+export const DEFAULT_PINNED: AppId[] = [
+  "browser", "ghostcloud", "games", "movies", "music", "chat", "files", "settings",
+];
+
+const DEFAULT_WIDGETS: Record<WidgetId, boolean> = {
+  quick: true, status: true, nowplaying: true, updates: true,
+};
+
 
 interface GhostCtx {
   booted: boolean;
@@ -177,6 +197,21 @@ interface GhostCtx {
   installedApps: Record<string, boolean>;
   installApp: (appId: AppId) => void;
   uninstallApp: (appId: AppId) => void;
+  /* Dock pins */
+  pinned: AppId[];
+  pinApp: (appId: AppId) => void;
+  unpinApp: (appId: AppId) => void;
+  /* Desktop icons */
+  desktopIcons: DesktopIcon[];
+  addDesktopIcon: (appId: AppId, x: number, y: number) => void;
+  moveDesktopIcon: (appId: AppId, x: number, y: number) => void;
+  removeDesktopIcon: (appId: AppId) => void;
+  /* Widgets */
+  widgets: Record<WidgetId, boolean>;
+  toggleWidget: (id: WidgetId) => void;
+  /* Wallpaper picker */
+  showWallpaperPicker: boolean;
+  setShowWallpaperPicker: (b: boolean) => void;
 }
 
 const Ctx = createContext<GhostCtx | null>(null);
@@ -186,6 +221,9 @@ const LS_WALL = "ghost.wallpaperId";
 const LS_WINDOWS = "ghost.windows";
 const LS_SETTINGS = "ghost.settings";
 const LS_INSTALLED = "ghost.installedApps";
+const LS_PINNED = "ghost.dockPins";
+const LS_ICONS = "ghost.desktopIcons";
+const LS_WIDGETS = "ghost.widgets";
 
 const isBrowser = typeof window !== "undefined";
 const ls = {
@@ -226,6 +264,47 @@ export function GhostProvider({ children }: { children: ReactNode }) {
   const [installedApps, setInstalledApps] = useState<Record<string, boolean>>(() => {
     try { return JSON.parse(ls.get(LS_INSTALLED) || "{}"); } catch { return {}; }
   });
+  const [showWallpaperPicker, setShowWallpaperPicker] = useState(false);
+  const [pinned, setPinned] = useState<AppId[]>(() => {
+    try {
+      const raw = ls.get(LS_PINNED);
+      if (!raw) return DEFAULT_PINNED;
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? (arr as AppId[]) : DEFAULT_PINNED;
+    } catch { return DEFAULT_PINNED; }
+  });
+  const [desktopIcons, setDesktopIcons] = useState<DesktopIcon[]>(() => {
+    try {
+      const raw = ls.get(LS_ICONS);
+      if (!raw) return [];
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? (arr as DesktopIcon[]) : [];
+    } catch { return []; }
+  });
+  const [widgets, setWidgets] = useState<Record<WidgetId, boolean>>(() => {
+    try { return { ...DEFAULT_WIDGETS, ...JSON.parse(ls.get(LS_WIDGETS) || "{}") }; }
+    catch { return DEFAULT_WIDGETS; }
+  });
+
+  useEffect(() => { ls.set(LS_PINNED, JSON.stringify(pinned)); }, [pinned]);
+  useEffect(() => { ls.set(LS_ICONS, JSON.stringify(desktopIcons)); }, [desktopIcons]);
+  useEffect(() => { ls.set(LS_WIDGETS, JSON.stringify(widgets)); }, [widgets]);
+
+  const pinApp = useCallback((appId: AppId) =>
+    setPinned((p) => (p.includes(appId) ? p : [...p, appId])), []);
+  const unpinApp = useCallback((appId: AppId) =>
+    setPinned((p) => p.filter((id) => id !== appId)), []);
+  const addDesktopIcon = useCallback((appId: AppId, x: number, y: number) =>
+    setDesktopIcons((icons) => (icons.some((i) => i.appId === appId)
+      ? icons.map((i) => (i.appId === appId ? { ...i, x, y } : i))
+      : [...icons, { appId, x, y }])), []);
+  const moveDesktopIcon = useCallback((appId: AppId, x: number, y: number) =>
+    setDesktopIcons((icons) => icons.map((i) => (i.appId === appId ? { ...i, x, y } : i))), []);
+  const removeDesktopIcon = useCallback((appId: AppId) =>
+    setDesktopIcons((icons) => icons.filter((i) => i.appId !== appId)), []);
+  const toggleWidget = useCallback((id: WidgetId) =>
+    setWidgets((w) => ({ ...w, [id]: !w[id] })), []);
+
   const zRef = useRef(10);
 
   useEffect(() => { ls.set(LS_UNLOCKED, JSON.stringify(unlocked)); }, [unlocked]);
@@ -421,12 +500,18 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     settings, updateSettings, triggerPanic, locked, setLocked,
     showGhostDrop, toggleGhostDrop, openGhostDrop, closeGhostDrop, pendingDropFiles, clearPendingDropFiles,
     installedApps, installApp, uninstallApp,
+    pinned, pinApp, unpinApp,
+    desktopIcons, addDesktopIcon, moveDesktopIcon, removeDesktopIcon,
+    widgets, toggleWidget,
+    showWallpaperPicker, setShowWallpaperPicker,
   }), [installedApps, installApp, uninstallApp, booted, windows, wallpaper, wallpaperId, setWallpaperById, unlocked, redeemCode, unlockExclusive,
     notifications, showNotifCenter, showControlCenter, toggleControlCenter,
     toggleNotifCenter, pushNotification, dismissNotification, clearAllNotifications, markAllNotificationsRead,
     openApp, closeWindow, focusWindow, updateWindow, toggleMinimize, toggleMaximize, toggleFullscreen,
     hasFullscreen, showLauncher, toggleLauncher, settings, updateSettings, triggerPanic, locked,
-    showGhostDrop, toggleGhostDrop, openGhostDrop, closeGhostDrop, pendingDropFiles, clearPendingDropFiles]);
+    showGhostDrop, toggleGhostDrop, openGhostDrop, closeGhostDrop, pendingDropFiles, clearPendingDropFiles,
+    pinned, pinApp, unpinApp, desktopIcons, addDesktopIcon, moveDesktopIcon, removeDesktopIcon,
+    widgets, toggleWidget, showWallpaperPicker]);
 
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
