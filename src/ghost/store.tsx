@@ -492,12 +492,18 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     settings, updateSettings, triggerPanic, locked, setLocked,
     showGhostDrop, toggleGhostDrop, openGhostDrop, closeGhostDrop, pendingDropFiles, clearPendingDropFiles,
     installedApps, installApp, uninstallApp,
+    pinned, pinApp, unpinApp,
+    desktopIcons, addDesktopIcon, moveDesktopIcon, removeDesktopIcon,
+    widgets, toggleWidget,
+    showWallpaperPicker, setShowWallpaperPicker,
   }), [installedApps, installApp, uninstallApp, booted, windows, wallpaper, wallpaperId, setWallpaperById, unlocked, redeemCode, unlockExclusive,
     notifications, showNotifCenter, showControlCenter, toggleControlCenter,
     toggleNotifCenter, pushNotification, dismissNotification, clearAllNotifications, markAllNotificationsRead,
     openApp, closeWindow, focusWindow, updateWindow, toggleMinimize, toggleMaximize, toggleFullscreen,
     hasFullscreen, showLauncher, toggleLauncher, settings, updateSettings, triggerPanic, locked,
-    showGhostDrop, toggleGhostDrop, openGhostDrop, closeGhostDrop, pendingDropFiles, clearPendingDropFiles]);
+    showGhostDrop, toggleGhostDrop, openGhostDrop, closeGhostDrop, pendingDropFiles, clearPendingDropFiles,
+    pinned, pinApp, unpinApp, desktopIcons, addDesktopIcon, moveDesktopIcon, removeDesktopIcon,
+    widgets, toggleWidget, showWallpaperPicker]);
 
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
