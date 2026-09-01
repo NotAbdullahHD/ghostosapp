@@ -32,6 +32,7 @@ export interface Wallpaper {
   rarity: "common" | "rare" | "epic" | "legendary" | "mythic";
   css: string;
   video?: string;
+  image?: string;
   poster?: string;
   animated?: "city" | "rain" | "grid" | "aurora" | "glitch";
   /** redeem code required to unlock (shown only as "REQUIRES CODE", never revealed in UI). */
