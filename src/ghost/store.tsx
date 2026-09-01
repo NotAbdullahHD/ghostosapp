@@ -177,6 +177,21 @@ interface GhostCtx {
   installedApps: Record<string, boolean>;
   installApp: (appId: AppId) => void;
   uninstallApp: (appId: AppId) => void;
+  /* Dock pins */
+  pinned: AppId[];
+  pinApp: (appId: AppId) => void;
+  unpinApp: (appId: AppId) => void;
+  /* Desktop icons */
+  desktopIcons: DesktopIcon[];
+  addDesktopIcon: (appId: AppId, x: number, y: number) => void;
+  moveDesktopIcon: (appId: AppId, x: number, y: number) => void;
+  removeDesktopIcon: (appId: AppId) => void;
+  /* Widgets */
+  widgets: Record<WidgetId, boolean>;
+  toggleWidget: (id: WidgetId) => void;
+  /* Wallpaper picker */
+  showWallpaperPicker: boolean;
+  setShowWallpaperPicker: (b: boolean) => void;
 }
 
 const Ctx = createContext<GhostCtx | null>(null);
@@ -186,6 +201,9 @@ const LS_WALL = "ghost.wallpaperId";
 const LS_WINDOWS = "ghost.windows";
 const LS_SETTINGS = "ghost.settings";
 const LS_INSTALLED = "ghost.installedApps";
+const LS_PINNED = "ghost.dockPins";
+const LS_ICONS = "ghost.desktopIcons";
+const LS_WIDGETS = "ghost.widgets";
 
 const isBrowser = typeof window !== "undefined";
 const ls = {
