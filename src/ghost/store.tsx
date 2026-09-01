@@ -256,6 +256,47 @@ export function GhostProvider({ children }: { children: ReactNode }) {
   const [installedApps, setInstalledApps] = useState<Record<string, boolean>>(() => {
     try { return JSON.parse(ls.get(LS_INSTALLED) || "{}"); } catch { return {}; }
   });
+  const [showWallpaperPicker, setShowWallpaperPicker] = useState(false);
+  const [pinned, setPinned] = useState<AppId[]>(() => {
+    try {
+      const raw = ls.get(LS_PINNED);
+      if (!raw) return DEFAULT_PINNED;
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? (arr as AppId[]) : DEFAULT_PINNED;
+    } catch { return DEFAULT_PINNED; }
+  });
+  const [desktopIcons, setDesktopIcons] = useState<DesktopIcon[]>(() => {
+    try {
+      const raw = ls.get(LS_ICONS);
+      if (!raw) return [];
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? (arr as DesktopIcon[]) : [];
+    } catch { return []; }
+  });
+  const [widgets, setWidgets] = useState<Record<WidgetId, boolean>>(() => {
+    try { return { ...DEFAULT_WIDGETS, ...JSON.parse(ls.get(LS_WIDGETS) || "{}") }; }
+    catch { return DEFAULT_WIDGETS; }
+  });
+
+  useEffect(() => { ls.set(LS_PINNED, JSON.stringify(pinned)); }, [pinned]);
+  useEffect(() => { ls.set(LS_ICONS, JSON.stringify(desktopIcons)); }, [desktopIcons]);
+  useEffect(() => { ls.set(LS_WIDGETS, JSON.stringify(widgets)); }, [widgets]);
+
+  const pinApp = useCallback((appId: AppId) =>
+    setPinned((p) => (p.includes(appId) ? p : [...p, appId])), []);
+  const unpinApp = useCallback((appId: AppId) =>
+    setPinned((p) => p.filter((id) => id !== appId)), []);
+  const addDesktopIcon = useCallback((appId: AppId, x: number, y: number) =>
+    setDesktopIcons((icons) => (icons.some((i) => i.appId === appId)
+      ? icons.map((i) => (i.appId === appId ? { ...i, x, y } : i))
+      : [...icons, { appId, x, y }])), []);
+  const moveDesktopIcon = useCallback((appId: AppId, x: number, y: number) =>
+    setDesktopIcons((icons) => icons.map((i) => (i.appId === appId ? { ...i, x, y } : i))), []);
+  const removeDesktopIcon = useCallback((appId: AppId) =>
+    setDesktopIcons((icons) => icons.filter((i) => i.appId !== appId)), []);
+  const toggleWidget = useCallback((id: WidgetId) =>
+    setWidgets((w) => ({ ...w, [id]: !w[id] })), []);
+
   const zRef = useRef(10);
 
   useEffect(() => { ls.set(LS_UNLOCKED, JSON.stringify(unlocked)); }, [unlocked]);
