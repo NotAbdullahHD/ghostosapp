@@ -69,6 +69,13 @@ export const WALLPAPERS: Wallpaper[] = [
     css: "linear-gradient(180deg,#000510 0%,#001a30 100%)",
     video: "/wallpapers/gojo.mp4", code: "#s1xeyes" },
 
+  // Static image wallpapers
+  { id: "neon-drift", name: "NEON DRIFT", rarity: "common",
+    css: "linear-gradient(180deg,#05060a 0%,#0d1018 100%)", image: "/wallpapers/fx-neon.png" },
+  { id: "vinyl", name: "VINYL", rarity: "common",
+    css: "linear-gradient(180deg,#08070a 0%,#141018 100%)", image: "/wallpapers/fx-vinyl.jpg" },
+
+
   // EXCLUSIVE — no code, hidden unlock only
   { id: "yuta", name: "YUTA · CURSED KING", rarity: "mythic",
     css: "linear-gradient(180deg,#000 0%,#10001a 100%)",
