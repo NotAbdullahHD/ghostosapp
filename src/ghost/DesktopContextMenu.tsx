@@ -37,8 +37,6 @@ export function DesktopContextMenu() {
     { icon: <Image className="h-3.5 w-3.5" />, label: "Wallpapers", action: () => setShowWallpaperPicker(true) },
     { icon: <LayoutGrid className="h-3.5 w-3.5" />, label: `Quick Access widget${widgets.quick ? " ✓" : ""}`, action: () => toggleWidget("quick") },
     { icon: <LayoutGrid className="h-3.5 w-3.5" />, label: `System Status widget${widgets.status ? " ✓" : ""}`, action: () => toggleWidget("status") },
-    { icon: <LayoutGrid className="h-3.5 w-3.5" />, label: `Now Playing widget${widgets.nowplaying ? " ✓" : ""}`, action: () => toggleWidget("nowplaying") },
-    { icon: <LayoutGrid className="h-3.5 w-3.5" />, label: `Updates widget${widgets.updates ? " ✓" : ""}`, action: () => toggleWidget("updates") },
     { icon: <Monitor className="h-3.5 w-3.5" />, label: "Display Settings", action: () => openApp("settings", "Settings") },
     { icon: <RefreshCw className="h-3.5 w-3.5" />, label: "Refresh", action: () => window.location.reload() },
     { icon: <Terminal className="h-3.5 w-3.5" />, label: "Open Terminal", action: () => openApp("terminal", "Terminal") },
