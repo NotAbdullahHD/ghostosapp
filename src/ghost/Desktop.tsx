@@ -97,6 +97,22 @@ export function Desktop() {
     };
   }, [px, py, parallax]);
 
+  // Opening an app can autofocus an input and make the browser scroll the page/root
+  // container. Keep the desktop pinned at the top-left.
+  useEffect(() => {
+    const reset = () => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      const root = document.getElementById("root");
+      if (root) { root.scrollTop = 0; root.scrollLeft = 0; }
+    };
+    const raf = requestAnimationFrame(reset);
+    const t = setTimeout(reset, 260);
+    window.addEventListener("scroll", reset, { passive: true });
+    return () => { cancelAnimationFrame(raf); clearTimeout(t); window.removeEventListener("scroll", reset); };
+  }, [windows.length]);
+
   // Suppress heavy ambient effects while locked or fullscreen for smoother perf.
   const showAmbient = !hasFullscreen && !locked && settings.wallpaperEffects;
 
