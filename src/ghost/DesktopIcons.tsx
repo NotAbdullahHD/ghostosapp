@@ -63,7 +63,12 @@ export function DesktopIcons() {
             }`}
           >
             <AppIcon id={app.id} size={44} />
-            <span className="w-full truncate text-[11px] text-white/80">{app.name}</span>
+            <span
+              className="w-full truncate text-[11px] text-white/85"
+              style={{ textShadow: "0 1px 3px rgba(0,0,0,.85)" }}
+            >
+              {app.name}
+            </span>
           </button>
         );
       })}
