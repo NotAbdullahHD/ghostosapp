@@ -24,6 +24,10 @@ import settingsPng from "@/assets/icons/settings.png.asset.json";
 import storePng from "@/assets/icons/store.png.asset.json";
 import terminalPng from "@/assets/icons/terminal.png.asset.json";
 import xPng from "@/assets/icons/x.png.asset.json";
+import notesPng from "@/assets/icons/notes.png.asset.json";
+import calendarPng from "@/assets/icons/calendar.png.asset.json";
+import tiktokPng from "@/assets/icons/tiktok.png.asset.json";
+import pinterestPng from "@/assets/icons/pinterest.png.asset.json";
 
 /** Real app artwork (macOS-style icon set) — takes priority over the glyph tiles. */
 const ART: Partial<Record<AppId, string>> = {
@@ -37,6 +41,10 @@ const ART: Partial<Record<AppId, string>> = {
   store: storePng.url,
   terminal: terminalPng.url,
   x: xPng.url,
+  notes: notesPng.url,
+  calendar: calendarPng.url,
+  tiktok: tiktokPng.url,
+  pinterest: pinterestPng.url,
 };
 
 type IconCmp = React.ComponentType<LucideProps> | typeof XGlyph;
