@@ -41,6 +41,10 @@ const ART: Partial<Record<AppId, string>> = {
   store: storePng.url,
   terminal: terminalPng.url,
   x: xPng.url,
+  notes: notesPng.url,
+  calendar: calendarPng.url,
+  tiktok: tiktokPng.url,
+  pinterest: pinterestPng.url,
 };
 
 type IconCmp = React.ComponentType<LucideProps> | typeof XGlyph;
