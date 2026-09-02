@@ -13,6 +13,32 @@ function XGlyph({ className, style }: { className?: string; style?: React.CSSPro
   );
 }
 
+
+import browserPng from "@/assets/icons/browser.png.asset.json";
+import chatPng from "@/assets/icons/chat.png.asset.json";
+import filesPng from "@/assets/icons/files.png.asset.json";
+import gamesPng from "@/assets/icons/games.png.asset.json";
+import moviesPng from "@/assets/icons/movies.png.asset.json";
+import musicPng from "@/assets/icons/music.png.asset.json";
+import settingsPng from "@/assets/icons/settings.png.asset.json";
+import storePng from "@/assets/icons/store.png.asset.json";
+import terminalPng from "@/assets/icons/terminal.png.asset.json";
+import xPng from "@/assets/icons/x.png.asset.json";
+
+/** Real app artwork (macOS-style icon set) — takes priority over the glyph tiles. */
+const ART: Partial<Record<AppId, string>> = {
+  browser: browserPng.url,
+  chat: chatPng.url,
+  files: filesPng.url,
+  games: gamesPng.url,
+  movies: moviesPng.url,
+  music: musicPng.url,
+  settings: settingsPng.url,
+  store: storePng.url,
+  terminal: terminalPng.url,
+  x: xPng.url,
+};
+
 type IconCmp = React.ComponentType<LucideProps> | typeof XGlyph;
 
 const ICONS: Record<AppId, IconCmp> = {
@@ -71,6 +97,18 @@ export function AppIcon({
   radius?: number;
   className?: string;
 }) {
+  const art = ART[id];
+  if (art) {
+    return (
+      <img
+        src={art}
+        alt=""
+        draggable={false}
+        className={`select-none object-contain ${className}`}
+        style={{ width: size, height: size }}
+      />
+    );
+  }
   const Icon = ICONS[id] as React.ComponentType<{ className?: string; style?: React.CSSProperties; strokeWidth?: number }>;
   const [r0, g0, b0] = TINTS[id] ?? [102, 217, 255];
   const tint = `rgb(${r0} ${g0} ${b0})`;

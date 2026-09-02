@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Palette, Monitor, RefreshCw, Maximize, Settings, Terminal, Image, Radio } from "lucide-react";
+import { Palette, Monitor, RefreshCw, Maximize, Settings, Terminal, Image, Radio, LayoutGrid } from "lucide-react";
 import { useGhost } from "./store";
 
 export function DesktopContextMenu() {
-  const { openApp, hasFullscreen, openGhostDrop } = useGhost();
+  const { openApp, hasFullscreen, openGhostDrop, setShowWallpaperPicker, widgets, toggleWidget } = useGhost();
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -14,7 +14,7 @@ export function DesktopContextMenu() {
       if (tgt.closest("[data-no-ctx]") || tgt.closest("button, input, textarea, a, iframe")) return;
       e.preventDefault();
       const x = Math.min(e.clientX, window.innerWidth - 240);
-      const y = Math.min(e.clientY, window.innerHeight - 320);
+      const y = Math.min(e.clientY, window.innerHeight - 460);
       setMenu({ x, y });
     };
     const onClick = () => setMenu(null);
@@ -34,7 +34,11 @@ export function DesktopContextMenu() {
   const items = [
     { icon: <Radio className="h-3.5 w-3.5" />, label: "Share with GhostDrop", action: () => openGhostDrop() },
     { icon: <Palette className="h-3.5 w-3.5" />, label: "Personalize", action: () => openApp("settings", "Settings") },
-    { icon: <Image className="h-3.5 w-3.5" />, label: "Wallpapers", action: () => openApp("settings", "Settings") },
+    { icon: <Image className="h-3.5 w-3.5" />, label: "Wallpapers", action: () => setShowWallpaperPicker(true) },
+    { icon: <LayoutGrid className="h-3.5 w-3.5" />, label: `Quick Access widget${widgets.quick ? " ✓" : ""}`, action: () => toggleWidget("quick") },
+    { icon: <LayoutGrid className="h-3.5 w-3.5" />, label: `System Status widget${widgets.status ? " ✓" : ""}`, action: () => toggleWidget("status") },
+    { icon: <LayoutGrid className="h-3.5 w-3.5" />, label: `Now Playing widget${widgets.nowplaying ? " ✓" : ""}`, action: () => toggleWidget("nowplaying") },
+    { icon: <LayoutGrid className="h-3.5 w-3.5" />, label: `Updates widget${widgets.updates ? " ✓" : ""}`, action: () => toggleWidget("updates") },
     { icon: <Monitor className="h-3.5 w-3.5" />, label: "Display Settings", action: () => openApp("settings", "Settings") },
     { icon: <RefreshCw className="h-3.5 w-3.5" />, label: "Refresh", action: () => window.location.reload() },
     { icon: <Terminal className="h-3.5 w-3.5" />, label: "Open Terminal", action: () => openApp("terminal", "Terminal") },

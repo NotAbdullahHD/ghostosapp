@@ -36,11 +36,12 @@ export function Dock() {
       data-no-ctx
     >
       <div
-        className="rounded-2xl px-2 py-1.5 flex items-end gap-1"
+        className="rounded-2xl px-2 py-1.5 flex items-center gap-1.5"
         style={{
-          background: "rgba(20,20,22,0.38)",
-          backdropFilter: "blur(30px) saturate(170%)",
-          border: "1px solid rgba(255,255,255,0.07)",
+          background: "rgba(20,20,22,0.62)",
+          backdropFilter: "blur(28px) saturate(160%)",
+          WebkitBackdropFilter: "blur(28px) saturate(160%)",
+          border: "1px solid rgba(255,255,255,0.08)",
           boxShadow: "0 18px 44px -22px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.06)",
         }}
       >
@@ -77,7 +78,7 @@ export function Dock() {
 }
 
 function Divider() {
-  return <span className="self-stretch w-px mx-1 my-1.5 bg-white/10" />;
+  return <span className="w-px h-6 mx-0.5 bg-white/10" />;
 }
 
 function DockApp({
@@ -118,21 +119,21 @@ function DockApp({
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      className="group relative flex flex-col items-center"
+      className="group relative flex h-8 w-8 items-center justify-center"
       title={app.name}
       style={{ touchAction: "none" }}
     >
       <motion.span
         whileHover={{ scale: 1.18, y: -4 }}
         transition={{ type: "spring", stiffness: 380, damping: 24 }}
-        className="h-9 w-9 rounded-xl flex items-center justify-center"
+        className="h-8 w-8 rounded-xl flex items-center justify-center"
         style={{ opacity: dragging ? 0.5 : 1 }}
       >
-        <AppIcon id={app.id} size={34} className="!w-[34px] !h-[34px]" />
+        <AppIcon id={app.id} size={30} className="!w-[30px] !h-[30px]" />
       </motion.span>
       <Tooltip>{app.name}</Tooltip>
       <span
-        className="mt-[3px] h-[3px] rounded-full transition-all duration-200"
+        className="absolute -bottom-[3px] left-1/2 -translate-x-1/2 h-[3px] rounded-full transition-all duration-200"
         style={{
           width: open ? (minimized ? 6 : 14) : 0,
           background: "#66d9ff",
@@ -145,17 +146,16 @@ function DockApp({
 
 function DockButton({ label, active, onClick, children }: { label: string; active?: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} className="group relative flex flex-col items-center" title={label}>
+    <button onClick={onClick} className="group relative flex h-8 w-8 items-center justify-center" title={label}>
       <motion.span
         whileHover={{ scale: 1.15, y: -3 }}
         transition={{ type: "spring", stiffness: 380, damping: 24 }}
-        className="h-9 w-9 rounded-xl flex items-center justify-center"
+        className="h-8 w-8 rounded-xl flex items-center justify-center"
         style={{ background: active ? "#66d9ff" : "rgba(255,255,255,0.06)" }}
       >
         {children}
       </motion.span>
       <Tooltip>{label}</Tooltip>
-      <span className="mt-[3px] h-[3px] w-0 rounded-full" />
     </button>
   );
 }
