@@ -97,6 +97,7 @@ export function AppLauncher() {
                   autoFocus
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
+                  onKeyDown={onSearchKeyDown}
                   placeholder="Search apps and settings"
                   className="flex-1 bg-transparent outline-none text-[14px] text-white placeholder:text-white/35"
                 />
