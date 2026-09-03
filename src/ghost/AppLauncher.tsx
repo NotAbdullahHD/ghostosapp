@@ -125,8 +125,10 @@ export function AppLauncher() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Math.min(i, 12) * 0.018, duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => launch(app.id, app.name)}
-                    className="group flex flex-col items-center gap-2 px-1 py-3 rounded-xl hover:bg-white/[0.06] transition"
+                    onClick={() => { launch(app.id, app.name); toggleLauncher(); }}
+                    onMouseEnter={() => setSel(i)}
+                    className={`group flex flex-col items-center gap-2 px-1 py-3 rounded-xl transition ${i === sel ? "bg-white/[0.10]" : "hover:bg-white/[0.06]"}`}
+
                   >
                     <AppIcon id={app.id} size={46} />
                     <span className="text-[11px] text-white/80 text-center leading-tight truncate w-full px-0.5">{app.name}</span>
