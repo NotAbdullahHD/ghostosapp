@@ -148,7 +148,7 @@ export function AppLauncher() {
                   {recentApps.map((app) => (
                     <button
                       key={app.id}
-                      onClick={() => launch(app.id, app.name)}
+                      onClick={() => { launch(app.id, app.name); toggleLauncher(); }}
                       className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/[0.06] transition text-left"
                     >
                       <AppIcon id={app.id} size={30} />
