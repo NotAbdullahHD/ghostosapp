@@ -70,7 +70,20 @@ function AppLoading() {
 }
 
 export function Desktop() {
-  const { windows, wallpaper, wallpaperId, hasFullscreen, locked, settings } = useGhost();
+  const { windows, wallpaper, wallpaperId, hasFullscreen, locked, settings, toggleLauncher } = useGhost();
+
+  // Ctrl+K / Cmd+K opens Ghost Search.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        toggleLauncher();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [toggleLauncher]);
+
   const activeWallpaper = useMemo(
     () => WALLPAPERS.find((w) => w.id === wallpaperId),
     [wallpaperId]
