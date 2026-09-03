@@ -12,13 +12,14 @@ export function AppLauncher() {
   const { showLauncher, toggleLauncher, openApp, setLocked, installedApps } = useGhost();
   const [q, setQ] = useState("");
   const [showAll, setShowAll] = useState(false);
+  const [sel, setSel] = useState(0);
   const [recent, setRecent] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
     try { return JSON.parse(localStorage.getItem(LS_RECENT) || "[]"); } catch { return []; }
   });
 
   useEffect(() => {
-    if (!showLauncher) { setQ(""); setShowAll(false); }
+    if (!showLauncher) { setQ(""); setShowAll(false); setSel(0); }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && showLauncher) toggleLauncher();
     };
@@ -36,14 +37,36 @@ export function AppLauncher() {
   };
 
   const searching = q.trim().length > 0;
-  const filtered = useMemo(
-    () => APPS
+  const filtered = useMemo(() => {
+    const list = APPS
       .filter((a) => !a.installable || installedApps[a.id])
-      .filter((a) => a.name.toLowerCase().includes(q.toLowerCase()) || a.description.toLowerCase().includes(q.toLowerCase())),
-    [q, installedApps]
-  );
+      .filter((a) => a.name.toLowerCase().includes(q.toLowerCase()) || a.description.toLowerCase().includes(q.toLowerCase()));
+    // Recently opened apps come first.
+    const rank = (id: string) => {
+      const i = recent.indexOf(id);
+      return i === -1 ? 999 : i;
+    };
+    return [...list].sort((a, b) => rank(a.id) - rank(b.id));
+  }, [q, installedApps, recent]);
   const pinned = showAll || searching ? filtered : filtered.slice(0, 12);
   const recentApps = recent.map((id) => APPS.find((a) => a.id === id)).filter(Boolean).slice(0, 4) as typeof APPS;
+
+  useEffect(() => { setSel(0); }, [q, showAll]);
+
+  const onSearchKeyDown = (e: React.KeyboardEvent) => {
+    const n = pinned.length;
+    if (!n) return;
+    if (e.key === "ArrowRight") { e.preventDefault(); setSel((s) => (s + 1) % n); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); setSel((s) => (s - 1 + n) % n); }
+    else if (e.key === "ArrowDown") { e.preventDefault(); setSel((s) => Math.min(n - 1, s + 6)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setSel((s) => Math.max(0, s - 6)); }
+    else if (e.key === "Enter") {
+      e.preventDefault();
+      const app = pinned[Math.min(sel, n - 1)];
+      if (app) { launch(app.id, app.name); toggleLauncher(); }
+    }
+  };
+
 
   return (
     <AnimatePresence>
