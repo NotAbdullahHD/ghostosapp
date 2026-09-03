@@ -44,7 +44,8 @@ export function BootScreen({ onDone }: { onDone: () => void }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: phase ? 1 : 0 }}
         transition={{ duration: 0.6 }}
-        className="mt-14 flex flex-col items-center gap-5"
+        className="relative mt-14 flex flex-col items-center gap-5"
+
       >
         {/* circular spinner */}
         <div className="relative h-7 w-7">
