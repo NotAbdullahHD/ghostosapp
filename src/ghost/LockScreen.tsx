@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { useGhost, WALLPAPERS } from "./store";
+import { GhostLogo } from "./GhostLogo";
 
 
 export function LockScreen() {
