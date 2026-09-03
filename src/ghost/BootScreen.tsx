@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { GhostLogo } from "./GhostLogo";
+import bootVideo from "@/assets/boot.mp4.asset.json";
 
 const TOTAL_MS = 3400;
 
@@ -19,7 +20,18 @@ export function BootScreen({ onDone }: { onDone: () => void }) {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
     >
+      <video
+        className="absolute inset-0 h-full w-full object-cover opacity-40"
+        src={bootVideo.url}
+        autoPlay
+        muted
+        playsInline
+        aria-hidden
+      />
+      <div className="absolute inset-0 bg-[#0b0b0d]/55" />
+
       <motion.div
+        className="relative"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
@@ -27,11 +39,13 @@ export function BootScreen({ onDone }: { onDone: () => void }) {
         <GhostLogo size={96} />
       </motion.div>
 
+
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: phase ? 1 : 0 }}
         transition={{ duration: 0.6 }}
-        className="mt-14 flex flex-col items-center gap-5"
+        className="relative mt-14 flex flex-col items-center gap-5"
+
       >
         {/* circular spinner */}
         <div className="relative h-7 w-7">
