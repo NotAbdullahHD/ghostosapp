@@ -84,11 +84,12 @@ export function LockScreen() {
             }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           >
+            <GhostLogo size={64} />
             <motion.div
               initial={{ opacity: 0, y: 26, scale: 0.985 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-              className="text-[clamp(90px,16vw,190px)] leading-[0.92] font-extralight text-white tabular-nums tracking-[-0.05em]"
+              className="mt-6 text-[clamp(90px,16vw,190px)] leading-[0.92] font-extralight text-white tabular-nums tracking-[-0.05em]"
             >
               {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </motion.div>
