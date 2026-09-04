@@ -3,7 +3,7 @@ import { useGhost } from "./store";
 
 /** Minimal left-aligned desktop clock — day name, date and time between hairlines. */
 export function DesktopClock() {
-  const { hasFullscreen, locked } = useGhost();
+  const { hasFullscreen, locked, windows } = useGhost();
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
