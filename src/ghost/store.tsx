@@ -1,5 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { AppId } from "./apps";
+import wpGlitch from "@/assets/wallpapers/windows-glitch-logo.mp4.asset.json";
+import wpVagabond from "@/assets/wallpapers/vagabond-path-of-blades.mp4.asset.json";
+import wpBmw from "@/assets/wallpapers/bmw-m5-in-dark.mp4.asset.json";
+import wpSamurai from "@/assets/wallpapers/samurai-spirit-under-the-moon.mp4.asset.json";
+import wpVoid from "@/assets/wallpapers/void-dark-king.mp4.asset.json";
+import wpSmoke from "@/assets/wallpapers/abstract-blue-smoke.mp4.asset.json";
 
 export interface WindowState {
   id: string;
@@ -43,13 +49,25 @@ export interface Wallpaper {
 }
 
 export const WALLPAPERS: Wallpaper[] = [
+  // Uploaded live wallpapers (CDN)
+  { id: "windows-glitch", name: "WINDOWS GLITCH", rarity: "common",
+    css: "linear-gradient(180deg,#000 0%,#0a0a0f 100%)", video: wpGlitch.url },
+  { id: "vagabond", name: "VAGABOND · PATH OF BLADES", rarity: "common",
+    css: "linear-gradient(180deg,#000 0%,#0d0d0d 100%)", video: wpVagabond.url },
+  { id: "bmw-m5", name: "BMW M5 · DARK", rarity: "common",
+    css: "linear-gradient(180deg,#000 0%,#0b0b10 100%)", video: wpBmw.url },
+  { id: "samurai-moon", name: "SAMURAI · UNDER THE MOON", rarity: "common",
+    css: "linear-gradient(180deg,#000 0%,#080c14 100%)", video: wpSamurai.url },
+  { id: "void-king", name: "VOID · DARK KING", rarity: "common",
+    css: "linear-gradient(180deg,#000 0%,#0a0008 100%)", video: wpVoid.url },
+  { id: "blue-smoke", name: "ABSTRACT BLUE SMOKE", rarity: "common",
+    css: "linear-gradient(180deg,#000 0%,#04101a 100%)", video: wpSmoke.url },
+
   // FREE defaults — animated video
   { id: "celestial-veil", name: "CELESTIAL VEIL", rarity: "common",
     css: "linear-gradient(180deg,#02030a 0%,#0a0820 100%)", video: "/wallpapers/celestial-veil.mp4" },
   { id: "silver-silence", name: "SILVER SILENCE", rarity: "common",
     css: "linear-gradient(180deg,#000 0%,#0a0a14 100%)", video: "/wallpapers/silver-silence.mp4" },
-  { id: "carbon",  name: "CARBON",  rarity: "common", css: "linear-gradient(180deg,#0a0a0f 0%,#16161f 100%)" },
-  { id: "matrix",  name: "MATRIX",  rarity: "common", css: "linear-gradient(180deg,#000 0%,#031a08 100%)", animated: "grid" },
 
   // FREE animated/video — promoted to no-code (codes leaked)
   { id: "northern-light", name: "NORTHERN LIGHT", rarity: "rare",
@@ -63,26 +81,8 @@ export const WALLPAPERS: Wallpaper[] = [
   { id: "rapi-red-hood", name: "RAPI · RED HOOD", rarity: "epic",
     css: "linear-gradient(180deg,#0c0007 0%,#1a000a 100%)",
     video: "/wallpapers/rapi-red-hood.mp4", code: "#r3dh00d" },
-  { id: "sukuna", name: "SUKUNA · KING OF CURSES", rarity: "legendary",
-    css: "linear-gradient(180deg,#100000 0%,#2a0500 100%)",
-    video: "/wallpapers/sukuna.mp4", code: "#k1ngofcurses" },
-  { id: "gojo", name: "GOJO · INFINITY", rarity: "legendary",
-    css: "linear-gradient(180deg,#000510 0%,#001a30 100%)",
-    video: "/wallpapers/gojo.mp4", code: "#s1xeyes" },
-
-  // Static image wallpapers
-  { id: "neon-drift", name: "NEON DRIFT", rarity: "common",
-    css: "linear-gradient(180deg,#05060a 0%,#0d1018 100%)", image: "/wallpapers/fx-neon.png" },
-  { id: "vinyl", name: "VINYL", rarity: "common",
-    css: "linear-gradient(180deg,#08070a 0%,#141018 100%)", image: "/wallpapers/fx-vinyl.jpg" },
-
-
-  // EXCLUSIVE — no code, hidden unlock only
-  { id: "yuta", name: "YUTA · CURSED KING", rarity: "mythic",
-    css: "linear-gradient(180deg,#000 0%,#10001a 100%)",
-    video: "/wallpapers/yuta.mp4", exclusive: true,
-    exclusiveHint: "Whisper to the Ghost. Click the GhostOS logo six times." },
 ];
+
 
 export type SearchEngineId = "google" | "duckduckgo" | "brave" | "bing";
 export type ProxyProviderId = "scramjet" | "ultraviolet";
@@ -245,7 +245,10 @@ export function GhostProvider({ children }: { children: ReactNode }) {
   const [unlocked, setUnlocked] = useState<Record<string, boolean>>(() => {
     try { return JSON.parse(ls.get(LS_UNLOCKED) || "{}"); } catch { return {}; }
   });
-  const [wallpaperId, setWallpaperId] = useState<string>(() => ls.get(LS_WALL) || WALLPAPERS[0].id);
+  const [wallpaperId, setWallpaperId] = useState<string>(() => {
+    const id = ls.get(LS_WALL);
+    return WALLPAPERS.some((w) => w.id === id) ? (id as string) : WALLPAPERS[0].id;
+  });
   const [wallpaper, setWallpaper] = useState(() => {
     const id = ls.get(LS_WALL) || WALLPAPERS[0].id;
     return (WALLPAPERS.find((w) => w.id === id) || WALLPAPERS[0]).css;

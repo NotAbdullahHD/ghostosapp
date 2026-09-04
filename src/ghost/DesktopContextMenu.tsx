@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Palette, Monitor, RefreshCw, Maximize, Settings, Terminal, Image, Radio, LayoutGrid } from "lucide-react";
+import { Palette, Monitor, RefreshCw, Maximize, Settings, Terminal, Image, Radio } from "lucide-react";
 import { useGhost } from "./store";
 
 export function DesktopContextMenu() {
-  const { openApp, hasFullscreen, openGhostDrop, setShowWallpaperPicker, widgets, toggleWidget } = useGhost();
+  const { openApp, hasFullscreen, openGhostDrop, setShowWallpaperPicker } = useGhost();
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -35,9 +35,8 @@ export function DesktopContextMenu() {
     { icon: <Radio className="h-3.5 w-3.5" />, label: "Share with GhostDrop", action: () => openGhostDrop() },
     { icon: <Palette className="h-3.5 w-3.5" />, label: "Personalize", action: () => openApp("settings", "Settings") },
     { icon: <Image className="h-3.5 w-3.5" />, label: "Wallpapers", action: () => setShowWallpaperPicker(true) },
-    { icon: <LayoutGrid className="h-3.5 w-3.5" />, label: `Quick Access widget${widgets.quick ? " ✓" : ""}`, action: () => toggleWidget("quick") },
-    { icon: <LayoutGrid className="h-3.5 w-3.5" />, label: `System Status widget${widgets.status ? " ✓" : ""}`, action: () => toggleWidget("status") },
     { icon: <Monitor className="h-3.5 w-3.5" />, label: "Display Settings", action: () => openApp("settings", "Settings") },
+
     { icon: <RefreshCw className="h-3.5 w-3.5" />, label: "Refresh", action: () => window.location.reload() },
     { icon: <Terminal className="h-3.5 w-3.5" />, label: "Open Terminal", action: () => openApp("terminal", "Terminal") },
     { icon: <Maximize className="h-3.5 w-3.5" />, label: "Fullscreen", action: () => document.documentElement.requestFullscreen?.() },

@@ -13,7 +13,7 @@ import { GhostDrop } from "./GhostDrop";
 import { ControlCenter } from "./ControlCenter";
 import { NowPlayingWidget } from "./NowPlayingWidget";
 import { DesktopIcons } from "./DesktopIcons";
-import { Widgets } from "./Widgets";
+import { DesktopClock } from "./DesktopClock";
 import { WallpaperPicker } from "./WallpaperPicker";
 import type { AppId } from "./apps";
 
@@ -151,7 +151,7 @@ export function Desktop() {
             animate={{ opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] } }}
             exit={{ opacity: 0, transition: { duration: 0.2 } }}
           >
-            <Widgets />
+            <DesktopClock />
             <NotificationCenter />
             <Dock />
             <SystemTray />
