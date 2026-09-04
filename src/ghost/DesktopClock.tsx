@@ -12,7 +12,8 @@ export function DesktopClock() {
     return () => clearInterval(id);
   }, []);
 
-  if (hasFullscreen || locked || !now) return null;
+  const anyOpen = windows.some((w) => !w.minimized);
+  if (hasFullscreen || locked || anyOpen || !now) return null;
 
   const day = now.toLocaleDateString([], { weekday: "long" }).toUpperCase();
   const date = now
