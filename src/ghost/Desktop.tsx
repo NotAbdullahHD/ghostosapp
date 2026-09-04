@@ -13,7 +13,7 @@ import { GhostDrop } from "./GhostDrop";
 import { ControlCenter } from "./ControlCenter";
 import { NowPlayingWidget } from "./NowPlayingWidget";
 import { DesktopIcons } from "./DesktopIcons";
-import { Widgets } from "./Widgets";
+import { DesktopClock } from "./DesktopClock";
 import { WallpaperPicker } from "./WallpaperPicker";
 import type { AppId } from "./apps";
 
