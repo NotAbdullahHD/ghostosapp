@@ -245,7 +245,10 @@ export function GhostProvider({ children }: { children: ReactNode }) {
   const [unlocked, setUnlocked] = useState<Record<string, boolean>>(() => {
     try { return JSON.parse(ls.get(LS_UNLOCKED) || "{}"); } catch { return {}; }
   });
-  const [wallpaperId, setWallpaperId] = useState<string>(() => ls.get(LS_WALL) || WALLPAPERS[0].id);
+  const [wallpaperId, setWallpaperId] = useState<string>(() => {
+    const id = ls.get(LS_WALL);
+    return WALLPAPERS.some((w) => w.id === id) ? (id as string) : WALLPAPERS[0].id;
+  });
   const [wallpaper, setWallpaper] = useState(() => {
     const id = ls.get(LS_WALL) || WALLPAPERS[0].id;
     return (WALLPAPERS.find((w) => w.id === id) || WALLPAPERS[0]).css;
