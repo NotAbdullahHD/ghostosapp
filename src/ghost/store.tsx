@@ -1,5 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { AppId } from "./apps";
+import wpGlitch from "@/assets/wallpapers/windows-glitch-logo.mp4.asset.json";
+import wpVagabond from "@/assets/wallpapers/vagabond-path-of-blades.mp4.asset.json";
+import wpBmw from "@/assets/wallpapers/bmw-m5-in-dark.mp4.asset.json";
+import wpSamurai from "@/assets/wallpapers/samurai-spirit-under-the-moon.mp4.asset.json";
+import wpVoid from "@/assets/wallpapers/void-dark-king.mp4.asset.json";
+import wpSmoke from "@/assets/wallpapers/abstract-blue-smoke.mp4.asset.json";
 
 export interface WindowState {
   id: string;
