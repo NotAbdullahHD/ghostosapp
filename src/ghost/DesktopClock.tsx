@@ -23,7 +23,7 @@ export function DesktopClock() {
   const time = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 
   return (
-    <div className="pointer-events-none absolute left-[7%] top-1/2 z-[400] -translate-y-1/2 select-none">
+    <div className="pointer-events-none absolute left-[7%] top-1/2 z-[10] -translate-y-1/2 select-none">
       <div className="mx-auto mb-6 h-14 w-px bg-white/20" />
       <div className="text-[clamp(34px,5vw,64px)] font-extralight leading-none tracking-[0.18em] text-white/90">
         {day}
