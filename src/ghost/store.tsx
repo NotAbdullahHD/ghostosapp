@@ -1,11 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { AppId } from "./apps";
-import wpGlitch from "@/assets/wallpapers/windows-glitch-logo.mp4.asset.json";
-import wpVagabond from "@/assets/wallpapers/vagabond-path-of-blades.mp4.asset.json";
-import wpBmw from "@/assets/wallpapers/bmw-m5-in-dark.mp4.asset.json";
-import wpSamurai from "@/assets/wallpapers/samurai-spirit-under-the-moon.mp4.asset.json";
-import wpVoid from "@/assets/wallpapers/void-dark-king.mp4.asset.json";
-import wpSmoke from "@/assets/wallpapers/abstract-blue-smoke.mp4.asset.json";
 
 export interface WindowState {
   id: string;
@@ -51,17 +45,17 @@ export interface Wallpaper {
 export const WALLPAPERS: Wallpaper[] = [
   // Uploaded live wallpapers (CDN)
   { id: "windows-glitch", name: "WINDOWS GLITCH", rarity: "common",
-    css: "linear-gradient(180deg,#000 0%,#0a0a0f 100%)", video: wpGlitch.url },
+    css: "linear-gradient(180deg,#000 0%,#0a0a0f 100%)", video: "/media/windows-glitch-logo.mp4" },
   { id: "vagabond", name: "VAGABOND · PATH OF BLADES", rarity: "common",
-    css: "linear-gradient(180deg,#000 0%,#0d0d0d 100%)", video: wpVagabond.url },
+    css: "linear-gradient(180deg,#000 0%,#0d0d0d 100%)", video: "/media/vagabond-path-of-blades.mp4" },
   { id: "bmw-m5", name: "BMW M5 · DARK", rarity: "common",
-    css: "linear-gradient(180deg,#000 0%,#0b0b10 100%)", video: wpBmw.url },
+    css: "linear-gradient(180deg,#000 0%,#0b0b10 100%)", video: "/media/bmw-m5-in-dark.mp4" },
   { id: "samurai-moon", name: "SAMURAI · UNDER THE MOON", rarity: "common",
-    css: "linear-gradient(180deg,#000 0%,#080c14 100%)", video: wpSamurai.url },
+    css: "linear-gradient(180deg,#000 0%,#080c14 100%)", video: "/media/samurai-spirit-under-the-moon.mp4" },
   { id: "void-king", name: "VOID · DARK KING", rarity: "common",
-    css: "linear-gradient(180deg,#000 0%,#0a0008 100%)", video: wpVoid.url },
+    css: "linear-gradient(180deg,#000 0%,#0a0008 100%)", video: "/media/void-dark-king.mp4" },
   { id: "blue-smoke", name: "ABSTRACT BLUE SMOKE", rarity: "common",
-    css: "linear-gradient(180deg,#000 0%,#04101a 100%)", video: wpSmoke.url },
+    css: "linear-gradient(180deg,#000 0%,#04101a 100%)", video: "/media/abstract-blue-smoke.mp4" },
 
   // FREE defaults — animated video
   { id: "celestial-veil", name: "CELESTIAL VEIL", rarity: "common",
@@ -103,6 +97,7 @@ export const PROXY_PROVIDERS: { id: ProxyProviderId; name: string; note: string;
 
 export type PowerMode = "performance" | "balanced" | "battery";
 export type AnimationQuality = "high" | "reduced" | "off";
+export type DockPosition = "left" | "center";
 
 export interface SystemSettings {
   idleLockMinutes: number;       // 0 = off
@@ -121,6 +116,7 @@ export interface SystemSettings {
   proxyProvider: ProxyProviderId;
   homepage: string;
   newTab: NewTabBehavior;
+  dockPosition: DockPosition;
 }
 
 const DEFAULT_SETTINGS: SystemSettings = {
@@ -138,6 +134,7 @@ const DEFAULT_SETTINGS: SystemSettings = {
   proxyProvider: "scramjet",
   homepage: "https://www.google.com",
   newTab: "ghost",
+  dockPosition: "center",
 };
 
 export interface DesktopIcon { appId: AppId; x: number; y: number }

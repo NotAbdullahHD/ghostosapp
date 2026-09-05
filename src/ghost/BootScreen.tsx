@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { GhostLogo } from "./GhostLogo";
-import bootVideo from "@/assets/boot.mp4.asset.json";
 
 const TOTAL_MS = 3400;
 
@@ -22,7 +21,7 @@ export function BootScreen({ onDone }: { onDone: () => void }) {
     >
       <video
         className="absolute inset-0 h-full w-full object-cover opacity-40"
-        src={bootVideo.url}
+        src="/media/boot.mp4"
         autoPlay
         muted
         playsInline

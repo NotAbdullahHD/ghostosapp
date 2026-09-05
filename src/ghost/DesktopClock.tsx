@@ -22,37 +22,22 @@ export function DesktopClock() {
   const anyOpen = windows.some((w) => !w.minimized);
   if (hasFullscreen || locked || anyOpen || !now) return null;
 
-  const [g1, g2] = greetingFor(now.getHours()).split(" ");
   const day = now.toLocaleDateString([], { weekday: "long" }).toUpperCase();
-  const date = now
-    .toLocaleDateString([], { day: "2-digit", month: "short", year: "numeric" })
-    .toUpperCase()
-    .replace(/,/g, "")
-    .replace(/\./g, "");
+  const date = now.toLocaleDateString([], { day: "2-digit", month: "2-digit", year: "numeric" });
   const time = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 
   return (
-    <div className="pointer-events-none absolute left-[9%] top-1/2 z-[10] -translate-y-1/2 select-none text-center">
-      <div className="mx-auto mb-9 h-16 w-px bg-white/25" />
-
-      <div className="text-[11px] font-light leading-[2.4] tracking-[0.5em] text-white/70">
-        <div>{g1}</div>
-        <div>{g2}</div>
-      </div>
-
+    <div className="pointer-events-none absolute left-1/2 top-[42%] z-[10] -translate-x-1/2 -translate-y-1/2 select-none text-center">
       <div
-        className="mt-6 whitespace-nowrap text-[clamp(28px,3.6vw,52px)] font-normal leading-none text-white/95"
-        style={{ fontFamily: '"Syncopate", var(--font-display)', letterSpacing: "0.06em" }}
+        className="whitespace-nowrap text-[clamp(36px,5vw,72px)] font-normal leading-none text-white/95"
+        style={{ fontFamily: '"Ethnocentric", "Syncopate", sans-serif', letterSpacing: "0" }}
       >
         {day}
       </div>
-
-      <div className="mt-7 text-[12px] font-light tracking-[0.42em] text-white/70">{date}</div>
-      <div className="mt-2 text-[12px] font-light tracking-[0.42em] tabular-nums text-white/50">
+      <div className="mt-6 text-[13px] font-semibold text-white/80" style={{ fontFamily: '"Montserrat", sans-serif', letterSpacing: "0" }}>{date}</div>
+      <div className="mt-3 text-[13px] font-semibold tabular-nums text-white/70" style={{ fontFamily: '"Montserrat", sans-serif', letterSpacing: "0" }}>
         - {time} -
       </div>
-
-      <div className="mx-auto mt-9 h-16 w-px bg-white/25" />
     </div>
   );
 }

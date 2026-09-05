@@ -9,7 +9,7 @@ import { isOverDock } from "./DesktopIcons";
 export function Dock() {
   const {
     openApp, windows, toggleLauncher, showLauncher, focusWindow, toggleMinimize,
-    pinned, unpinApp, addDesktopIcon,
+    pinned, unpinApp, addDesktopIcon, settings,
   } = useGhost();
 
   const pinnedApps = pinned.map((id) => APPS.find((a) => a.id === id)).filter(Boolean) as AppDef[];
@@ -31,22 +31,21 @@ export function Dock() {
       initial={{ y: 24, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed bottom-2 left-1/2 -translate-x-1/2 z-[600]"
+      className={`fixed bottom-3 z-[600] ${settings.dockPosition === "left" ? "left-3" : "left-1/2 -translate-x-1/2"}`}
       data-dock
       data-no-ctx
     >
       <div
-        className="rounded-2xl px-2 py-1.5 flex items-center gap-1.5"
+        className="rounded-lg px-2.5 py-2 flex items-center gap-2"
         style={{
-          background: "rgba(20,20,22,0.62)",
-          backdropFilter: "blur(28px) saturate(160%)",
-          WebkitBackdropFilter: "blur(28px) saturate(160%)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          boxShadow: "0 18px 44px -22px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.06)",
+          background: "rgba(18,18,20,0.38)",
+          backdropFilter: "blur(22px) saturate(135%)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          boxShadow: "0 12px 36px -22px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.07)",
         }}
       >
         <DockButton label="All apps" active={showLauncher} onClick={toggleLauncher}>
-          <LayoutGrid className="h-[18px] w-[18px]" strokeWidth={1.8} style={{ color: showLauncher ? "#0b0b0d" : "#66d9ff" }} />
+          <LayoutGrid className={`h-[18px] w-[18px] ${showLauncher ? "text-primary-foreground" : "text-ice"}`} strokeWidth={1.8} />
         </DockButton>
 
         <Divider />
@@ -119,24 +118,24 @@ function DockApp({
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      className="group relative flex h-8 w-8 items-center justify-center"
+      className="group relative flex h-9 w-9 items-center justify-center"
       title={app.name}
       style={{ touchAction: "none" }}
     >
       <motion.span
-        whileHover={{ scale: 1.18, y: -4 }}
+        whileHover={{ scale: 1.24, y: -5 }}
         transition={{ type: "spring", stiffness: 380, damping: 24 }}
-        className="h-8 w-8 rounded-xl flex items-center justify-center"
+        className="h-9 w-9 rounded-lg flex items-center justify-center"
         style={{ opacity: dragging ? 0.5 : 1 }}
       >
-        <AppIcon id={app.id} size={30} className="!w-[30px] !h-[30px]" />
+        <AppIcon id={app.id} size={34} className="!h-[34px] !w-[34px]" />
       </motion.span>
       <Tooltip>{app.name}</Tooltip>
       <span
         className="absolute -bottom-[3px] left-1/2 -translate-x-1/2 h-[3px] rounded-full transition-all duration-200"
         style={{
           width: open ? (minimized ? 6 : 14) : 0,
-          background: "#66d9ff",
+          background: "var(--ice)",
           opacity: open ? (minimized ? 0.55 : 1) : 0,
         }}
       />
@@ -146,12 +145,11 @@ function DockApp({
 
 function DockButton({ label, active, onClick, children }: { label: string; active?: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} className="group relative flex h-8 w-8 items-center justify-center" title={label}>
+    <button onClick={onClick} className="group relative flex h-9 w-9 items-center justify-center" title={label}>
       <motion.span
         whileHover={{ scale: 1.15, y: -3 }}
         transition={{ type: "spring", stiffness: 380, damping: 24 }}
-        className="h-8 w-8 rounded-xl flex items-center justify-center"
-        style={{ background: active ? "#66d9ff" : "rgba(255,255,255,0.06)" }}
+        className={`h-9 w-9 rounded-lg flex items-center justify-center ${active ? "bg-ice" : "bg-white/[0.06]"}`}
       >
         {children}
       </motion.span>
@@ -162,7 +160,7 @@ function DockButton({ label, active, onClick, children }: { label: string; activ
 
 function Tooltip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded-md text-[11px] whitespace-nowrap bg-[#141416]/95 text-white/90 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none border border-white/10">
+    <span className="absolute -top-9 left-1/2 -translate-x-1/2 px-2 py-1 rounded text-[11px] whitespace-nowrap bg-surface/95 text-white/90 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none border border-white/10">
       {children}
     </span>
   );

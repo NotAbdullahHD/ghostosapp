@@ -14,7 +14,6 @@ function XGlyph({ className, style }: { className?: string; style?: React.CSSPro
 }
 
 
-import browserPng from "@/assets/icons/browser.png.asset.json";
 import chatPng from "@/assets/icons/chat.png.asset.json";
 import filesPng from "@/assets/icons/files.png.asset.json";
 import gamesPng from "@/assets/icons/games.png.asset.json";
@@ -31,7 +30,10 @@ import pinterestPng from "@/assets/icons/pinterest.png.asset.json";
 
 /** Real app artwork (macOS-style icon set) — takes priority over the glyph tiles. */
 const ART: Partial<Record<AppId, string>> = {
-  browser: browserPng.url,
+  browser: "/icons/browser.png",
+  ghostai: "/icons/ghostai.png",
+  ghostcloud: "/icons/ghostcloud.png",
+  ghostanime: "/icons/ghostanime.png",
   chat: chatPng.url,
   files: filesPng.url,
   games: gamesPng.url,
