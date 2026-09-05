@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Palette, Monitor, RefreshCw, Maximize, Settings, Terminal, Image, Radio } from "lucide-react";
+import { Palette, Monitor, RefreshCw, Maximize, Settings, Terminal, Image, Radio, AlignLeft, AlignCenter } from "lucide-react";
 import { useGhost } from "./store";
 
 export function DesktopContextMenu() {
-  const { openApp, hasFullscreen, openGhostDrop, setShowWallpaperPicker } = useGhost();
+  const { openApp, hasFullscreen, openGhostDrop, setShowWallpaperPicker, settings, updateSettings } = useGhost();
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -36,6 +36,9 @@ export function DesktopContextMenu() {
     { icon: <Palette className="h-3.5 w-3.5" />, label: "Personalize", action: () => openApp("settings", "Settings") },
     { icon: <Image className="h-3.5 w-3.5" />, label: "Wallpapers", action: () => setShowWallpaperPicker(true) },
     { icon: <Monitor className="h-3.5 w-3.5" />, label: "Display Settings", action: () => openApp("settings", "Settings") },
+    settings.dockPosition === "center"
+      ? { icon: <AlignLeft className="h-3.5 w-3.5" />, label: "Move Dock Left", action: () => updateSettings({ dockPosition: "left" }) }
+      : { icon: <AlignCenter className="h-3.5 w-3.5" />, label: "Move Dock Center", action: () => updateSettings({ dockPosition: "center" }) },
 
     { icon: <RefreshCw className="h-3.5 w-3.5" />, label: "Refresh", action: () => window.location.reload() },
     { icon: <Terminal className="h-3.5 w-3.5" />, label: "Open Terminal", action: () => openApp("terminal", "Terminal") },

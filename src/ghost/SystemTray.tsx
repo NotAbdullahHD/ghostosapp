@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Wifi, Volume2, VolumeX, BatteryFull, Bell, SlidersHorizontal, Radio, Lock } from "lucide-react";
+import { Wifi, BatteryFull, Bell, SlidersHorizontal, Radio, Lock } from "lucide-react";
 import { useGhost } from "./store";
 
 export function SystemTray() {
@@ -10,7 +10,6 @@ export function SystemTray() {
     toggleGhostDrop, showGhostDrop, setLocked,
   } = useGhost();
   const [now, setNow] = useState(new Date());
-  const [muted, setMuted] = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 10_000);
@@ -21,19 +20,18 @@ export function SystemTray() {
 
   return (
     <motion.div
-      initial={{ y: 20, opacity: 0 }}
+      initial={{ y: -12, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed bottom-2 right-2 z-[600]"
+      className="fixed right-3 top-3 z-[600]"
     >
       <div
-        className="rounded-2xl px-2 py-1.5 flex items-center gap-0.5 text-white/70"
+        className="flex items-center gap-0.5 rounded-lg px-1.5 py-1 text-white/70"
         style={{
-          background: "rgba(20,20,22,0.62)",
-          backdropFilter: "blur(28px) saturate(160%)",
-          WebkitBackdropFilter: "blur(28px) saturate(160%)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          boxShadow: "0 18px 44px -22px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.06)",
+          background: "rgba(18,18,20,0.38)",
+          backdropFilter: "blur(22px) saturate(135%)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          boxShadow: "0 12px 36px -22px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.07)",
         }}
       >
         <TrayButton label="GhostDrop" active={showGhostDrop} onClick={toggleGhostDrop}>
@@ -49,9 +47,8 @@ export function SystemTray() {
           className={`flex items-center gap-2 px-2 h-8 rounded-lg transition-colors duration-150 ${showControlCenter ? "bg-white/[0.12] text-white" : "hover:bg-white/[0.08] hover:text-white"}`}
         >
           <Wifi className="h-[15px] w-[15px]" />
-          {muted ? <VolumeX className="h-[15px] w-[15px]" /> : <Volume2 className="h-[15px] w-[15px]" />}
           <BatteryFull className="h-[15px] w-[15px]" />
-          <SlidersHorizontal className="h-[15px] w-[15px]" style={{ color: "#66d9ff" }} />
+          <SlidersHorizontal className="h-[15px] w-[15px] text-ice" />
         </button>
 
         <TrayButton label="Notifications" active={showNotifCenter} onClick={toggleNotifCenter}>
@@ -74,8 +71,6 @@ export function SystemTray() {
           </span>
         </button>
 
-        {/* keeps the mute control reachable without extra chrome */}
-        <button className="sr-only" onClick={() => setMuted((m) => !m)}>Toggle mute</button>
       </div>
     </motion.div>
   );
