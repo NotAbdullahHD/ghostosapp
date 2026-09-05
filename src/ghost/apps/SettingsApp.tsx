@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useGhost, WALLPAPERS, SEARCH_ENGINES, PROXY_PROVIDERS } from "../store";
-import { Volume2, Palette, Image as ImageIcon, Bell, Monitor, Lock, Sparkles, Shield, EyeOff, AlertTriangle, KeyRound, Clock, Gauge, Zap, Battery, Wand2, Code2, Globe, Search } from "lucide-react";
+import { Volume2, Palette, Image as ImageIcon, Bell, Monitor, Lock, Sparkles, Shield, EyeOff, AlertTriangle, KeyRound, Clock, Gauge, Zap, Battery, Wand2, Code2, Globe, Search, AlignLeft, AlignCenter } from "lucide-react";
 
 const RARITY_STYLE: Record<string, string> = {
   common:    "text-white/50 ring-white/10",
@@ -319,6 +319,19 @@ export function SettingsApp() {
               <Row label="Accent" value="Neon Violet" />
               <Row label="Transparency" value="High" />
               <Row label="Animations" value="Cinematic" />
+            </div>
+            <div className="glass mt-4 rounded-xl p-4">
+              <div className="mb-3 text-sm font-semibold">Dock Position</div>
+              <div className="flex gap-2">
+                <button onClick={() => updateSettings({ dockPosition: "left" })}
+                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ring-1 ${settings.dockPosition === "left" ? "bg-ice/15 text-white ring-ice/60" : "text-white/60 ring-white/10"}`}>
+                  <AlignLeft className="h-3.5 w-3.5" /> Left
+                </button>
+                <button onClick={() => updateSettings({ dockPosition: "center" })}
+                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ring-1 ${settings.dockPosition === "center" ? "bg-ice/15 text-white ring-ice/60" : "text-white/60 ring-white/10"}`}>
+                  <AlignCenter className="h-3.5 w-3.5" /> Center
+                </button>
+              </div>
             </div>
           </div>
         )}

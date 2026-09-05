@@ -47,11 +47,10 @@ export function NotificationCenter() {
           <div className="fixed inset-0 z-[780]" onClick={toggleNotifCenter} />
           <motion.div
             role="dialog" aria-label="Notification Center"
-            className="fixed right-2 bottom-16 w-[340px] z-[800] rounded-2xl p-2"
+            className="fixed right-3 top-14 w-[340px] z-[800] rounded-xl p-2"
             style={{
               background: "rgba(20,20,22,0.86)",
               backdropFilter: "blur(28px) saturate(160%)",
-              WebkitBackdropFilter: "blur(28px) saturate(160%)",
               border: "1px solid rgba(255,255,255,0.08)",
               boxShadow: "0 26px 60px -24px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.06)",
             }}
