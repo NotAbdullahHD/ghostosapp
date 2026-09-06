@@ -62,8 +62,8 @@ export function MoviesApp() {
   useEffect(() => {
     const list = loadProfiles();
     setProfiles(list);
-    const activeId = loadActiveProfileId();
-    if (activeId && list.some((p) => p.id === activeId)) setProfileId(activeId);
+    // Always start on "Who's watching?" — never resume the last profile.
+    setProfileId(null);
     setProfilesReady(true);
   }, []);
 
