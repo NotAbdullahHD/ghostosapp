@@ -49,9 +49,41 @@ async function* sseLines(res: Response): AsyncGenerator<string> {
   }
 }
 
+async function* streamLovable(key: string, messages: ChatMessage[]): AsyncGenerator<string> {
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Lovable-API-Key": key,
+      "X-Lovable-AIG-SDK": "fetch",
+    },
+    body: JSON.stringify({
+      model: "openai/gpt-5.6-sol",
+      stream: true,
+      instructions: SYSTEM_PROMPT,
+      input: messages.map((m) => ({
+        role: m.role,
+        content: [{ type: m.role === "assistant" ? "output_text" : "input_text", text: m.content }],
+      })),
+    }),
+  });
+  if (!res.ok || !res.body) {
+    throw new Error(`lovable_${res.status}: ${(await res.text()).slice(0, 200)}`);
+  }
+  for await (const data of sseLines(res)) {
+    if (!data || data === "[DONE]") continue;
+    try {
+      const json = JSON.parse(data);
+      if (json?.type === "response.output_text.delta" && typeof json.delta === "string") yield json.delta;
+    } catch {
+      /* ignore partial frames */
+    }
+  }
+}
+
 async function* streamGemini(key: string, messages: ChatMessage[]): AsyncGenerator<string> {
   const res = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:streamGenerateContent?alt=sse",
     {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
@@ -105,38 +137,29 @@ async function* streamGroq(key: string, messages: ChatMessage[]): AsyncGenerator
   }
 }
 
-/** Runs the primary provider, transparently switching to the fallback if it fails before emitting. */
+/** Tries each provider in order; switches over transparently when one fails before emitting. */
 async function* runChain(messages: ChatMessage[]): AsyncGenerator<string> {
-  const gemini = process.env["GEMINI_API_KEY"];
+  const providers: Array<[string, (m: ChatMessage[]) => AsyncGenerator<string>]> = [];
+  const lovable = process.env["LOVABLE_API_KEY"];
   const groq = process.env["GROQ_API_KEY"];
-  const errors: string[] = [];
+  const gemini = process.env["GEMINI_API_KEY"];
+  if (lovable) providers.push(["lovable", (m) => streamLovable(lovable, m)]);
+  if (groq) providers.push(["groq", (m) => streamGroq(groq, m)]);
+  if (gemini) providers.push(["gemini", (m) => streamGemini(gemini, m)]);
 
-  if (gemini) {
+  const errors: string[] = [];
+  for (const [name, run] of providers) {
     let emitted = false;
     try {
-      for await (const chunk of streamGemini(gemini, messages)) {
+      for await (const chunk of run(messages)) {
         emitted = true;
         yield chunk;
       }
       if (emitted) return;
-      errors.push("gemini: empty response");
+      errors.push(`${name}: empty response`);
     } catch (e) {
       if (emitted) return; // partial answer already delivered
-      errors.push(e instanceof Error ? e.message : "gemini failed");
-    }
-  }
-
-  if (groq) {
-    try {
-      let emitted = false;
-      for await (const chunk of streamGroq(groq, messages)) {
-        emitted = true;
-        yield chunk;
-      }
-      if (emitted) return;
-      errors.push("groq: empty response");
-    } catch (e) {
-      errors.push(e instanceof Error ? e.message : "groq failed");
+      errors.push(e instanceof Error ? e.message : `${name} failed`);
     }
   }
 

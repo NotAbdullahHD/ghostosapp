@@ -97,7 +97,7 @@ export const PROXY_PROVIDERS: { id: ProxyProviderId; name: string; note: string;
 
 export type PowerMode = "performance" | "balanced" | "battery";
 export type AnimationQuality = "high" | "reduced" | "off";
-export type DockPosition = "left" | "center";
+export type DockPosition = "left" | "bottom" | "right";
 
 export interface SystemSettings {
   idleLockMinutes: number;       // 0 = off
@@ -134,7 +134,7 @@ const DEFAULT_SETTINGS: SystemSettings = {
   proxyProvider: "scramjet",
   homepage: "https://www.google.com",
   newTab: "ghost",
-  dockPosition: "center",
+  dockPosition: "bottom",
 };
 
 export interface DesktopIcon { appId: AppId; x: number; y: number }
@@ -258,9 +258,14 @@ export function GhostProvider({ children }: { children: ReactNode }) {
   const [showLauncher, setShowLauncher] = useState(false);
   const [locked, setLocked] = useState(false);
   const [settings, setSettings] = useState<SystemSettings>(() => {
-    try { return { ...DEFAULT_SETTINGS, ...JSON.parse(ls.get(LS_SETTINGS) || "{}") }; }
+    try {
+      const merged = { ...DEFAULT_SETTINGS, ...JSON.parse(ls.get(LS_SETTINGS) || "{}") } as SystemSettings;
+      if (!["left", "bottom", "right"].includes(merged.dockPosition)) merged.dockPosition = "bottom";
+      return merged;
+    }
     catch { return DEFAULT_SETTINGS; }
   });
+
   const [installedApps, setInstalledApps] = useState<Record<string, boolean>>(() => {
     try { return JSON.parse(ls.get(LS_INSTALLED) || "{}"); } catch { return {}; }
   });

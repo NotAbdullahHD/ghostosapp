@@ -14,19 +14,6 @@ function XGlyph({ className, style }: { className?: string; style?: React.CSSPro
 }
 
 
-import chatPng from "@/assets/icons/chat.png.asset.json";
-import filesPng from "@/assets/icons/files.png.asset.json";
-import gamesPng from "@/assets/icons/games.png.asset.json";
-import moviesPng from "@/assets/icons/movies.png.asset.json";
-import musicPng from "@/assets/icons/music.png.asset.json";
-import settingsPng from "@/assets/icons/settings.png.asset.json";
-import storePng from "@/assets/icons/store.png.asset.json";
-import terminalPng from "@/assets/icons/terminal.png.asset.json";
-import xPng from "@/assets/icons/x.png.asset.json";
-import notesPng from "@/assets/icons/notes.png.asset.json";
-import calendarPng from "@/assets/icons/calendar.png.asset.json";
-import tiktokPng from "@/assets/icons/tiktok.png.asset.json";
-import pinterestPng from "@/assets/icons/pinterest.png.asset.json";
 
 /** Real app artwork (macOS-style icon set) — takes priority over the glyph tiles. */
 const ART: Partial<Record<AppId, string>> = {
@@ -34,19 +21,19 @@ const ART: Partial<Record<AppId, string>> = {
   ghostai: "/icons/ghostai.png",
   ghostcloud: "/icons/ghostcloud.png",
   ghostanime: "/icons/ghostanime.png",
-  chat: chatPng.url,
-  files: filesPng.url,
-  games: gamesPng.url,
-  movies: moviesPng.url,
-  music: musicPng.url,
-  settings: settingsPng.url,
-  store: storePng.url,
-  terminal: terminalPng.url,
-  x: xPng.url,
-  notes: notesPng.url,
-  calendar: calendarPng.url,
-  tiktok: tiktokPng.url,
-  pinterest: pinterestPng.url,
+  chat: "/icons/chat.png",
+  files: "/icons/files.png",
+  games: "/icons/games.png",
+  movies: "/icons/movies.png",
+  music: "/icons/music.png",
+  settings: "/icons/settings.png",
+  store: "/icons/store.png",
+  terminal: "/icons/terminal.png",
+  x: "/icons/x.png",
+  notes: "/icons/notes.png",
+  calendar: "/icons/calendar.png",
+  tiktok: "/icons/tiktok.png",
+  pinterest: "/icons/pinterest.png",
 };
 
 type IconCmp = React.ComponentType<LucideProps> | typeof XGlyph;
