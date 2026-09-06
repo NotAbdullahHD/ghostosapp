@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Palette, Monitor, RefreshCw, Maximize, Settings, Terminal, Image, Radio, AlignLeft, AlignCenter } from "lucide-react";
+import { Palette, Monitor, RefreshCw, Maximize, Settings, Terminal, Image, Radio, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
 import { useGhost } from "./store";
 
 export function DesktopContextMenu() {
@@ -36,9 +36,9 @@ export function DesktopContextMenu() {
     { icon: <Palette className="h-3.5 w-3.5" />, label: "Personalize", action: () => openApp("settings", "Settings") },
     { icon: <Image className="h-3.5 w-3.5" />, label: "Wallpapers", action: () => setShowWallpaperPicker(true) },
     { icon: <Monitor className="h-3.5 w-3.5" />, label: "Display Settings", action: () => openApp("settings", "Settings") },
-    settings.dockPosition === "center"
-      ? { icon: <AlignLeft className="h-3.5 w-3.5" />, label: "Move Dock Left", action: () => updateSettings({ dockPosition: "left" }) }
-      : { icon: <AlignCenter className="h-3.5 w-3.5" />, label: "Move Dock Center", action: () => updateSettings({ dockPosition: "center" }) },
+    { icon: <AlignLeft className="h-3.5 w-3.5" />, label: `Dock Left${settings.dockPosition === "left" ? " ·" : ""}`, action: () => updateSettings({ dockPosition: "left" }) },
+    { icon: <AlignCenter className="h-3.5 w-3.5" />, label: `Dock Bottom${settings.dockPosition === "bottom" ? " ·" : ""}`, action: () => updateSettings({ dockPosition: "bottom" }) },
+    { icon: <AlignRight className="h-3.5 w-3.5" />, label: `Dock Right${settings.dockPosition === "right" ? " ·" : ""}`, action: () => updateSettings({ dockPosition: "right" }) },
 
     { icon: <RefreshCw className="h-3.5 w-3.5" />, label: "Refresh", action: () => window.location.reload() },
     { icon: <Terminal className="h-3.5 w-3.5" />, label: "Open Terminal", action: () => openApp("terminal", "Terminal") },

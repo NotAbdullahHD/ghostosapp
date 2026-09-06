@@ -323,14 +323,12 @@ export function SettingsApp() {
             <div className="glass mt-4 rounded-xl p-4">
               <div className="mb-3 text-sm font-semibold">Dock Position</div>
               <div className="flex gap-2">
-                <button onClick={() => updateSettings({ dockPosition: "left" })}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ring-1 ${settings.dockPosition === "left" ? "bg-ice/15 text-white ring-ice/60" : "text-white/60 ring-white/10"}`}>
-                  <AlignLeft className="h-3.5 w-3.5" /> Left
-                </button>
-                <button onClick={() => updateSettings({ dockPosition: "center" })}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ring-1 ${settings.dockPosition === "center" ? "bg-ice/15 text-white ring-ice/60" : "text-white/60 ring-white/10"}`}>
-                  <AlignCenter className="h-3.5 w-3.5" /> Center
-                </button>
+                {([["left", "Left"], ["bottom", "Bottom"], ["right", "Right"]] as const).map(([id, label]) => (
+                  <button key={id} onClick={() => updateSettings({ dockPosition: id })}
+                    className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ring-1 ${settings.dockPosition === id ? "bg-ice/15 text-white ring-ice/60" : "text-white/60 ring-white/10"}`}>
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
