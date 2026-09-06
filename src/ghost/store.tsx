@@ -258,9 +258,14 @@ export function GhostProvider({ children }: { children: ReactNode }) {
   const [showLauncher, setShowLauncher] = useState(false);
   const [locked, setLocked] = useState(false);
   const [settings, setSettings] = useState<SystemSettings>(() => {
-    try { return { ...DEFAULT_SETTINGS, ...JSON.parse(ls.get(LS_SETTINGS) || "{}") }; }
+    try {
+      const merged = { ...DEFAULT_SETTINGS, ...JSON.parse(ls.get(LS_SETTINGS) || "{}") } as SystemSettings;
+      if (!["left", "bottom", "right"].includes(merged.dockPosition)) merged.dockPosition = "bottom";
+      return merged;
+    }
     catch { return DEFAULT_SETTINGS; }
   });
+
   const [installedApps, setInstalledApps] = useState<Record<string, boolean>>(() => {
     try { return JSON.parse(ls.get(LS_INSTALLED) || "{}"); } catch { return {}; }
   });
