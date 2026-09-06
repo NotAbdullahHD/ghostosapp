@@ -17,7 +17,7 @@ import {
 
 import { ProfileGate } from "./FlixProfiles";
 import {
-  loadProfiles, saveProfiles, loadActiveProfileId, saveActiveProfileId,
+  loadProfiles, saveProfiles, saveActiveProfileId,
   type FlixProfile,
 } from "../profiles";
 
