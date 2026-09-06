@@ -97,7 +97,7 @@ export const PROXY_PROVIDERS: { id: ProxyProviderId; name: string; note: string;
 
 export type PowerMode = "performance" | "balanced" | "battery";
 export type AnimationQuality = "high" | "reduced" | "off";
-export type DockPosition = "left" | "center";
+export type DockPosition = "left" | "bottom" | "right";
 
 export interface SystemSettings {
   idleLockMinutes: number;       // 0 = off
@@ -134,7 +134,7 @@ const DEFAULT_SETTINGS: SystemSettings = {
   proxyProvider: "scramjet",
   homepage: "https://www.google.com",
   newTab: "ghost",
-  dockPosition: "center",
+  dockPosition: "bottom",
 };
 
 export interface DesktopIcon { appId: AppId; x: number; y: number }
