@@ -82,8 +82,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "GhostOS" },
       { name: "twitter:description", content: "GhostOS is a cinematic, browser-based operating system with a futuristic, cyberpunk aesthetic." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/ClA7NYhCIYeHgdb5aGfH579sb9M2/social-images/social-1778765007394-Screenshot_2026-05-14_15.23.14.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/ClA7NYhCIYeHgdb5aGfH579sb9M2/social-images/social-1778765007394-Screenshot_2026-05-14_15.23.14.webp" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
