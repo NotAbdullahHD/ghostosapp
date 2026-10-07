@@ -10,9 +10,9 @@ import { useGhost } from "./store";
  */
 export function NowPlayingWidget() {
   const { track, playing, position, duration, buffering, toggle, next, prev, stop } = useMusic();
-  const { openApp, hasFullscreen } = useGhost();
+  const { openApp, hasFullscreen, windows, showLauncher } = useGhost();
 
-  const visible = !!track && !hasFullscreen;
+  const visible = !!track && !hasFullscreen && !showLauncher && !windows.some(w => !w.minimized);
   const total = duration || track?.duration || 0;
   const progress = total ? Math.min(100, (position / total) * 100) : 0;
 
@@ -25,9 +25,9 @@ export function NowPlayingWidget() {
           animate={{ opacity: 1, x: 0, scale: 1 }}
           exit={{ opacity: 0, x: 28, scale: 0.96 }}
           transition={{ type: "spring", stiffness: 320, damping: 30 }}
-          className="fixed right-4 bottom-24 z-40 w-[268px] select-none"
+          className="fixed left-3 top-12 z-40 w-[300px] max-w-[calc(100vw-24px)] select-none"
         >
-          <div className="group glass-panel rounded-2xl border border-white/10 p-3 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.9)]">
+          <div className="group desktop-panel rounded-lg p-4">
             <div className="flex items-start gap-3">
               <button
                 onClick={() => openApp("music", "Ghost Music")}

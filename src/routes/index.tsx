@@ -8,10 +8,12 @@ import { MusicProvider } from "@/ghost/music";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "GhostOS — Spectral Desktop Environment" },
-      { name: "description", content: "GhostOS is a futuristic browser-based operating system with a cinematic dark interface, neon glow, and a complete glassmorphic desktop experience." },
-      { property: "og:title", content: "GhostOS — Spectral Desktop Environment" },
-      { property: "og:description", content: "A premium cyberpunk OS in your browser. Apps, windows, dock, GhostAI, and more." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { title: "GhostOS — Your Browser Desktop" },
+      { name: "description", content: "GhostOS brings a customized desktop, music, notes, files and apps to your browser." },
+      { property: "og:title", content: "GhostOS — Your Browser Desktop" },
+      { property: "og:description", content: "A minimal desktop with live music, useful apps and your own wallpapers." },
     ],
   }),
   component: Index,

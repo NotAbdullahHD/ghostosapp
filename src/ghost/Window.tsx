@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { useGhost, type WindowState } from "./store";
@@ -114,19 +115,18 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
             : { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
         }}
         exit={{ opacity: 0, scale: 0.94, y: 16, transition: { duration: 0.18, ease: [0.4, 0, 1, 1] } }}
-        className={`absolute ${fullscreen ? "" : "glass-strong window-shadow rounded-2xl"} overflow-hidden flex flex-col will-change-transform`}
+        className={`absolute ${fullscreen ? "" : "desktop-window"} overflow-hidden flex flex-col will-change-transform`}
         style={{ ...style, zIndex: fullscreen ? 9999 : win.z, pointerEvents: win.minimized ? "none" : "auto" }}
         onMouseDown={() => focusWindow(win.id)}
       >
         {!fullscreen && (
-          <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]" />
+          <div className="pointer-events-none absolute inset-0 rounded-lg" />
         )}
 
         {/* Title bar — hidden in fullscreen */}
         {!fullscreen && (
           <div
-            className="flex items-center justify-between px-4 h-10 select-none cursor-grab active:cursor-grabbing border-b border-white/5 relative"
-            style={{ background: "linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.01))" }}
+            className="desktop-window-title flex shrink-0 items-center justify-between px-3 h-10 select-none cursor-grab active:cursor-grabbing border-b border-chrome-border relative"
             onMouseDown={(e) => {
               if ((e.target as HTMLElement).closest("button")) return;
               dragStart.current = { mx: e.clientX, my: e.clientY, x: win.x, y: win.y };
@@ -134,18 +134,12 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
             }}
             onDoubleClick={() => toggleMaximize(win.id)}
           >
-            <div className="flex items-center gap-2">
-              <button onClick={() => closeWindow(win.id)} className="group h-3 w-3 rounded-full bg-red-500/90 hover:bg-red-400 transition flex items-center justify-center shadow-[0_0_8px_rgba(239,68,68,.6)]">
-                <X className="h-2 w-2 text-red-950 opacity-0 group-hover:opacity-100" strokeWidth={3} />
-              </button>
-              <button onClick={() => toggleMinimize(win.id)} className="group h-3 w-3 rounded-full bg-yellow-500/90 hover:bg-yellow-400 transition flex items-center justify-center shadow-[0_0_8px_rgba(234,179,8,.5)]">
-                <Minus className="h-2 w-2 text-yellow-950 opacity-0 group-hover:opacity-100" strokeWidth={3} />
-              </button>
-              <button onClick={() => toggleMaximize(win.id)} className="group h-3 w-3 rounded-full bg-emerald-500/90 hover:bg-emerald-400 transition flex items-center justify-center shadow-[0_0_8px_rgba(16,185,129,.5)]">
-                <Square className="h-2 w-2 text-emerald-950 opacity-0 group-hover:opacity-100" strokeWidth={3} />
-              </button>
+            <div className="flex items-center gap-1">
+              <Button variant="desktop" size="icon" title="Close window" onClick={() => closeWindow(win.id)} className="h-6 w-6 rounded-full p-0"><X className="h-3 w-3" /></Button>
+              <Button variant="desktop" size="icon" title="Minimize window" onClick={() => toggleMinimize(win.id)} className="h-6 w-6 rounded-full p-0"><Minus className="h-3 w-3" /></Button>
+              <Button variant="desktop" size="icon" title="Maximize window" onClick={() => toggleMaximize(win.id)} className="h-6 w-6 rounded-full p-0"><Square className="h-3 w-3" /></Button>
             </div>
-            <div className="text-[12px] text-white/70 absolute left-1/2 -translate-x-1/2">{win.title}</div>
+            <div className="pointer-events-none max-w-[50%] truncate text-[12px] text-chrome-muted absolute left-1/2 -translate-x-1/2">{win.title}</div>
             <button
               onClick={() => toggleFullscreen(win.id)}
               title="Fullscreen"

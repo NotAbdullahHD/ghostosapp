@@ -14,7 +14,6 @@ import { ControlCenter } from "./ControlCenter";
 import { NowPlayingWidget } from "./NowPlayingWidget";
 import { DesktopIcons } from "./DesktopIcons";
 import { DesktopClock } from "./DesktopClock";
-import { DesktopStatus } from "./DesktopStatus";
 import { WallpaperPicker } from "./WallpaperPicker";
 import type { AppId } from "./apps";
 
@@ -128,7 +127,7 @@ export function Desktop() {
   }, [windows.length]);
 
   // Suppress heavy ambient effects while locked or fullscreen for smoother perf.
-  const showAmbient = !hasFullscreen && !locked && settings.wallpaperEffects;
+  const showAmbient = false;
 
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ background: wallpaper }}>
@@ -148,12 +147,12 @@ export function Desktop() {
         {!hasFullscreen && !locked && (
           <motion.div
             key="chrome"
+            className="contents"
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] } }}
             exit={{ opacity: 0, transition: { duration: 0.2 } }}
           >
             <DesktopClock />
-            <DesktopStatus />
             <NotificationCenter />
             <Dock />
             <SystemTray />

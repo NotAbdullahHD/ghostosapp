@@ -1,3 +1,21 @@
+import browserArt from "../../public/icons/browser.png?url";
+import ghostaiArt from "../../public/icons/ghostai.png?url";
+import ghostcloudArt from "../../public/icons/ghostcloud.png?url";
+import ghostanimeArt from "../../public/icons/ghostanime.png?url";
+import chatArt from "../../public/icons/chat.png?url";
+import filesArt from "../../public/icons/files.png?url";
+import gamesArt from "../../public/icons/games.png?url";
+import moviesArt from "../../public/icons/movies.png?url";
+import musicArt from "../../public/icons/music.png?url";
+import settingsArt from "../../public/icons/settings.png?url";
+import storeArt from "../../public/icons/store.png?url";
+import terminalArt from "../../public/icons/terminal.png?url";
+import xArt from "../../public/icons/x.png?url";
+import notesArt from "../../public/icons/notes.png?url";
+import calendarArt from "../../public/icons/calendar.png?url";
+import tiktokArt from "../../public/icons/tiktok.png?url";
+import pinterestArt from "../../public/icons/pinterest.png?url";
+import { useState } from "react";
 import type { AppId } from "./apps";
 import {
   Gamepad2, Cloud, Sparkles, Bot, Globe, Compass, Clapperboard, Music4,
@@ -17,23 +35,23 @@ function XGlyph({ className, style }: { className?: string; style?: React.CSSPro
 
 /** Real app artwork (macOS-style icon set) — takes priority over the glyph tiles. */
 const ART: Partial<Record<AppId, string>> = {
-  browser: "/icons/browser.png",
-  ghostai: "/icons/ghostai.png",
-  ghostcloud: "/icons/ghostcloud.png",
-  ghostanime: "/icons/ghostanime.png",
-  chat: "/icons/chat.png",
-  files: "/icons/files.png",
-  games: "/icons/games.png",
-  movies: "/icons/movies.png",
-  music: "/icons/music.png",
-  settings: "/icons/settings.png",
-  store: "/icons/store.png",
-  terminal: "/icons/terminal.png",
-  x: "/icons/x.png",
-  notes: "/icons/notes.png",
-  calendar: "/icons/calendar.png",
-  tiktok: "/icons/tiktok.png",
-  pinterest: "/icons/pinterest.png",
+  browser: browserArt,
+  ghostai: ghostaiArt,
+  ghostcloud: ghostcloudArt,
+  ghostanime: ghostanimeArt,
+  chat: chatArt,
+  files: filesArt,
+  games: gamesArt,
+  movies: moviesArt,
+  music: musicArt,
+  settings: settingsArt,
+  store: storeArt,
+  terminal: terminalArt,
+  x: xArt,
+  notes: notesArt,
+  calendar: calendarArt,
+  tiktok: tiktokArt,
+  pinterest: pinterestArt,
 };
 
 type IconCmp = React.ComponentType<LucideProps> | typeof XGlyph;
@@ -94,11 +112,13 @@ export function AppIcon({
   radius?: number;
   className?: string;
 }) {
+  const [failedArt, setFailedArt] = useState<string | null>(null);
   const art = ART[id];
-  if (art) {
+  if (art && failedArt !== art) {
     return (
       <img
         src={art}
+        onError={() => setFailedArt(art)}
         alt=""
         draggable={false}
         className={`select-none object-contain ${className}`}
@@ -117,9 +137,9 @@ export function AppIcon({
         width: size,
         height: size,
         borderRadius: r,
-        background: "linear-gradient(160deg, #26262b 0%, #17171a 55%, #101013 100%)",
+        background: "var(--icon-surface)",
         boxShadow:
-          "inset 0 1px 0 rgba(255,255,255,.14), inset 0 -1px 0 rgba(0,0,0,.6), 0 10px 24px -12px rgba(0,0,0,.9)",
+          "var(--shadow-chrome)",
       }}
     >
       <span
