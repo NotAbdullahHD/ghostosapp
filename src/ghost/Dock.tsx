@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useRef, useState } from "react";
 import { useGhost } from "./store";
@@ -47,11 +48,11 @@ export function Dock() {
       data-no-ctx
     >
       <div
-        className={`rounded-2xl flex items-center ${vertical ? "flex-col px-2 py-2.5 gap-2.5" : "px-2.5 py-2 gap-2.5"}`}
+        className={`desktop-dock flex items-center ${vertical ? "flex-col px-1.5 py-2 gap-3" : "px-2 py-1.5 gap-3"}`}
         style={GLASS}
       >
         <DockButton label="All apps" active={showLauncher} onClick={toggleLauncher}>
-          <LayoutGrid className={`h-[18px] w-[18px] ${showLauncher ? "text-black" : "text-white/85"}`} strokeWidth={1.8} />
+          <LayoutGrid className={`h-[18px] w-[18px] ${showLauncher ? "text-primary-foreground" : "text-chrome-foreground"}`} strokeWidth={1.8} />
         </DockButton>
 
         <Divider vertical={vertical} />
@@ -85,7 +86,7 @@ export function Dock() {
 }
 
 function Divider({ vertical }: { vertical: boolean }) {
-  return <span className={vertical ? "h-px w-6 my-0.5 bg-white/20" : "w-px h-6 mx-0.5 bg-white/20"} />;
+  return <span className={vertical ? "h-px w-6 my-0.5 bg-chrome-border" : "w-px h-6 mx-0.5 bg-chrome-border"} />;
 }
 
 function DockApp({
@@ -133,11 +134,11 @@ function DockApp({
         : { bottom: -3, left: "50%", translate: "-50% 0", height: 3, width: open ? (minimized ? 6 : 14) : 0 };
 
   return (
-    <button
+    <Button variant="desktop" size="icon"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      className="group relative flex h-9 w-9 items-center justify-center"
+      className="group relative flex h-9 w-9 p-0 items-center justify-center"
       title={app.name}
       style={{ touchAction: "none" }}
     >
@@ -152,23 +153,23 @@ function DockApp({
       <Tooltip side={side}>{app.name}</Tooltip>
       <span
         className="absolute rounded-full transition-all duration-200"
-        style={{ ...indicator, background: "rgba(255,255,255,.9)", opacity: open ? (minimized ? 0.5 : 1) : 0 }}
+        style={{ ...indicator, background: "var(--chrome-foreground)", opacity: open ? (minimized ? 0.5 : 1) : 0 }}
       />
-    </button>
+    </Button>
   );
 }
 
 function DockButton({ label, active, onClick, children }: { label: string; active?: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} className="group relative flex h-9 w-9 items-center justify-center" title={label}>
+    <Button variant="desktop" size="icon" onClick={onClick} className="group relative flex h-9 w-9 p-0 items-center justify-center" title={label}>
       <motion.span
         whileHover={{ scale: 1.15 }}
         transition={{ type: "spring", stiffness: 380, damping: 24 }}
-        className={`h-9 w-9 rounded-lg flex items-center justify-center ${active ? "bg-white/80" : "bg-white/[0.12]"}`}
+        className={`h-9 w-9 rounded-lg flex items-center justify-center ${active ? "bg-chrome-foreground" : "bg-chrome-hover"}`}
       >
         {children}
       </motion.span>
-    </button>
+    </Button>
   );
 }
 
@@ -180,7 +181,7 @@ function Tooltip({ children, side }: { children: React.ReactNode; side: "left" |
         ? "right-12 top-1/2 -translate-y-1/2"
         : "-top-9 left-1/2 -translate-x-1/2";
   return (
-    <span className={`absolute ${place} px-2 py-1 rounded-md text-[11px] whitespace-nowrap bg-black/60 text-white/90 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none border border-white/15 backdrop-blur-xl`}>
+    <span className={`absolute ${place} px-2 py-1 rounded-md text-[11px] whitespace-nowrap bg-popover text-chrome-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none border border-chrome-border backdrop-blur-xl`}>
       {children}
     </span>
   );

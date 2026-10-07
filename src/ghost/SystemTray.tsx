@@ -1,104 +1,34 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { Wifi, BatteryFull, Bell, SlidersHorizontal, Radio, Lock } from "lucide-react";
+import { Wifi, WifiOff, Battery, BatteryCharging, Bell, SlidersHorizontal, Radio, Lock, LayoutGrid } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useGhost } from "./store";
 import { GLASS } from "./glass";
+import { useDeviceStatus } from "./useDeviceStatus";
 
-/**
- * Top chrome, split into three pieces:
- *  · controls pill (GhostDrop, lock, wifi/battery/control center) — top right
- *  · small time pill — top center
- *  · round notification button — top right corner
- */
 export function SystemTray() {
-  const {
-    toggleControlCenter, showControlCenter,
-    toggleNotifCenter, showNotifCenter, notifications,
-    toggleGhostDrop, showGhostDrop, setLocked,
-  } = useGhost();
-  const [now, setNow] = useState(new Date());
-
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 10_000);
-    return () => clearInterval(id);
-  }, []);
-
-  const unread = notifications.filter((n) => !n.read).length;
-
-  return (
-    <>
-      {/* Time — top center */}
-      <motion.div
-        initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed left-1/2 top-3 z-[600] -translate-x-1/2"
-      >
-        <button
-          onClick={toggleControlCenter}
-          style={GLASS}
-          className="flex h-8 items-center gap-2 rounded-full px-3.5 text-white/90 transition hover:bg-white/20"
-          title="Date and time"
-        >
-          <span className="text-[12px] font-medium tabular-nums">
-            {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-          </span>
-          <span className="h-1 w-1 rounded-full bg-white/40" />
-          <span className="text-[11px] text-white/65">
-            {now.toLocaleDateString([], { month: "short", day: "numeric" })}
-          </span>
-        </button>
-      </motion.div>
-
-      {/* Controls + notifications — top right */}
-      <motion.div
-        initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed right-3 top-3 z-[600] flex items-center gap-2"
-      >
-        <div className="flex items-center gap-0.5 rounded-full px-1.5 py-1 text-white/80" style={GLASS}>
-          <TrayButton label="GhostDrop" active={showGhostDrop} onClick={toggleGhostDrop}>
-            <Radio className="h-[15px] w-[15px]" />
-          </TrayButton>
-          <TrayButton label="Lock GhostOS" onClick={() => setLocked(true)}>
-            <Lock className="h-[15px] w-[15px]" />
-          </TrayButton>
-          <button
-            onClick={toggleControlCenter}
-            title="Control Center"
-            className={`flex h-8 items-center gap-2 rounded-full px-2.5 transition-colors duration-150 ${showControlCenter ? "bg-white/25 text-white" : "hover:bg-white/15 hover:text-white"}`}
-          >
-            <Wifi className="h-[15px] w-[15px]" />
-            <BatteryFull className="h-[15px] w-[15px]" />
-            <SlidersHorizontal className="h-[15px] w-[15px]" />
-          </button>
-        </div>
-
-        <button
-          onClick={toggleNotifCenter}
-          title="Notifications"
-          style={GLASS}
-          className={`relative flex h-9 w-9 items-center justify-center rounded-full text-white/85 transition hover:bg-white/20 ${showNotifCenter ? "bg-white/25 text-white" : ""}`}
-        >
-          <Bell className="h-[16px] w-[16px]" />
-          {unread > 0 && (
-            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full ring-2 ring-black/30" style={{ background: "#66d9ff" }} />
-          )}
-        </button>
-      </motion.div>
-    </>
-  );
-}
-
-function TrayButton({ label, active, onClick, children }: {
-  label: string; active?: boolean; onClick: () => void; children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      title={label}
-      className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-150 ${active ? "bg-white/25 text-white" : "hover:bg-white/15 hover:text-white"}`}
-    >
-      {children}
-    </button>
-  );
+  const { toggleControlCenter, toggleNotifCenter, notifications, toggleGhostDrop, setLocked, toggleLauncher, windows } = useGhost();
+  const { online, battery } = useDeviceStatus();
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => { const tick = () => setNow(new Date()); tick(); const t = setInterval(tick, 1000); return () => clearInterval(t); }, []);
+  const active = [...windows].filter(w => !w.minimized).sort((a,b) => b.z-a.z)[0];
+  return <>
+    <div className="fixed left-2 top-2 z-[600] flex gap-1.5">
+      <Button variant="desktop" size="sm" style={GLASS} className="desktop-top-button px-2 gap-2" title="All apps" onClick={toggleLauncher}><LayoutGrid className="h-3 w-3" /><span className="hidden sm:inline">{active?.title || "GhostOS"}</span></Button>
+    </div>
+    <Button variant="desktop" size="sm" style={GLASS} className="desktop-top-button fixed left-1/2 top-2 z-[600] -translate-x-1/2 px-2.5 tabular-nums" onClick={toggleControlCenter} title="Date and time">
+      {now && <><span className="desktop-top-date">{now.toLocaleDateString("en-GB", { day:"2-digit", month:"short" })}</span><span>{now.toLocaleTimeString("en-GB", { hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false })}</span></>}
+    </Button>
+    <div className="fixed right-2 top-2 z-[600] flex gap-1.5">
+      <div className="flex gap-0.5 rounded-md px-0.5" style={GLASS}>
+        <Button variant="desktop" size="icon" className="h-[26px] w-[26px] p-0" title="GhostDrop" onClick={toggleGhostDrop}><Radio className="h-3 w-3" /></Button>
+        <Button variant="desktop" size="icon" className="h-[26px] w-[26px] p-0" title="Lock GhostOS" onClick={() => setLocked(true)}><Lock className="h-3 w-3" /></Button>
+      </div>
+      <Button variant="desktop" size="sm" style={GLASS} className="desktop-top-button gap-2 px-2" title="Control Center" onClick={toggleControlCenter}>
+        {online === false ? <WifiOff className="h-3 w-3" /> : <Wifi className="h-3 w-3" />}
+        {battery && <span className="hidden sm:flex items-center gap-1 text-[10px]">{battery.charging ? <BatteryCharging className="h-3 w-3"/> : <Battery className="h-3 w-3"/>}{battery.level}%</span>}
+        <SlidersHorizontal className="h-3 w-3" />
+      </Button>
+      <Button variant="desktop" size="icon" style={GLASS} className="relative h-[26px] w-[26px] rounded-full p-0" title="Notifications" onClick={toggleNotifCenter}><Bell className="h-3 w-3" />{notifications.some(n=>!n.read) && <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-primary"/>}</Button>
+    </div>
+  </>;
 }
