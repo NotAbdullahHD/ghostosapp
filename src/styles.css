@@ -233,3 +233,7 @@
 @media (max-width: 700px) { .desktop-clock-day { font-size: 38px; } .desktop-clock-date, .desktop-clock-time { font-size: 12px; } .desktop-launcher-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; } }
 @media (max-width: 440px) { .desktop-clock-day { font-size: 27px; } .desktop-launcher-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .desktop-top-date { display: none; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+
+:root { --display-dim: oklch(0 0 0); --night-tint: oklch(0.72 0.12 66 / 0.1); }
+.desktop-display-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 10000; background: var(--display-dim); }
+.desktop-night-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 10000; background: var(--night-tint); }
