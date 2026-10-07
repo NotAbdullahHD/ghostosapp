@@ -36,6 +36,10 @@
   --color-ice-soft: var(--ice-soft);
   --color-surface: var(--surface);
   --color-elevated: var(--elevated);
+  --color-chrome-foreground: var(--chrome-foreground);
+  --color-chrome-muted: var(--chrome-muted);
+  --color-chrome-hover: var(--chrome-hover);
+  --color-chrome-border: var(--chrome-border);
   --font-display: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
@@ -43,6 +47,15 @@
 }
 
 :root {
+  --chrome-foreground: oklch(0.96 0 0);
+  --chrome-muted: oklch(0.77 0 0);
+  --chrome-hover: oklch(1 0 0 / 0.14);
+  --chrome-border: oklch(1 0 0 / 0.22);
+  --chrome-glass: oklch(0.28 0 0 / 0.48);
+  --chrome-panel: oklch(0.19 0 0 / 0.93);
+  --icon-surface: oklch(0.23 0 0);
+  --shadow-chrome: 0 8px 22px -12px oklch(0 0 0 / 0.55), inset 0 1px 0 oklch(1 0 0 / 0.12);
+  --launcher-scrim: oklch(0.28 0 0 / 0.38);
   --radius: 0.75rem;
 
   /* ── GhostOS 3.0 · Obsidian ───────────────────────────── */
@@ -106,7 +119,7 @@
     color: var(--color-foreground);
     font-family: var(--font-display);
     font-feature-settings: "cv02", "cv03", "cv04", "ss01";
-    letter-spacing: -0.011em;
+    letter-spacing: 0;
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -189,5 +202,34 @@
 }
 .ghost-no-blur *, .ghost-no-blur *::before, .ghost-no-blur *::after {
   backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
 }
+
+@font-face {
+  font-family: "Anurati";
+  src: url("https://ghostosapp.lovable.app/__l5e/assets-v1/872503d6-285a-487c-9fb9-e48d9d9e935b/anurati.woff") format("woff");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ghost Montserrat";
+  src: url("https://ghostosapp.lovable.app/__l5e/assets-v1/5e7d9f49-3ad9-4572-8d90-db4b4e5d7a07/montserrat-semibold.ttf") format("truetype");
+  font-weight: 600;
+  font-display: swap;
+}
+.desktop-clock { position: absolute; left: 50%; top: 49%; transform: translate(-50%, -50%); z-index: 10; text-align: center; pointer-events: none; user-select: none; color: var(--chrome-foreground); width: min(90%, 780px); }
+.desktop-clock-day { font-family: "Anurati", sans-serif; font-size: 64px; line-height: 1.2; white-space: nowrap; }
+.desktop-clock-date, .desktop-clock-time { font-family: "Ghost Montserrat", sans-serif; font-weight: 600; font-size: 15px; line-height: 1.5; }
+.desktop-clock-date { margin-top: 22px; }
+.desktop-clock-time { margin-top: 5px; }
+.desktop-dock { border-radius: 8px; }
+.desktop-top-button { height: 26px; font-size: 10px; border-radius: 5px; }
+.desktop-panel { background: var(--chrome-panel); color: var(--chrome-foreground); border: 1px solid var(--chrome-border); box-shadow: var(--shadow-chrome); backdrop-filter: blur(24px); }
+.desktop-launcher { background: var(--launcher-scrim); backdrop-filter: blur(26px); }
+.desktop-launcher-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 24px 28px; }
+.desktop-app-tile { flex-direction: column; height: 96px; gap: 12px; white-space: normal; }
+.desktop-app-tile span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+.desktop-window { background: var(--chrome-panel); border: 1px solid var(--chrome-border); border-radius: 8px; box-shadow: var(--shadow-window); }
+.desktop-window-title { background: var(--chrome-hover); }
+@media (max-width: 700px) { .desktop-clock-day { font-size: 38px; } .desktop-clock-date, .desktop-clock-time { font-size: 12px; } .desktop-launcher-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; } }
+@media (max-width: 440px) { .desktop-clock-day { font-size: 27px; } .desktop-launcher-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .desktop-top-date { display: none; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
