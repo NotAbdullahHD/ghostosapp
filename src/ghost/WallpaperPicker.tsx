@@ -1,52 +1,58 @@
+import { useEffect, useRef, useState } from "react";
 import { useGhost, WALLPAPERS } from "./store";
-import { X, Lock } from "lucide-react";
+import { usePersonalization } from "./PersonalizationProvider";
+import { Button } from "@/components/ui/button";
+import { X, Lock, Upload, Check, Trash2, Image, ChevronLeft, ChevronRight } from "lucide-react";
 
 export function WallpaperPicker() {
   const { showWallpaperPicker, setShowWallpaperPicker, wallpaperId, setWallpaperById, unlocked } = useGhost();
+  const { images, customId, setCustomId, addImage, removeImage } = usePersonalization();
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [tab, setTab] = useState<"collection" | "personal">("collection");
+  const rail = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!showWallpaperPicker) return;
+    const close = (event: KeyboardEvent) => { if (event.key === "Escape") setShowWallpaperPicker(false); };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [showWallpaperPicker, setShowWallpaperPicker]);
   if (!showWallpaperPicker) return null;
-
-  return (
-    <div
-      data-no-ctx
-      className="fixed inset-0 z-[9500] flex items-center justify-center bg-black/60 p-4"
-      onMouseDown={() => setShowWallpaperPicker(false)}
-    >
-      <div
-        onMouseDown={(e) => e.stopPropagation()}
-        className="w-full max-w-lg rounded-xl border border-white/10 bg-[#141416] p-4"
-      >
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm text-white/90">Wallpaper</h2>
-          <button onClick={() => setShowWallpaperPicker(false)} className="text-white/50 hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="max-h-[60vh] space-y-1 overflow-y-auto pr-1">
-          {WALLPAPERS.map((w) => {
-            const isLocked = !!(w.code || w.exclusive) && !unlocked[w.id];
-            const active = w.id === wallpaperId;
-            return (
-              <button
-                key={w.id}
-                disabled={isLocked}
-                onClick={() => { setWallpaperById(w.id); setShowWallpaperPicker(false); }}
-                className={`flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-xs ${
-                  active ? "bg-white/[0.12] text-white" : "text-white/70 hover:bg-white/[0.07]"
-                } ${isLocked ? "cursor-not-allowed opacity-40" : ""}`}
-              >
-                <span
-                  className="h-8 w-14 shrink-0 rounded border border-white/10 bg-cover bg-center"
-                  style={{ background: w.image ? undefined : w.css, backgroundImage: w.image ? `url(${w.image})` : undefined }}
-                />
-                <span className="min-w-0 flex-1 truncate">{w.name}</span>
-                {isLocked && <Lock className="h-3.5 w-3.5 shrink-0" />}
-                {active && <span className="text-[10px] text-[var(--ice,#66d9ff)]">Current</span>}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+  return <div data-no-ctx role="dialog" aria-label="Background studio" className="wallpaper-studio fixed inset-0 z-[9500] flex flex-col justify-end pb-24" onMouseDown={() => setShowWallpaperPicker(false)}>
+    <div className="wallpaper-controls desktop-panel mx-auto mb-6 flex max-w-[calc(100%-32px)] items-center gap-1 rounded-lg p-1.5" onMouseDown={event => event.stopPropagation()}>
+      <Button variant="desktop" className={`text-xs ${tab === "collection" ? "bg-chrome-hover" : ""}`} onClick={() => setTab("collection")}><Image/>Collection</Button>
+      <Button variant="desktop" className={`text-xs ${tab === "personal" ? "bg-chrome-hover" : ""}`} onClick={() => setTab("personal")}><Upload/>My backgrounds</Button>
+      <span className="mx-1 h-5 w-px bg-chrome-border"/>
+      <Button variant="desktop" size="icon" aria-label="Close backgrounds" onClick={() => setShowWallpaperPicker(false)}><X/></Button>
     </div>
-  );
+    <section className="wallpaper-strip" onMouseDown={event => event.stopPropagation()}>
+      <div className="mx-auto mb-3 flex max-w-[1100px] items-center justify-between px-6 text-chrome-foreground"><h2 className="text-sm font-medium">{tab === "collection" ? "Background collection" : "Your backgrounds"}</h2><div className="flex gap-1"><Button variant="desktop" size="icon" aria-label="Previous backgrounds" onClick={() => rail.current?.scrollBy({ left: -350, behavior: "smooth" })}><ChevronLeft/></Button><Button variant="desktop" size="icon" aria-label="Next backgrounds" onClick={() => rail.current?.scrollBy({ left: 350, behavior: "smooth" })}><ChevronRight/></Button></div></div>
+      <div ref={rail} className="wallpaper-rail flex gap-4 overflow-x-auto px-8 pb-5 pt-2">
+        {tab === "collection" && WALLPAPERS.map(wallpaper => {
+          const blocked = !!(wallpaper.code || wallpaper.exclusive) && !unlocked[wallpaper.id];
+          const active = !customId && wallpaperId === wallpaper.id;
+          return <Button key={wallpaper.id} variant="desktop" disabled={blocked} title={wallpaper.name} aria-label={`Choose ${wallpaper.name}`} aria-pressed={active} className={`wallpaper-preview group ${active ? "wallpaper-selected" : ""}`} onClick={() => { setWallpaperById(wallpaper.id); setCustomId(null); }}>
+            {wallpaper.video ? <video src={wallpaper.video} muted playsInline preload="metadata" onMouseEnter={event => { void event.currentTarget.play().catch(() => {}); }} onMouseLeave={event => event.currentTarget.pause()} className="absolute inset-0 h-full w-full object-cover"/> : <span className="absolute inset-0 bg-cover bg-center" style={{ background: wallpaper.image ? `url(${wallpaper.image}) center / cover` : wallpaper.css }}/>}
+            <span className="wallpaper-caption"><span className="truncate">{wallpaper.name}</span>{blocked ? <Lock/> : active ? <Check/> : null}</span>
+          </Button>;
+        })}
+        {tab === "personal" && <>
+          <label className={`wallpaper-upload ${saving ? "opacity-50" : ""}`}>
+            <Upload className="h-6 w-6"/><span>{saving ? "Saving…" : "Add background"}</span>
+            <input type="file" accept="image/*" aria-label="Upload background" disabled={saving} className="sr-only" onChange={async event => {
+              const file = event.target.files?.[0]; if (!file) return;
+              setError(""); setSaving(true);
+              try { await addImage(file); } catch (issue) { setError(issue instanceof Error ? issue.message : "Could not save the background."); }
+              finally { setSaving(false); event.target.value = ""; }
+            }}/>
+          </label>
+          {images.map(image => <div key={image.id} className="relative shrink-0">
+            <Button variant="desktop" aria-label={`Choose ${image.name}`} aria-pressed={customId === image.id} className={`wallpaper-preview ${customId === image.id ? "wallpaper-selected" : ""}`} onClick={() => setCustomId(image.id)}><img src={image.url} alt="" className="absolute inset-0 h-full w-full object-cover"/><span className="wallpaper-caption"><span className="truncate">{image.name}</span>{customId === image.id && <Check/>}</span></Button>
+            <Button variant="desktop" size="icon" title="Remove background" aria-label={`Remove ${image.name}`} className="absolute right-2 top-2 bg-popover h-7 w-7" onClick={() => { void removeImage(image.id).catch(() => setError("Could not remove the background.")); }}><Trash2/></Button>
+          </div>)}
+        </>}
+      </div>
+      {error && <p role="alert" className="px-8 text-sm text-destructive">{error}</p>}
+    </section>
+  </div>;
 }
