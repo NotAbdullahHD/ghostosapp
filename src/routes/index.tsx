@@ -4,6 +4,7 @@ import { GhostProvider, useGhost } from "@/ghost/store";
 import { BootScreen } from "@/ghost/BootScreen";
 import { Desktop } from "@/ghost/Desktop";
 import { MusicProvider } from "@/ghost/music";
+import { PersonalizationProvider } from "@/ghost/PersonalizationProvider";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -43,7 +44,9 @@ function Index() {
   return (
     <GhostProvider>
       <MusicProvider>
+        <PersonalizationProvider>
         <Shell />
+        </PersonalizationProvider>
       </MusicProvider>
     </GhostProvider>
   );
