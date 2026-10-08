@@ -15,6 +15,8 @@ import { NowPlayingWidget } from "./NowPlayingWidget";
 import { DesktopIcons } from "./DesktopIcons";
 import { DesktopClock } from "./DesktopClock";
 import { WallpaperPicker } from "./WallpaperPicker";
+import { ClockEditor } from "./ClockEditor";
+import { usePersonalization } from "./PersonalizationProvider";
 import type { AppId } from "./apps";
 
 // Lazy-load all app content — only fetches when opened.
@@ -71,6 +73,7 @@ function AppLoading() {
 
 export function Desktop() {
   const { windows, wallpaper, wallpaperId, hasFullscreen, locked, settings, toggleLauncher } = useGhost();
+  const { customImage } = usePersonalization();
 
   // Ctrl+K / Cmd+K opens Ghost Search.
   useEffect(() => {
@@ -131,7 +134,8 @@ export function Desktop() {
 
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ background: wallpaper }}>
-      <AnimatedWallpaperLayer wallpaper={activeWallpaper} />
+      {!customImage && <AnimatedWallpaperLayer wallpaper={activeWallpaper} />}
+      {customImage && <img src={customImage.url} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover"/>}
 
       <AnimatePresence>
         {showAmbient && (
@@ -172,6 +176,7 @@ export function Desktop() {
 
       <DesktopIcons />
       <WallpaperPicker />
+      <ClockEditor />
       <AppLauncher />
       <LockScreen />
       <DesktopContextMenu />

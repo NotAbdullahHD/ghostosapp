@@ -1,112 +1,38 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowUp, LockKeyhole } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useGhost, WALLPAPERS } from "./store";
 import { GhostLogo } from "./GhostLogo";
-
+import { usePersonalization } from "./PersonalizationProvider";
 
 export function LockScreen() {
   const { locked, setLocked, wallpaperId, wallpaper } = useGhost();
-  const [now, setNow] = useState(new Date());
+  const { customImage } = usePersonalization();
+  const [now, setNow] = useState<Date | null>(null);
   const [unlocking, setUnlocking] = useState(false);
-
-  const wp = useMemo(() => WALLPAPERS.find((w) => w.id === wallpaperId), [wallpaperId]);
-
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wp = useMemo(() => WALLPAPERS.find(w => w.id === wallpaperId), [wallpaperId]);
+  useEffect(() => { const tick = () => setNow(new Date()); tick(); const interval = setInterval(tick, 1000); return () => { clearInterval(interval); if (timer.current) clearTimeout(timer.current); }; }, []);
   useEffect(() => {
     if (!locked) return;
-    const id = setInterval(() => setNow(new Date()), 20_000);
-    setNow(new Date());
-    return () => clearInterval(id);
-  }, [locked]);
-
+    const unlock = (event: KeyboardEvent) => { if (["Enter", " ", "ArrowUp"].includes(event.key)) { event.preventDefault(); setLocked(false); } };
+    window.addEventListener("keydown", unlock);
+    return () => window.removeEventListener("keydown", unlock);
+  }, [locked, setLocked]);
   const unlock = () => {
     if (unlocking) return;
     setUnlocking(true);
-    setTimeout(() => { setLocked(false); setUnlocking(false); }, 620);
+    timer.current = setTimeout(() => { setLocked(false); setUnlocking(false); }, 400);
   };
-
-  useEffect(() => {
-    if (!locked) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === " " || e.key === "ArrowUp") unlock();
-    };
-    const onWheel = (e: WheelEvent) => { if (e.deltaY < -12) unlock(); };
-    window.addEventListener("keydown", onKey);
-    window.addEventListener("wheel", onWheel, { passive: true });
-    return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("wheel", onWheel); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locked]);
-
-  return (
-    <AnimatePresence>
-      {locked && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } }}
-          transition={{ duration: 0.35 }}
-          className="fixed inset-0 z-[9000] overflow-hidden cursor-pointer select-none"
-          onClick={unlock}
-          drag="y"
-          dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={0.25}
-          onDragEnd={(_, info) => { if (info.offset.y < -80) unlock(); }}
-        >
-          {/* Wallpaper */}
-          <div className="absolute inset-0" style={{ background: wallpaper }} />
-          {wp?.video && (
-            <video
-              className="absolute inset-0 h-full w-full object-cover"
-              src={wp.video}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
-            />
-          )}
-
-          {/* Blur + darken */}
-          <motion.div
-            className="absolute inset-0"
-            initial={{ opacity: 0 }}
-            animate={{ backdropFilter: unlocking ? "blur(0px)" : "blur(40px)", opacity: 1 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            style={{ background: "linear-gradient(180deg, rgba(11,11,13,.5), rgba(11,11,13,.72))" }}
-          />
-
-          {/* Content */}
-          <motion.div
-            className="relative h-full w-full flex flex-col items-center justify-center px-6"
-            animate={{
-              opacity: unlocking ? 0 : 1,
-              scale: unlocking ? 1.05 : 1,
-              y: unlocking ? -28 : 0,
-              filter: unlocking ? "blur(10px)" : "blur(0px)",
-            }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <GhostLogo size={64} />
-            <motion.div
-              initial={{ opacity: 0, y: 26, scale: 0.985 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-6 text-[clamp(90px,16vw,190px)] leading-[0.92] font-extralight text-white tabular-nums tracking-[-0.05em]"
-            >
-              {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.12, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-4 text-[19px] font-light text-white/65"
-            >
-              {now.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" })}
-            </motion.div>
-
-          </motion.div>
-
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+  return <AnimatePresence>{locked && <motion.div role="dialog" aria-label="GhostOS lock screen" data-no-ctx initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="lock-screen fixed inset-0 z-[9900] overflow-hidden select-none" onClick={unlock}>
+    <div className="absolute inset-0" style={{ background: wallpaper }}/>
+    {customImage ? <img src={customImage.url} alt="" className="absolute inset-0 h-full w-full object-cover"/> : wp?.video && <video className="absolute inset-0 h-full w-full object-cover" src={wp.video} autoPlay muted loop playsInline/>}
+    <div className="lock-screen-shade absolute inset-0"/>
+    <motion.div animate={{ opacity: unlocking ? 0 : 1, y: unlocking ? -24 : 0 }} className="relative flex h-full flex-col items-center justify-between px-6 py-8 text-chrome-foreground">
+      <div className="flex items-center gap-3"><GhostLogo size={28}/><span className="text-xs font-medium">GhostOS</span><LockKeyhole className="ml-2 h-3 w-3 text-chrome-muted"/></div>
+      <div className="lock-clock text-center"><div className="mb-5 text-xs font-semibold text-chrome-muted">{now?.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }).toUpperCase()}</div><div className="lock-clock-time">{now?.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false })}</div><div className="mt-8 flex justify-center"><GhostLogo size={56}/></div></div>
+      <Button variant="desktop" aria-label="Unlock GhostOS" className="lock-unlock flex h-auto flex-col gap-3 rounded-full px-8 py-4" onClick={event => { event.stopPropagation(); unlock(); }}><ArrowUp className="h-5 w-5"/><span className="text-xs font-normal">Unlock</span></Button>
+    </motion.div>
+  </motion.div>}</AnimatePresence>;
 }

@@ -13,7 +13,7 @@ export function ControlCenter() {
   const [brightness,setBrightness] = useState(100);
   const [night,setNight] = useState(false);
   useEffect(() => { try { const s=JSON.parse(localStorage.getItem("ghost.controlcenter.v2") || "{}");setBrightness(s.brightness??100);setNight(s.night??false); } catch {} },[]);
-  useEffect(() => { try { localStorage.setItem("ghost.controlcenter.v2",JSON.stringify({brightness,night})); } catch {} document.documentElement.style.setProperty("--desktop-brightness",String(brightness/100));return ()=>document.documentElement.style.removeProperty("--desktop-brightness"); },[brightness,night]);
+  useEffect(() => { try { localStorage.setItem("ghost.controlcenter.v2",JSON.stringify({brightness,night})); } catch {} document.documentElement.style.setProperty("--desktop-brightness",String(brightness/100));return ()=>{ document.documentElement.style.removeProperty("--desktop-brightness"); }; },[brightness,night]);
   return <>
     <div className={`desktop-display-overlay ${night?"desktop-night":""}`} style={{opacity: 1-brightness/100}}/>
     {night && <div className="desktop-night-overlay"/>}
