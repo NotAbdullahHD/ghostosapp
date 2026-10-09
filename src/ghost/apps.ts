@@ -2,7 +2,7 @@ export type AppId =
   | "games" | "movies" | "music" | "ghostai" | "browser" | "discover" | "ghostcloud" | "ghostanime"
   | "x" | "tiktok" | "pinterest"
   | "chat" | "store" | "settings" | "files" | "notes" | "calendar" | "terminal"
-  | "minecraft";
+  | "minecraft" | "roblox";
 
 export interface AppDef {
   id: AppId;
@@ -35,5 +35,6 @@ export const APPS: AppDef[] = [
   { id: "terminal",   name: "Terminal",   icon: "❯", accent: "from-zinc-800 to-zinc-900", description: "Spectral shell" },
   { id: "settings",   name: "Settings",   icon: "⚙", accent: "from-zinc-800 to-zinc-900", description: "System config" },
   { id: "minecraft",  name: "Minecraft",  icon: "⛏", accent: "from-zinc-800 to-zinc-900", description: "Sandbox world builder", installable: true },
+  { id: "roblox",     name: "Roblox",     icon: "◼", accent: "from-zinc-800 to-zinc-900", description: "Cloud-streamed Roblox", installable: true },
 ];
 

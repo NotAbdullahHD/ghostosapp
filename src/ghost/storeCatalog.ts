@@ -79,7 +79,9 @@ export interface StoreListing {
   changelog: { version: string; date: string; notes: string[] }[];
 }
 
-export const MINECRAFT_URL = minecraftAsset.url;
+/** Absolute origin so the packaged client also loads on external deployments. */
+export const MINECRAFT_URL = `https://ghostosapp.lovable.app${minecraftAsset.url}`;
+export const ROBLOX_URL = "https://nowgg.fun/apps/a/19900/b.html";
 
 export const STORE_LISTINGS: StoreListing[] = [
   {
@@ -118,6 +120,35 @@ export const STORE_LISTINGS: StoreListing[] = [
       { version: "1.8 · u53", date: "Aug 2026", notes: ["Packaged as a native GhostOS application", "Window, fullscreen and pointer-lock support", "Local world storage persists between sessions"] },
       { version: "1.8 · u52", date: "Jul 2026", notes: ["Rendering stability fixes", "Improved server connection handling"] },
     ],
+  },
+  {
+    id: "roblox",
+    name: "Roblox",
+    tagline: "Cloud-streamed Roblox inside a GhostOS window.",
+    description:
+      "Roblox streamed from the cloud — no install, no downloads. Because the game is streamed, it needs a fast and stable connection; on slow networks it can stay on the loading screen.",
+    publisher: "now.gg",
+    verified: false,
+    firstParty: false,
+    category: "games",
+    shelf: "Multiplayer",
+    version: "Cloud",
+    updated: "Oct 2026",
+    rating: 4.5,
+    ratingCount: 0,
+    ageRating: "Varies",
+    permissions: ["windows", "network"],
+    delivery: { kind: "native", appId: "roblox" },
+    heroCss: "linear-gradient(135deg,#17181c 0%,#2a2c33 50%,#0d0e10 100%)",
+    screenshots: [
+      { label: "Experiences", css: "linear-gradient(160deg,#2a2c33,#111215)" },
+      { label: "Avatar", css: "linear-gradient(160deg,#1d2a3a,#0c1118)" },
+    ],
+    requirements: [
+      { label: "Network", value: "Fast connection (10 Mbps+)" },
+      { label: "Input", value: "Keyboard & mouse" },
+    ],
+    changelog: [{ version: "Cloud", date: "Oct 2026", notes: ["Added to GhostOS Store"] }],
   },
 ];
 

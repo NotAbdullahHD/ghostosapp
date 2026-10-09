@@ -189,7 +189,7 @@ function Featured({ listing, installed, onClick }: { listing: StoreListing; inst
         <div className="absolute inset-0" style={{ background: "radial-gradient(90% 120% at 15% 0%, rgba(102,217,255,.16), transparent 60%)" }} />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0D] via-[#0B0B0D]/25 to-transparent" />
         <div className="relative h-full flex items-end p-5 gap-4">
-          <AppIcon id="minecraft" size={56} />
+          {listing.delivery.kind !== "appearance" && <AppIcon id={listing.delivery.appId} size={56} />}
           <div className="min-w-0">
             <div className="text-[10px] tracking-[0.22em] text-[#66D9FF] font-medium">FEATURED</div>
             <div className="text-[20px] font-semibold tracking-tight mt-0.5">{listing.name}</div>
@@ -312,7 +312,7 @@ function ProductPage({
 
       <div className="p-6 space-y-7">
         <div className="grid grid-cols-4 gap-3">
-          <Stat label="Rating" value={`${listing.rating.toFixed(1)} ★`} sub={`${listing.ratingCount.toLocaleString()} ratings`} />
+          <Stat label="Rating" value={listing.ratingCount ? `${listing.rating.toFixed(1)} ★` : "New"} sub={listing.ratingCount ? `${listing.ratingCount.toLocaleString()} ratings` : "No ratings yet"} />
           <Stat label="Version" value={listing.version} sub={`Updated ${listing.updated}`} />
           <Stat label="Age" value={listing.ageRating} sub="Content rating" />
           <Stat label="Category" value={STORE_CATEGORIES.find((c) => c.id === listing.category)!.name} sub={listing.shelf} />
