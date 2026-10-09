@@ -130,9 +130,9 @@ const DEFAULT_SETTINGS: SystemSettings = {
   wallpaperEffects: true,
   motionEffects: true,
   developerMode: false,
-  searchEngine: "google",
+  searchEngine: "brave",
   proxyProvider: "scramjet",
-  homepage: "https://www.google.com",
+  homepage: "https://search.brave.com",
   newTab: "ghost",
   dockPosition: "bottom",
 };
