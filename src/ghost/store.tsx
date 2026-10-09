@@ -261,6 +261,12 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     try {
       const merged = { ...DEFAULT_SETTINGS, ...JSON.parse(ls.get(LS_SETTINGS) || "{}") } as SystemSettings;
       if (!["left", "bottom", "right"].includes(merged.dockPosition)) merged.dockPosition = "bottom";
+      // One-time move to the privacy-friendly default search engine.
+      if (!ls.get("ghost.engine.v2")) {
+        if (merged.searchEngine === "google") merged.searchEngine = "brave";
+        if (merged.homepage === "https://www.google.com") merged.homepage = "https://search.brave.com";
+        ls.set("ghost.engine.v2", "1");
+      }
       return merged;
     }
     catch { return DEFAULT_SETTINGS; }

@@ -14,6 +14,7 @@ import xArt from "../../public/icons/x.png?url";
 import notesArt from "../../public/icons/notes.png?url";
 import calendarArt from "../../public/icons/calendar.png?url";
 import tiktokArt from "../../public/icons/tiktok.png?url";
+import robloxArt from "../../public/icons/roblox.svg?url";
 import pinterestArt from "../../public/icons/pinterest.png?url";
 import { useState } from "react";
 import type { AppId } from "./apps";
@@ -52,6 +53,7 @@ const ART: Partial<Record<AppId, string>> = {
   calendar: calendarArt,
   tiktok: tiktokArt,
   pinterest: pinterestArt,
+  roblox: robloxArt,
 };
 
 type IconCmp = React.ComponentType<LucideProps> | typeof XGlyph;
@@ -76,6 +78,7 @@ const ICONS: Record<AppId, IconCmp> = {
   terminal: TerminalSquare,
   settings: Settings2,
   minecraft: Pickaxe,
+  roblox: Gamepad2,
 };
 
 /** Single tinted light per app on a graphite Obsidian tile. */
@@ -99,6 +102,7 @@ const TINTS: Record<AppId, [number, number, number]> = {
   terminal: [200, 210, 225],
   settings: [190, 200, 215],
   minecraft: [126, 217, 140],
+  roblox: [235, 235, 240],
 };
 
 export function AppIcon({

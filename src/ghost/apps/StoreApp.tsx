@@ -189,7 +189,7 @@ function Featured({ listing, installed, onClick }: { listing: StoreListing; inst
         <div className="absolute inset-0" style={{ background: "radial-gradient(90% 120% at 15% 0%, rgba(102,217,255,.16), transparent 60%)" }} />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0D] via-[#0B0B0D]/25 to-transparent" />
         <div className="relative h-full flex items-end p-5 gap-4">
-          <AppIcon id="minecraft" size={56} />
+          {listing.delivery.kind !== "appearance" && <AppIcon id={listing.delivery.appId} size={56} />}
           <div className="min-w-0">
             <div className="text-[10px] tracking-[0.22em] text-[#66D9FF] font-medium">FEATURED</div>
             <div className="text-[20px] font-semibold tracking-tight mt-0.5">{listing.name}</div>
