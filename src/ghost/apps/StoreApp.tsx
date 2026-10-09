@@ -312,7 +312,7 @@ function ProductPage({
 
       <div className="p-6 space-y-7">
         <div className="grid grid-cols-4 gap-3">
-          <Stat label="Rating" value={`${listing.rating.toFixed(1)} ★`} sub={`${listing.ratingCount.toLocaleString()} ratings`} />
+          <Stat label="Rating" value={listing.ratingCount ? `${listing.rating.toFixed(1)} ★` : "New"} sub={listing.ratingCount ? `${listing.ratingCount.toLocaleString()} ratings` : "No ratings yet"} />
           <Stat label="Version" value={listing.version} sub={`Updated ${listing.updated}`} />
           <Stat label="Age" value={listing.ageRating} sub="Content rating" />
           <Stat label="Category" value={STORE_CATEGORIES.find((c) => c.id === listing.category)!.name} sub={listing.shelf} />
