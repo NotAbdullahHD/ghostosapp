@@ -7,7 +7,9 @@
 
 <script src="./uv/uv.bundle.js"></script>
 <script src="./uv/uv.config.js"></script>
-<script src="./scramjet/scramjet.all.js"></script>
+<script src="/spectre/sj/scramjet.js"></script>
+<script src="/spectre/sj/controller.api.js"></script>
+<script src="/spectre/sj/epoxy.js" defer></script>
 <script src="./baremux/index.js"></script>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -355,9 +357,9 @@ function bootConnection() {
 const GHOST_PREFS = (() => {
   const p = new URLSearchParams(location.search);
   return {
-    engine: p.get("engine") || "google",
+    engine: p.get("engine") || "brave",
     proxy: p.get("proxy") || "scramjet",
-    home: p.get("home") || "https://www.google.com",
+    home: p.get("home") || "https://search.brave.com",
     newtab: p.get("newtab") || "ghost",
   };
 })();
@@ -373,21 +375,31 @@ const SEARCH_ENGINES = {
 let scramjetController = null;
 let scramjetReady = false;
 
+/* Scramjet v2 (2.0.67-alpha.2): controller + epoxy transport over wisp. */
 async function initScramjet() {
   try {
-    const { ScramjetController } = $scramjetLoadController();
-    scramjetController = new ScramjetController({
-      files: {
-        wasm: "/spectre/scramjet/scramjet.wasm.wasm",
-        all: "/spectre/scramjet/scramjet.all.js",
-        sync: "/spectre/scramjet/scramjet.sync.js",
+    if (!self.EpoxyTransport) await new Promise((r) => window.addEventListener("load", r, { once: true }));
+    const reg = await navigator.serviceWorker.register("/spectre/sj/sw.js", { scope: "/spectre/sj/" });
+    await navigator.serviceWorker.ready;
+    const sw = reg.active || reg.waiting || reg.installing;
+    const { Controller } = $scramjetController;
+    const { defaultConfig } = $scramjet;
+    const transport = new self.EpoxyTransport.default({ wisp: WISP_ENDPOINTS[wispIndex] });
+    await transport.init();
+    scramjetController = new Controller({
+      serviceworker: sw,
+      transport,
+      scramjetConfig: defaultConfig,
+      config: {
+        prefix: "/spectre/sj/~/",
+        scramjetPath: "/spectre/sj/scramjet.js",
+        injectPath: "/spectre/sj/controller.inject.js",
+        wasmPath: "/spectre/sj/scramjet.wasm",
       },
-      prefix: "/spectre/scramjet/service/",
     });
-    await scramjetController.init();
-    await navigator.serviceWorker.register("/spectre/scramjet/sw.js", { scope: "/spectre/scramjet/" });
+    await scramjetController.wait();
     scramjetReady = true;
-    log("Scramjet ready", "ok");
+    log("Scramjet v2 ready", "ok");
   } catch (e) {
     scramjetReady = false;
     log("Scramjet init failed, falling back to Ultraviolet: " + e, "err");
@@ -398,12 +410,15 @@ const PROVIDERS = {
   scramjet: {
     name: "Scramjet",
     ready: () => scramjetReady,
-    encode: (url) => scramjetController.encodeUrl(url),
+    open: (tab, url) => {
+      if (!tab.sjFrame) tab.sjFrame = scramjetController.createFrame(tab.iframe);
+      tab.sjFrame.go(url);
+    },
   },
   ultraviolet: {
     name: "Ultraviolet",
     ready: () => true,
-    encode: (url) => __uv$config.prefix + __uv$config.encodeUrl(url),
+    open: (tab, url) => { tab.iframe.src = __uv$config.prefix + __uv$config.encodeUrl(url); },
   },
 };
 
@@ -557,7 +572,7 @@ async function navigate(input, push = true) {
 
   const provider = activeProvider();
   diagBaremux.textContent = "proxy: " + provider.name;
-  tab.iframe.src = provider.encode(url);
+  provider.open(tab, url);
   urlInput.value = url;
   ntp.style.display = "none";
 
