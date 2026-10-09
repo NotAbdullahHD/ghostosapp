@@ -12,7 +12,6 @@ export function useConnection() {
     read();
     c?.addEventListener?.("change", read);
     window.addEventListener("online", read);
-    window.removeEventListener("offline", read);
     window.addEventListener("offline", read);
     return () => { c?.removeEventListener?.("change", read); window.removeEventListener("online", read); window.removeEventListener("offline", read); };
   }, []);
