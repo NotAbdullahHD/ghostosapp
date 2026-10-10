@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowUp, RotateCcw, Square } from "lucide-react";
 import { GhostLogo } from "../GhostLogo";
+import { incrementQuota, readQuota, resetLabel, type QuotaState } from "../assistantQuota";
 
 interface Msg { id: string; role: "user" | "assistant"; text: string }
 
@@ -20,9 +21,24 @@ export function GhostAIApp() {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [quota, setQuota] = useState<QuotaState>(() => readQuota());
+  const [quotaLabel, setQuotaLabel] = useState(() => resetLabel(quota?.resetsAt ?? 0));
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  const limitReached = quota.remaining <= 0;
+
+  // Keep the quota display fresh (reset at midnight, live countdown).
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      if (quota.resetsAt - now.getTime() <= 0) setQuota(readQuota(now));
+      setQuotaLabel(resetLabel(quota.resetsAt, now));
+    };
+    const t = setInterval(tick, 30_000);
+    return () => clearInterval(t);
+  }, [quota.resetsAt]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -33,8 +49,10 @@ export function GhostAIApp() {
   const send = useCallback(async (raw: string) => {
     const text = raw.trim();
     if (!text || streaming) return;
+    if (limitReached) { setError(`Daily limit reached — ${quotaLabel}.`); return; }
     setError(null);
     setInput("");
+    setQuota(incrementQuota());
 
     const history = [...messages, { id: uid(), role: "user" as const, text }];
     setMessages(history);
@@ -74,7 +92,7 @@ export function GhostAIApp() {
       setStreaming(false);
       inputRef.current?.focus();
     }
-  }, [messages, streaming]);
+  }, [messages, streaming, limitReached, quotaLabel]);
 
   const stop = () => abortRef.current?.abort();
 
@@ -93,14 +111,26 @@ export function GhostAIApp() {
             {streaming ? "Thinking" : "Ready"}
           </div>
         </div>
-        {messages.length > 0 && (
-          <button
-            onClick={() => { stop(); setMessages([]); setError(null); }}
-            className="ml-auto flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] text-white/50 transition hover:border-white/20 hover:text-white"
+        <div className="ml-auto flex items-center gap-2">
+          <span
+            className={`rounded-lg border px-2.5 py-1.5 font-mono text-[10px] tracking-wide transition ${
+              limitReached
+                ? "border-rose-400/30 text-rose-300"
+                : "border-white/10 text-white/45"
+            }`}
+            title={`Daily limit: ${quota.limit} messages. Resets at midnight.`}
           >
-            <RotateCcw className="h-3 w-3" /> New chat
-          </button>
-        )}
+            {quota.used}/{quota.limit} · {quota.remaining} left · {quotaLabel}
+          </span>
+          {messages.length > 0 && (
+            <button
+              onClick={() => { stop(); setMessages([]); setError(null); }}
+              className="flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] text-white/50 transition hover:border-white/20 hover:text-white"
+            >
+              <RotateCcw className="h-3 w-3" /> New chat
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Conversation */}
@@ -166,6 +196,12 @@ export function GhostAIApp() {
         )}
       </div>
 
+      {limitReached && (
+        <div className="mx-3 mb-1 rounded-xl border border-rose-400/25 bg-rose-500/10 px-3.5 py-2.5 text-center text-[11.5px] text-rose-200/90">
+          You've used all {quota.limit} messages today. The limit {quotaLabel}.
+        </div>
+      )}
+
       {/* Composer */}
       <div className="border-t border-white/[0.07] p-3">
         <div className="flex items-end gap-2 rounded-2xl border border-white/[0.09] bg-white/[0.04] px-3.5 py-2 focus-within:border-[var(--ice)]/35">
@@ -188,7 +224,7 @@ export function GhostAIApp() {
             </button>
           ) : (
             <button
-              onClick={() => void send(input)} disabled={!input.trim()}
+              onClick={() => void send(input)} disabled={!input.trim() || limitReached}
               className="mb-1 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--ice)] text-black transition hover:brightness-110 disabled:opacity-25"
               aria-label="Send"
             >
