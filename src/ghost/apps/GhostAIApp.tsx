@@ -196,6 +196,12 @@ export function GhostAIApp() {
         )}
       </div>
 
+      {limitReached && (
+        <div className="mx-3 mb-1 rounded-xl border border-rose-400/25 bg-rose-500/10 px-3.5 py-2.5 text-center text-[11.5px] text-rose-200/90">
+          You've used all {quota.limit} messages today. The limit {quotaLabel}.
+        </div>
+      )}
+
       {/* Composer */}
       <div className="border-t border-white/[0.07] p-3">
         <div className="flex items-end gap-2 rounded-2xl border border-white/[0.09] bg-white/[0.04] px-3.5 py-2 focus-within:border-[var(--ice)]/35">
