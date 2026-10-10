@@ -224,7 +224,7 @@ export function GhostAIApp() {
             </button>
           ) : (
             <button
-              onClick={() => void send(input)} disabled={!input.trim()}
+              onClick={() => void send(input)} disabled={!input.trim() || limitReached}
               className="mb-1 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--ice)] text-black transition hover:brightness-110 disabled:opacity-25"
               aria-label="Send"
             >
