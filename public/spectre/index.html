@@ -380,8 +380,11 @@ async function initScramjet() {
   try {
     if (!self.EpoxyTransport) await new Promise((r) => window.addEventListener("load", r, { once: true }));
     const reg = await navigator.serviceWorker.register("/spectre/sj/sw.js", { scope: "/spectre/sj/" });
-    await navigator.serviceWorker.ready;
-    const sw = reg.active || reg.waiting || reg.installing;
+    // The page itself is outside the worker's scope, so wait on this registration directly.
+    const sw = reg.active || await new Promise((res) => {
+      const w = reg.installing || reg.waiting;
+      w.addEventListener("statechange", () => { if (w.state === "activated") res(w); });
+    });
     const { Controller } = $scramjetController;
     const { defaultConfig } = $scramjet;
     const transport = new self.EpoxyTransport.default({ wisp: WISP_ENDPOINTS[wispIndex] });
