@@ -17,26 +17,25 @@ export function MinecraftApp() {
   useEffect(() => {
     if (cached) return;
     let cancelled = false;
+    const ctl = new AbortController();
     setError(false); setProgress(0);
     (async () => {
       try {
-        const res = await fetch(MINECRAFT_URL);
-        if (!res.ok || !res.body) throw new Error(String(res.status));
-        const total = Number(res.headers.get("content-length")) || 18002822;
-        const reader = res.body.getReader();
-        const chunks: BlobPart[] = [];
-        let got = 0;
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          chunks.push(value); got += value.length;
-          if (!cancelled) setProgress(Math.min(1, got / total));
-        }
-        cached = URL.createObjectURL(new Blob(chunks, { type: "text/html" }));
+        const res = await fetch(MINECRAFT_URL, { cache: "no-store", signal: ctl.signal });
+        if (!res.ok) throw new Error(String(res.status));
+        const timer = setInterval(() => { if (!cancelled) setProgress((p) => Math.min(0.92, p + 0.04)); }, 300);
+        const blob = await res.blob().finally(() => clearInterval(timer));
+        if (!cancelled) setProgress(1);
+        cached = URL.createObjectURL(new Blob([blob], { type: "text/html" }));
         if (!cancelled) setSrc(cached);
-      } catch { if (!cancelled) setError(true); }
+      } catch (e) {
+        console.warn("[Minecraft] load failed", e);
+        // Large download: retry automatically a couple of times before showing the error.
+        if (!cancelled && attempt < 2) setTimeout(() => setAttempt((a) => a + 1), 800);
+        else if (!cancelled) setError(true);
+      }
     })();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; ctl.abort(); };
   }, [attempt]);
 
   return (
@@ -48,7 +47,7 @@ export function MinecraftApp() {
       slowAfterMs={error ? 0 : 60000}
       slowMessage={error ? "Minecraft couldn't be unpacked. Check your connection and retry." : undefined}
       onReload={() => { if (!src) setAttempt((a) => a + 1); }}
-      loading={<GhostSpinner label={src ? "Starting Minecraft" : "Unpacking Minecraft"} detail={src ? "launching client" : `${Math.round(progress * 18)} / 18 MB`} progress={src ? 1 : progress} />}
+      loading={<GhostSpinner label={src ? "Starting Minecraft" : "Unpacking Minecraft"} detail={src ? "launching client" : "18 MB client"} progress={src ? 1 : progress} />}
     />
   );
 }
