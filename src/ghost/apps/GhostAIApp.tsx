@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowUp, RotateCcw, Square } from "lucide-react";
 import { GhostLogo } from "../GhostLogo";
+import { incrementQuota, readQuota, resetLabel, type QuotaState } from "../assistantQuota";
 
 interface Msg { id: string; role: "user" | "assistant"; text: string }
 
@@ -20,9 +21,24 @@ export function GhostAIApp() {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [quota, setQuota] = useState<QuotaState>(() => readQuota());
+  const [quotaLabel, setQuotaLabel] = useState(() => resetLabel(quota?.resetsAt ?? 0));
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  const limitReached = quota.remaining <= 0;
+
+  // Keep the quota display fresh (reset at midnight, live countdown).
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      if (quota.resetsAt - now.getTime() <= 0) setQuota(readQuota(now));
+      setQuotaLabel(resetLabel(quota.resetsAt, now));
+    };
+    const t = setInterval(tick, 30_000);
+    return () => clearInterval(t);
+  }, [quota.resetsAt]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
