@@ -111,14 +111,26 @@ export function GhostAIApp() {
             {streaming ? "Thinking" : "Ready"}
           </div>
         </div>
-        {messages.length > 0 && (
-          <button
-            onClick={() => { stop(); setMessages([]); setError(null); }}
-            className="ml-auto flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] text-white/50 transition hover:border-white/20 hover:text-white"
+        <div className="ml-auto flex items-center gap-2">
+          <span
+            className={`rounded-lg border px-2.5 py-1.5 font-mono text-[10px] tracking-wide transition ${
+              limitReached
+                ? "border-rose-400/30 text-rose-300"
+                : "border-white/10 text-white/45"
+            }`}
+            title={`Daily limit: ${quota.limit} messages. Resets at midnight.`}
           >
-            <RotateCcw className="h-3 w-3" /> New chat
-          </button>
-        )}
+            {quota.used}/{quota.limit} · {quota.remaining} left · {quotaLabel}
+          </span>
+          {messages.length > 0 && (
+            <button
+              onClick={() => { stop(); setMessages([]); setError(null); }}
+              className="flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] text-white/50 transition hover:border-white/20 hover:text-white"
+            >
+              <RotateCcw className="h-3 w-3" /> New chat
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Conversation */}
