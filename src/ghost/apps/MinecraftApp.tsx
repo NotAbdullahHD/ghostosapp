@@ -20,7 +20,7 @@ export function MinecraftApp() {
     setError(false); setProgress(0);
     (async () => {
       try {
-        const res = await fetch(MINECRAFT_URL);
+        const res = await fetch(MINECRAFT_URL, { cache: "no-store" });
         if (!res.ok) throw new Error(String(res.status));
         const timer = setInterval(() => { if (!cancelled) setProgress((p) => Math.min(0.92, p + 0.04)); }, 300);
         const blob = await res.blob().finally(() => clearInterval(timer));
