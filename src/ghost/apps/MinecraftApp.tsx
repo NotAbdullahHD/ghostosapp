@@ -34,7 +34,11 @@ export function MinecraftApp() {
         }
         cached = URL.createObjectURL(new Blob(chunks, { type: "text/html" }));
         if (!cancelled) setSrc(cached);
-      } catch { if (!cancelled) setError(true); }
+      } catch {
+        // Large download: retry automatically a couple of times before showing the error.
+        if (!cancelled && attempt < 2) setTimeout(() => setAttempt((a) => a + 1), 800);
+        else if (!cancelled) setError(true);
+      }
     })();
     return () => { cancelled = true; };
   }, [attempt]);
