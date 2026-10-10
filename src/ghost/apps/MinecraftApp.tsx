@@ -27,7 +27,8 @@ export function MinecraftApp() {
         if (!cancelled) setProgress(1);
         cached = URL.createObjectURL(new Blob([blob], { type: "text/html" }));
         if (!cancelled) setSrc(cached);
-      } catch {
+      } catch (e) {
+        console.warn("[Minecraft] load failed", e);
         // Large download: retry automatically a couple of times before showing the error.
         if (!cancelled && attempt < 2) setTimeout(() => setAttempt((a) => a + 1), 800);
         else if (!cancelled) setError(true);
