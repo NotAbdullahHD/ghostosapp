@@ -49,8 +49,10 @@ export function GhostAIApp() {
   const send = useCallback(async (raw: string) => {
     const text = raw.trim();
     if (!text || streaming) return;
+    if (limitReached) { setError(`Daily limit reached — ${quotaLabel}.`); return; }
     setError(null);
     setInput("");
+    setQuota(incrementQuota());
 
     const history = [...messages, { id: uid(), role: "user" as const, text }];
     setMessages(history);
@@ -90,7 +92,7 @@ export function GhostAIApp() {
       setStreaming(false);
       inputRef.current?.focus();
     }
-  }, [messages, streaming]);
+  }, [messages, streaming, limitReached, quotaLabel]);
 
   const stop = () => abortRef.current?.abort();
 
