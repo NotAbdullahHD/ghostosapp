@@ -17,10 +17,11 @@ export function MinecraftApp() {
   useEffect(() => {
     if (cached) return;
     let cancelled = false;
+    const ctl = new AbortController();
     setError(false); setProgress(0);
     (async () => {
       try {
-        const res = await fetch(MINECRAFT_URL, { cache: "no-store" });
+        const res = await fetch(MINECRAFT_URL, { cache: "no-store", signal: ctl.signal });
         if (!res.ok) throw new Error(String(res.status));
         const timer = setInterval(() => { if (!cancelled) setProgress((p) => Math.min(0.92, p + 0.04)); }, 300);
         const blob = await res.blob().finally(() => clearInterval(timer));
@@ -34,7 +35,7 @@ export function MinecraftApp() {
         else if (!cancelled) setError(true);
       }
     })();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; ctl.abort(); };
   }, [attempt]);
 
   return (
