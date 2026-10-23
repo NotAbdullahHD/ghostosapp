@@ -237,3 +237,12 @@
 :root { --display-dim: oklch(0 0 0); --night-tint: oklch(0.72 0.12 66 / 0.1); }
 .desktop-display-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 10000; background: var(--display-dim); }
 .desktop-night-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 10000; background: var(--night-tint); }
+
+/* Ghost Mods (live tweaks from Settings) */
+.desktop-window { border-radius: var(--mod-radius, 8px); opacity: var(--mod-window-opacity, 1); }
+.mod-hide-icons [data-desktop-icons] { display: none; }
+.mod-hide-labels [data-desktop-icons] .truncate { display: none; }
+.mod-compact-titlebar .desktop-window-title { height: 2rem; }
+.mod-reduce-blur * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+.desktop-dock { zoom: var(--mod-dock-scale, 1); }
+:root { --brave: #fb542b; --brave-bar: #1e1f25; --brave-surface: #121317; }

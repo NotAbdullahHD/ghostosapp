@@ -1,63 +1,48 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Globe, Shield, Maximize, RotateCw } from "lucide-react";
+import { Shield, Maximize, RotateCw, Lock, EyeOff } from "lucide-react";
 import { useGhost } from "../store";
 
-
-
+/** Ghost Browser — Brave-style private shell around the Spectre relay. */
 export function BrowserApp() {
   const { windows, toggleFullscreen, settings } = useGhost();
   const [loaded, setLoaded] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [shields, setShields] = useState(true);
 
   const browserUrl = `/spectre/index.html?engine=${settings.searchEngine}&proxy=${settings.proxyProvider}&newtab=${settings.newTab}&home=${encodeURIComponent(settings.homepage)}`;
-
   const me = windows.find((w) => w.appId === "browser");
-  const requestFullscreen = () => { if (me) toggleFullscreen(me.id); };
   const reload = () => { setLoaded(false); setReloadKey((k) => k + 1); };
 
   return (
-    <div className="h-full flex flex-col bg-[#070410] text-white relative overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-cyan-950/60 via-black to-fuchsia-950/40 border-b border-cyan-500/15">
-        <div className="flex items-center gap-3">
-          <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center shadow-[0_0_18px_rgba(59,130,246,.5)]">
-            <Globe className="h-4 w-4" />
-          </div>
-          <div>
-            <div className="text-sm font-black tracking-widest bg-gradient-to-r from-cyan-300 to-fuchsia-300 bg-clip-text text-transparent">GHOST BROWSER</div>
-            <div className="text-[9px] tracking-[0.4em] text-white/40 font-mono">{settings.proxyProvider === "scramjet" ? "SCRAMJET RELAY" : "ULTRAVIOLET RELAY"} · GHOSTOS NATIVE</div>
-          </div>
+    <div className="h-full flex flex-col text-white relative overflow-hidden" style={{ background: "var(--brave-surface)" }}>
+      <div className="flex h-9 shrink-0 items-center gap-2 px-3 border-b border-white/5" style={{ background: "var(--brave-bar)" }}>
+        <div className="flex h-5 w-5 items-center justify-center rounded-md" style={{ background: "var(--brave)" }}>
+          <Shield className="h-3 w-3" fill="currentColor" />
         </div>
-        <div className="flex items-center gap-2">
-          <span className="hidden sm:flex items-center gap-1 text-[10px] font-mono text-emerald-300">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,.9)]" />
-            SECURE TUNNEL
-          </span>
-          <button onClick={reload} title="Reload" className="p-1.5 rounded-full hover:bg-white/10 text-white/70"><RotateCw className="h-3.5 w-3.5" /></button>
-          <button title="Shield active" className="p-1.5 rounded-full hover:bg-white/10 text-fuchsia-300"><Shield className="h-3.5 w-3.5" /></button>
-          <button onClick={requestFullscreen} title="Immersive fullscreen"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-mono tracking-widest text-cyan-200 ring-1 ring-cyan-400/30 hover:bg-cyan-500/15 transition">
-            <Maximize className="h-3 w-3" /> IMMERSE
+        <span className="text-xs font-semibold">Ghost Browser</span>
+        <span className="flex items-center gap-1 rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] text-violet-300"><EyeOff className="h-3 w-3" />Private</span>
+        <span className="hidden sm:flex items-center gap-1 text-[10px] text-white/45"><Lock className="h-3 w-3" />Encrypted · {settings.proxyProvider === "scramjet" ? "Scramjet" : "Ultraviolet"}</span>
+        <div className="ml-auto flex items-center gap-1">
+          <button onClick={reload} title="Reload" aria-label="Reload" className="rounded-md p-1.5 text-white/60 hover:bg-white/10"><RotateCw className="h-3.5 w-3.5" /></button>
+          <button onClick={() => setShields((s) => !s)} title={shields ? "Shields up" : "Shields down"} aria-label="Toggle shields"
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] hover:bg-white/10" style={{ color: shields ? "var(--brave)" : "rgba(255,255,255,.4)" }}>
+            <Shield className="h-3.5 w-3.5" fill={shields ? "currentColor" : "none"} />{shields ? "Shields up" : "Shields down"}
           </button>
+          <button onClick={() => me && toggleFullscreen(me.id)} title="Fullscreen" aria-label="Fullscreen" className="rounded-md p-1.5 text-white/60 hover:bg-white/10"><Maximize className="h-3.5 w-3.5" /></button>
         </div>
       </div>
 
-      <div className="flex-1 relative bg-black">
+      <div className="flex-1 relative">
         <AnimatePresence>
           {!loaded && (
             <motion.div key="boot" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#070410]">
-              <div className="relative h-20 w-20">
-                <motion.div className="absolute inset-0 rounded-full border-2 border-cyan-400/30" />
-                <motion.div className="absolute inset-0 rounded-full border-t-2 border-cyan-400"
-                  animate={{ rotate: 360 }} transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }} />
-                <motion.div className="absolute inset-2 rounded-full border-b-2 border-fuchsia-400"
-                  animate={{ rotate: -360 }} transition={{ duration: 1.6, repeat: Infinity, ease: "linear" }} />
-              </div>
-              <div className="mt-6 text-[10px] tracking-[0.45em] font-mono text-cyan-300">BOOTING SPECTRE RELAY</div>
-              <div className="mt-1 text-[9px] tracking-[0.35em] font-mono text-white/30 flex items-center gap-1.5">
-                <Loader2 className="h-3 w-3 animate-spin" /> ULTRAVIOLET HANDSHAKE
-              </div>
+              className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4" style={{ background: "var(--brave-surface)" }}>
+              <motion.div animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 1.2, repeat: Infinity }}
+                className="flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: "var(--brave)" }}>
+                <Shield className="h-7 w-7" fill="currentColor" />
+              </motion.div>
+              <div className="text-xs text-white/50">Starting private session…</div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -66,11 +51,11 @@ export function BrowserApp() {
           src={browserUrl}
           title="Ghost Browser"
           onLoad={() => setLoaded(true)}
-          className="absolute inset-0 w-full h-full bg-white"
-          allow="autoplay; fullscreen; clipboard-write; encrypted-media; geolocation; camera; microphone; gamepad"
+          className="absolute inset-0 w-full h-full"
+          style={{ background: "var(--brave-surface)" }}
+          allow="autoplay; fullscreen; clipboard-write; encrypted-media; gamepad"
           referrerPolicy="no-referrer"
         />
-        <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-cyan-500/10" />
       </div>
     </div>
   );

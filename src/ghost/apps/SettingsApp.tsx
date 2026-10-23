@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { usePersonalization } from "../PersonalizationProvider";
+import { GhostModsPanel } from "../GhostModsPanel";
 import { motion } from "framer-motion";
 import { useGhost, WALLPAPERS, SEARCH_ENGINES, PROXY_PROVIDERS } from "../store";
 import { Volume2, Palette, Image as ImageIcon, Bell, Monitor, Lock, Sparkles, Shield, EyeOff, AlertTriangle, KeyRound, Clock, Gauge, Zap, Battery, Wand2, Code2, Globe, Search, AlignLeft, AlignCenter } from "lucide-react";
@@ -12,6 +14,7 @@ const RARITY_STYLE: Record<string, string> = {
 };
 
 const SECTIONS = [
+  { id: "mods", name: "Ghost Mods", icon: Wand2 },
   { id: "wallpaper", name: "Wallpaper", icon: ImageIcon },
   { id: "performance", name: "Performance", icon: Gauge },
   { id: "browser", name: "Browser", icon: Globe },
@@ -34,6 +37,7 @@ const CLOAK_PRESETS = [
 
 export function SettingsApp() {
   const { wallpaperId, setWallpaperById, unlocked, redeemCode, pushNotification, settings, updateSettings, triggerPanic } = useGhost();
+  const { setCustomId } = usePersonalization();
   const [section, setSection] = useState("wallpaper");
   const [code, setCode] = useState("");
   const [redeemMsg, setRedeemMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -61,6 +65,7 @@ export function SettingsApp() {
       </aside>
 
       <main className="flex-1 p-6 overflow-y-auto scrollbar-hide">
+        {section === "mods" && <GhostModsPanel />}
         {section === "wallpaper" && (
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -97,7 +102,7 @@ export function SettingsApp() {
                   <button key={w.id}
                     disabled={locked}
                     onClick={() => {
-                      const ok = setWallpaperById(w.id);
+                      const ok = setWallpaperById(w.id); if (ok) setCustomId(null);
                       if (ok) pushNotification({ title: "Wallpaper updated", body: w.name });
                     }}
                     className={`group relative aspect-video rounded-xl overflow-hidden ring-2 transition ${
