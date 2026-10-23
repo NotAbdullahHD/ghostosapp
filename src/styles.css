@@ -244,4 +244,4 @@
 .mod-hide-labels [data-desktop-icons] .truncate { display: none; }
 .mod-compact-titlebar .desktop-window-title { height: 2rem; }
 .mod-reduce-blur * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
-.desktop-dock { transform: scale(var(--mod-dock-scale, 1)); transform-origin: bottom center; }
+.desktop-dock { zoom: var(--mod-dock-scale, 1); }

@@ -18,6 +18,7 @@ import { WallpaperPicker } from "./WallpaperPicker";
 import { ClockEditor } from "./ClockEditor";
 import { usePersonalization } from "./PersonalizationProvider";
 import type { AppId } from "./apps";
+import { applyMods, readMods } from "./mods";
 
 // Lazy-load all app content — only fetches when opened.
 const GamesApp = lazy(() => import("./apps/GamesApp").then((m) => ({ default: m.GamesApp })));
@@ -76,6 +77,8 @@ function AppLoading() {
 export function Desktop() {
   const { windows, wallpaper, wallpaperId, hasFullscreen, locked, settings, toggleLauncher } = useGhost();
   const { customImage } = usePersonalization();
+
+  useEffect(() => { applyMods(readMods()); }, []);
 
   // Ctrl+K / Cmd+K opens Ghost Search.
   useEffect(() => {
