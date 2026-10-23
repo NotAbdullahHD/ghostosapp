@@ -115,7 +115,7 @@ export function DesktopIcons() {
   };
 
   return (
-    <div className="absolute inset-0 z-[100] pointer-events-none">
+    <div data-desktop-icons className="absolute inset-0 z-[100] pointer-events-none">
       {icons.map((icon) => {
         const app = APPS.find((a) => a.id === icon.appId);
         if (!app) return null;
