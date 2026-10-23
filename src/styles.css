@@ -245,3 +245,4 @@
 .mod-compact-titlebar .desktop-window-title { height: 2rem; }
 .mod-reduce-blur * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 .desktop-dock { zoom: var(--mod-dock-scale, 1); }
+:root { --brave: #fb542b; --brave-bar: #1e1f25; --brave-surface: #121317; }

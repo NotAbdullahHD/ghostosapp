@@ -19,8 +19,9 @@ export function AnimatedWallpaperLayer({ wallpaper }: { wallpaper: Wallpaper | u
   if (wallpaper.video) {
     return (
       <>
-        <video
+        <motion.video
           key={wallpaper.id}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}
           src={wallpaper.video}
           autoPlay loop muted playsInline
           className="pointer-events-none absolute inset-0 w-full h-full object-cover"
