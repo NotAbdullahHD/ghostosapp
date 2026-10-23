@@ -5,23 +5,30 @@ import { Button } from "@/components/ui/button";
 import { useGhost, WALLPAPERS } from "./store";
 import { GhostLogo } from "./GhostLogo";
 import { usePersonalization } from "./PersonalizationProvider";
+import { checkLockPassword, hasLockPassword } from "./mods";
 
 export function LockScreen() {
   const { locked, setLocked, wallpaperId, wallpaper } = useGhost();
   const { customImage } = usePersonalization();
   const [now, setNow] = useState<Date | null>(null);
   const [unlocking, setUnlocking] = useState(false);
+  const [needPw, setNeedPw] = useState(false);
+  const [pw, setPw] = useState("");
+  const [pwError, setPwError] = useState(false);
+  useEffect(() => { if (locked) { setNeedPw(hasLockPassword()); setPw(""); setPwError(false); } }, [locked]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wp = useMemo(() => WALLPAPERS.find(w => w.id === wallpaperId), [wallpaperId]);
   useEffect(() => { const tick = () => setNow(new Date()); tick(); const interval = setInterval(tick, 1000); return () => { clearInterval(interval); if (timer.current) clearTimeout(timer.current); }; }, []);
   useEffect(() => {
     if (!locked) return;
-    const unlock = (event: KeyboardEvent) => { if (["Enter", " ", "ArrowUp"].includes(event.key)) { event.preventDefault(); setLocked(false); } };
+    const unlock = (event: KeyboardEvent) => { if (hasLockPassword()) return; if (["Enter", " ", "ArrowUp"].includes(event.key)) { event.preventDefault(); setLocked(false); } };
     window.addEventListener("keydown", unlock);
     return () => window.removeEventListener("keydown", unlock);
   }, [locked, setLocked]);
+  const tryPassword = async () => { if (await checkLockPassword(pw)) { setNeedPw(false); setPw(""); setUnlocking(true); timer.current = setTimeout(() => { setLocked(false); setUnlocking(false); }, 400); } else { setPwError(true); setPw(""); } };
   const unlock = () => {
     if (unlocking) return;
+    if (needPw) return;
     setUnlocking(true);
     timer.current = setTimeout(() => { setLocked(false); setUnlocking(false); }, 400);
   };
@@ -32,7 +39,7 @@ export function LockScreen() {
     <motion.div animate={{ opacity: unlocking ? 0 : 1, y: unlocking ? -24 : 0 }} className="relative flex h-full flex-col items-center justify-between px-6 py-8 text-chrome-foreground">
       <div className="flex items-center gap-3"><GhostLogo size={28}/><span className="text-xs font-medium">GhostOS</span><LockKeyhole className="ml-2 h-3 w-3 text-chrome-muted"/></div>
       <div className="lock-clock text-center"><div className="mb-5 text-xs font-semibold text-chrome-muted">{now?.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }).toUpperCase()}</div><div className="lock-clock-time">{now?.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false })}</div><div className="mt-8 flex justify-center"><GhostLogo size={56}/></div></div>
-      <Button variant="desktop" aria-label="Unlock GhostOS" className="lock-unlock flex h-auto flex-col gap-3 rounded-full px-8 py-4" onClick={event => { event.stopPropagation(); unlock(); }}><ArrowUp className="h-5 w-5"/><span className="text-xs font-normal">Unlock</span></Button>
+      {needPw ? <form onClick={e => e.stopPropagation()} onSubmit={e => { e.preventDefault(); void tryPassword(); }} className="flex flex-col items-center gap-2"><motion.input key={pwError ? "err" : "ok"} animate={pwError ? { x: [0, -10, 10, -6, 6, 0] } : {}} transition={{ duration: 0.35 }} autoFocus type="password" aria-label="Password" value={pw} onChange={e => { setPw(e.target.value); setPwError(false); }} placeholder="Enter password" className="desktop-panel w-64 rounded-full px-5 py-3 text-center text-sm outline-none text-chrome-foreground placeholder:text-chrome-muted"/><span className="text-xs text-chrome-muted">{pwError ? "Wrong password — try again" : "Press Enter to unlock"}</span></form> : <Button variant="desktop" aria-label="Unlock GhostOS" className="lock-unlock flex h-auto flex-col gap-3 rounded-full px-8 py-4" onClick={event => { event.stopPropagation(); unlock(); }}><ArrowUp className="h-5 w-5"/><span className="text-xs font-normal">Unlock</span></Button>}
     </motion.div>
   </motion.div>}</AnimatePresence>;
 }
