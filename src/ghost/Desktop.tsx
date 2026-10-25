@@ -14,6 +14,7 @@ import { ControlCenter } from "./ControlCenter";
 import { NowPlayingWidget } from "./NowPlayingWidget";
 import { DesktopIcons } from "./DesktopIcons";
 import { DesktopClock } from "./DesktopClock";
+import { DesktopStatus } from "./DesktopStatus";
 import { WallpaperPicker } from "./WallpaperPicker";
 import { ClockEditor } from "./ClockEditor";
 import { usePersonalization } from "./PersonalizationProvider";
@@ -177,6 +178,7 @@ export function Desktop() {
             exit={{ opacity: 0, transition: { duration: 0.2 } }}
           >
             <DesktopClock />
+            <DesktopStatus />
             <NotificationCenter />
             <Dock />
             <SystemTray />
