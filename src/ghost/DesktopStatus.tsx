@@ -1,4 +1,5 @@
-import { Activity, CheckCircle2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Activity, CheckCircle2, HardDrive } from "lucide-react";
 import { APPS } from "./apps";
 import { AppIcon } from "./AppIcon";
 import { useGhost } from "./store";
@@ -7,6 +8,18 @@ import { GLASS } from "./glass";
 /** Small glass widgets on the desktop — hidden as soon as an app window is open. */
 export function DesktopStatus() {
   const { windows, hasFullscreen, locked } = useGhost();
+  const [storage, setStorage] = useState<{ used: number; quota: number } | null>(null);
+  useEffect(() => {
+    let disposed = false;
+    const read = () => {
+      navigator.storage?.estimate?.().then((est) => {
+        if (!disposed && est.quota) setStorage({ used: est.usage ?? 0, quota: est.quota });
+      }).catch(() => {});
+    };
+    read();
+    const t = setInterval(read, 30000);
+    return () => { disposed = true; clearInterval(t); };
+  }, []);
   const openWindows = windows.filter((win) => !win.minimized);
   const activeWindow = [...openWindows].sort((a, b) => b.z - a.z)[0];
   const activeApp = activeWindow ? APPS.find((app) => app.id === activeWindow.appId) : undefined;
@@ -41,6 +54,20 @@ export function DesktopStatus() {
           )}
         </div>
       </section>
+
+      {storage && (
+        <section className="rounded-xl px-3 py-2.5" style={GLASS}>
+          <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-wider text-white/60">
+            <HardDrive className="h-3.5 w-3.5" /> Storage
+          </div>
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+            <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, (storage.used / storage.quota) * 100)}%` }} />
+          </div>
+          <div className="mt-1 text-[10px] text-white/60">
+            {(storage.used / 1048576).toFixed(1)} MB of {(storage.quota / 1073741824).toFixed(1)} GB used
+          </div>
+        </section>
+      )}
     </div>
   );
 }

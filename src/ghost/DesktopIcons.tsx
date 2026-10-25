@@ -28,6 +28,63 @@ export function DesktopIcons() {
   const [open, setOpen] = useState<string | null>(null);
   const offset = useRef({ x: 0, y: 0 });
   const moved = useRef(false);
+  const [selBox, setSelBox] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  // Delete/Backspace removes selected desktop icons.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Delete" && e.key !== "Backspace") return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (selected.size === 0) return;
+      e.preventDefault();
+      selected.forEach((id) => removeDesktopIcon(id as AppId));
+      setSelected(new Set());
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selected, removeDesktopIcon]);
+
+  // Selection box: press on empty desktop (not a window, icon, dock or control) and drag.
+  useEffect(() => {
+    let box: { x0: number; y0: number; x1: number; y1: number } | null = null;
+    const down = (e: PointerEvent) => {
+      if (e.button !== 0) return;
+      const t = e.target as HTMLElement;
+      if (t.closest("button, input, textarea, a, iframe, [data-no-ctx], [data-dock], .desktop-window, .desktop-panel")) return;
+      box = { x0: e.clientX, y0: e.clientY, x1: e.clientX, y1: e.clientY };
+      setSelBox(box);
+      setSelected(new Set());
+    };
+    const move = (e: PointerEvent) => {
+      if (!box) return;
+      box = { ...box, x1: e.clientX, y1: e.clientY };
+      setSelBox(box);
+    };
+    const up = () => {
+      if (!box) return;
+      const [lx, rx] = [Math.min(box.x0, box.x1), Math.max(box.x0, box.x1)];
+      const [ty, by] = [Math.min(box.y0, box.y1), Math.max(box.y0, box.y1)];
+      const hit = new Set<string>();
+      if (rx - lx > 6 || by - ty > 6) {
+        desktopIcons.forEach((i) => {
+          if (i.x + 76 > lx && i.x < rx && i.y + 76 > ty && i.y < by) hit.add(i.appId);
+        });
+      }
+      setSelected(hit);
+      setSelBox(null);
+      box = null;
+    };
+    window.addEventListener("pointerdown", down);
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    return () => {
+      window.removeEventListener("pointerdown", down);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+  }, [desktopIcons]);
 
   useEffect(() => {
     try { localStorage.setItem(LS_FOLDERS, JSON.stringify(folders)); } catch { /* ignore */ }
@@ -116,6 +173,17 @@ export function DesktopIcons() {
 
   return (
     <div data-desktop-icons className="absolute inset-0 z-[100] pointer-events-none">
+      {selBox && (
+        <div
+          className="absolute rounded-sm border border-primary/60 bg-primary/15 pointer-events-none"
+          style={{
+            left: Math.min(selBox.x0, selBox.x1),
+            top: Math.min(selBox.y0, selBox.y1),
+            width: Math.abs(selBox.x1 - selBox.x0),
+            height: Math.abs(selBox.y1 - selBox.y0),
+          }}
+        />
+      )}
       {icons.map((icon) => {
         const app = APPS.find((a) => a.id === icon.appId);
         if (!app) return null;
@@ -132,7 +200,7 @@ export function DesktopIcons() {
             style={{ left: icon.x, top: icon.y, touchAction: "none" }}
             className={`pointer-events-auto absolute flex w-[76px] flex-col items-center gap-1 rounded-lg p-1.5 text-center select-none hover:bg-white/10 ${
               dragging === icon.appId ? "opacity-70" : ""
-            }`}
+            } ${selected.has(icon.appId) ? "bg-primary/25 ring-1 ring-primary/60" : ""}`}
           >
             <AppIcon id={app.id} size={44} />
             <span
