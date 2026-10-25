@@ -156,6 +156,24 @@ export function DesktopIcons() {
 
   return (
     <div data-desktop-icons className="absolute inset-0 z-[100] pointer-events-none">
+      {/* Selection-box background layer */}
+      <div
+        className="absolute inset-0 pointer-events-auto"
+        onPointerDown={startSelect}
+        onPointerMove={moveSelect}
+        onPointerUp={endSelect}
+      />
+      {selBox && (
+        <div
+          className="absolute rounded-sm border border-primary/60 bg-primary/15 pointer-events-none"
+          style={{
+            left: Math.min(selBox.x0, selBox.x1),
+            top: Math.min(selBox.y0, selBox.y1),
+            width: Math.abs(selBox.x1 - selBox.x0),
+            height: Math.abs(selBox.y1 - selBox.y0),
+          }}
+        />
+      )}
       {icons.map((icon) => {
         const app = APPS.find((a) => a.id === icon.appId);
         if (!app) return null;
@@ -172,7 +190,7 @@ export function DesktopIcons() {
             style={{ left: icon.x, top: icon.y, touchAction: "none" }}
             className={`pointer-events-auto absolute flex w-[76px] flex-col items-center gap-1 rounded-lg p-1.5 text-center select-none hover:bg-white/10 ${
               dragging === icon.appId ? "opacity-70" : ""
-            }`}
+            } ${selected.has(icon.appId) ? "bg-primary/25 ring-1 ring-primary/60" : ""}`}
           >
             <AppIcon id={app.id} size={44} />
             <span
