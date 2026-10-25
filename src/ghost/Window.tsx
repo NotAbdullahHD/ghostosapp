@@ -90,10 +90,10 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
         if (snapHint === "top") toggleMaximize(win.id);
         else {
           const W = window.innerWidth;
-          const H = window.innerHeight - 8 - 56;
+          const H = window.innerHeight - 106;
           updateWindow(win.id, {
             x: snapHint === "left" ? 0 : W / 2,
-            y: 8, width: W / 2, height: H,
+            y: 42, width: W / 2, height: H,
           });
         }
       }
@@ -129,8 +129,8 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
             snapHint === "top"
               ? { top: 42, left: 8, width: "calc(100vw - 16px)", height: "calc(100dvh - 106px)" }
               : snapHint === "left"
-              ? { top: 8, left: 0, width: "50vw", height: "calc(100vh - 8px - 56px)" }
-              : { top: 8, left: "50vw", width: "50vw", height: "calc(100vh - 8px - 56px)" }
+              ? { top: 42, left: 0, width: "50vw", height: "calc(100dvh - 106px)" }
+              : { top: 42, left: "50vw", width: "50vw", height: "calc(100dvh - 106px)" }
           } />
       )}
 
