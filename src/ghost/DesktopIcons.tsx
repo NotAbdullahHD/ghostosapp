@@ -28,6 +28,46 @@ export function DesktopIcons() {
   const [open, setOpen] = useState<string | null>(null);
   const offset = useRef({ x: 0, y: 0 });
   const moved = useRef(false);
+  const [selBox, setSelBox] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  // Delete/Backspace removes selected desktop icons.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Delete" && e.key !== "Backspace") return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (selected.size === 0) return;
+      e.preventDefault();
+      selected.forEach((id) => removeDesktopIcon(id as AppId));
+      setSelected(new Set());
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selected, removeDesktopIcon]);
+
+  const startSelect = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    setSelBox({ x0: e.clientX, y0: e.clientY, x1: e.clientX, y1: e.clientY });
+    setSelected(new Set());
+  };
+  const moveSelect = (e: React.PointerEvent) => {
+    setSelBox((b) => (b ? { ...b, x1: e.clientX, y1: e.clientY } : b));
+  };
+  const endSelect = () => {
+    if (!selBox) return;
+    const [lx, rx] = [Math.min(selBox.x0, selBox.x1), Math.max(selBox.x0, selBox.x1)];
+    const [ty, by] = [Math.min(selBox.y0, selBox.y1), Math.max(selBox.y0, selBox.y1)];
+    const hit = new Set<string>();
+    if (rx - lx > 6 || by - ty > 6) {
+      desktopIcons.forEach((i) => {
+        if (i.x + 76 > lx && i.x < rx && i.y + 76 > ty && i.y < by) hit.add(i.appId);
+      });
+    }
+    setSelected(hit);
+    setSelBox(null);
+  };
 
   useEffect(() => {
     try { localStorage.setItem(LS_FOLDERS, JSON.stringify(folders)); } catch { /* ignore */ }
