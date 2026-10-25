@@ -75,7 +75,7 @@ function AppLoading() {
 }
 
 export function Desktop() {
-  const { windows, wallpaper, wallpaperId, hasFullscreen, locked, settings, toggleLauncher } = useGhost();
+  const { windows, wallpaper, wallpaperId, hasFullscreen, locked, settings, toggleLauncher, focusWindow, updateWindow } = useGhost();
   const { customImage } = usePersonalization();
 
   useEffect(() => { applyMods(readMods()); }, []);
@@ -91,6 +91,21 @@ export function Desktop() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [toggleLauncher]);
+
+  // Alt+Tab cycles focus through open windows (minimized ones restore).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.altKey || e.key !== "Tab" || windows.length === 0) return;
+      e.preventDefault();
+      const sorted = [...windows].sort((a, b) => b.z - a.z);
+      const next = sorted[(e.shiftKey ? sorted.length - 1 : 1) % sorted.length];
+      if (!next) return;
+      if (next.minimized) updateWindow(next.id, { minimized: false });
+      focusWindow(next.id);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [windows, focusWindow, updateWindow]);
 
   const activeWallpaper = useMemo(
     () => WALLPAPERS.find((w) => w.id === wallpaperId),

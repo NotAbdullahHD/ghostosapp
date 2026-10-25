@@ -8,7 +8,7 @@ import { useGhost, type WindowState } from "./store";
 import { X, Minus, Square, Maximize, Minimize2, Copy } from "lucide-react";
 
 export function Window({ win, children }: { win: WindowState; children: ReactNode }) {
-  const { focusWindow, closeWindow, toggleMinimize, toggleMaximize, toggleFullscreen, updateWindow } = useGhost();
+  const { windows, focusWindow, closeWindow, toggleMinimize, toggleMaximize, toggleFullscreen, updateWindow } = useGhost();
   const mods = useMods();
   const openFrom = OPEN_ANIMATIONS[mods.openAnimation]?.initial ?? OPEN_ANIMATIONS.zoom.initial;
   const dragStart = useRef<{ mx: number; my: number; x: number; y: number } | null>(null);
@@ -111,6 +111,9 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
 
   const fullscreen = win.fullscreen;
   const maximized = win.maximized;
+  // Active-window focus: the top-most visible window pops, others dim slightly.
+  const topZ = windows.reduce((m, w) => (!w.minimized && w.z > m ? w.z : m), 0);
+  const isActive = !win.minimized && win.z === topZ;
   const style = fullscreen
     ? { top: 0, left: 0, width: "100vw", height: "100vh" }
     : maximized
@@ -138,7 +141,7 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
           opacity: win.minimized ? 0 : 1,
           scale: win.minimized ? 0.4 : (dragging ? 1.004 : 1),
           y: win.minimized ? 480 : 0,
-          filter: dragging ? "blur(0px)" : "blur(0px)",
+          filter: !isActive && !fullscreen ? "brightness(0.82) saturate(0.9)" : "brightness(1) saturate(1)",
           transition: dragging
             ? { duration: 0 }
             : mods.openAnimation === "genie" ? { type: "spring", stiffness: 260, damping: 26 } : { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
