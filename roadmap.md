@@ -11,4 +11,4 @@
 - [x] Games reskinned to Ghost theme, fake "trending" removed.
 - [~] Chat: WhatsApp-style colors/bubbles done; full layout rebuild pending.
 - [ ] Real calling in chat (needs WebRTC; current call screen is simulated).
-- [ ] Reskin remaining apps (Files, Notes, Calendar, Store).
+- [x] Notes, Calendar reskinned (Files, Store already on theme).

@@ -20,7 +20,7 @@ const FOLDERS = ["All Notes", "Personal", "Work", "Ideas", "Study", "Archive"];
 
 const SEED: Note[] = [
   {
-    id: "1", folder: "Work", pinned: true, color: "from-fuchsia-500/30 to-violet-700/30",
+    id: "1", folder: "Work", pinned: true, color: "from-zinc-800 to-zinc-950",
     title: "GhostOS launch checklist",
     body: "Rich text editor coming soon.\n\n• Cinematic boot sequence — polished\n• Control Center — new\n• Notification Center — refresh\n\nRemember to record a fresh trailer with the new dock magnification.",
     tags: ["ship", "priority"], updatedAt: Date.now() - 1000 * 60 * 12,
@@ -87,7 +87,7 @@ export function NotesApp() {
     const n: Note = {
       id: Math.random().toString(36).slice(2), title: "Untitled", body: "",
       folder: folder === "All Notes" ? "Personal" : folder,
-      color: "from-fuchsia-500/30 to-violet-700/30", tags: [], updatedAt: Date.now(),
+      color: "from-zinc-800 to-zinc-950", tags: [], updatedAt: Date.now(),
     };
     setNotes((ns) => [n, ...ns]);
     setActiveId(n.id);
@@ -110,7 +110,7 @@ export function NotesApp() {
           {FOLDERS.map((f) => (
             <button key={f} onClick={() => setFolder(f)}
               className={`w-full flex items-center gap-2 text-left px-3 py-1.5 rounded-lg text-xs transition ${
-                folder === f ? "bg-fuchsia-500/15 text-white ring-1 ring-fuchsia-400/30" : "text-white/70 hover:bg-white/5"
+                folder === f ? "bg-white/5 text-white ring-1 ring-white/15" : "text-white/70 hover:bg-white/5"
               }`}>
               <Folder className="h-3.5 w-3.5 opacity-70" />
               <span className="flex-1 truncate">{f}</span>
@@ -138,7 +138,7 @@ export function NotesApp() {
         <div className="flex-1" />
         <div className="p-3">
           <button onClick={add}
-            className="w-full flex items-center justify-center gap-2 rounded-xl gradient-neon py-2 text-xs font-bold shadow-lg shadow-fuchsia-500/30 hover:scale-[1.02] transition">
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground py-2 text-xs font-bold shadow-lg shadow-black/30 hover:scale-[1.02] transition">
             <Plus className="h-4 w-4" /> NEW NOTE
           </button>
         </div>
@@ -156,7 +156,7 @@ export function NotesApp() {
         <div className="flex-1 overflow-y-auto scrollbar-hide p-2">
           {pinned.length > 0 && (
             <>
-              <div className="text-[10px] font-mono tracking-widest text-fuchsia-300/70 px-3 py-1.5">PINNED</div>
+              <div className="text-[10px] font-mono tracking-widest text-primary px-3 py-1.5">PINNED</div>
               {pinned.map((n) => <NoteRow key={n.id} n={n} active={active?.id === n.id} onClick={() => setActiveId(n.id)} onDelete={() => remove(n.id)} />)}
             </>
           )}
@@ -194,11 +194,11 @@ export function NotesApp() {
                 <div className="ml-auto flex items-center gap-2">
                   <button onClick={() => update({ pinned: !active.pinned })}
                     className={`h-7 px-2 rounded-md text-[10px] font-mono tracking-widest flex items-center gap-1 transition ${
-                      active.pinned ? "bg-fuchsia-500/25 text-fuchsia-200 ring-1 ring-fuchsia-400/30" : "text-white/60 hover:bg-white/10"
+                      active.pinned ? "bg-white/5 text-primary ring-1 ring-white/15" : "text-white/60 hover:bg-white/10"
                     }`}>
                     <Pin className="h-3 w-3" /> {active.pinned ? "PINNED" : "PIN"}
                   </button>
-                  <button className="h-7 px-2 rounded-md text-[10px] font-mono tracking-widest text-fuchsia-200/90 hover:bg-white/10 flex items-center gap-1">
+                  <button className="h-7 px-2 rounded-md text-[10px] font-mono tracking-widest text-primary hover:bg-white/10 flex items-center gap-1">
                     <Sparkles className="h-3 w-3" /> AI
                   </button>
                   <button onClick={() => remove(active.id)} className="h-7 w-7 rounded-md text-white/50 hover:text-rose-400 hover:bg-white/10 flex items-center justify-center">
@@ -231,7 +231,7 @@ export function NotesApp() {
                 <Tag className="h-7 w-7 text-white/40" />
               </div>
               <div className="text-sm text-white/60">Pick a note or create a new one.</div>
-              <button onClick={add} className="mt-4 px-4 py-2 rounded-full text-xs font-mono tracking-widest gradient-neon">+ NEW NOTE</button>
+              <button onClick={add} className="mt-4 px-4 py-2 rounded-full text-xs font-mono tracking-widest bg-primary text-primary-foreground">+ NEW NOTE</button>
             </div>
           )}
         </AnimatePresence>
@@ -253,16 +253,16 @@ function NoteRow({ n, active, onClick, onDelete }: { n: Note; active: boolean; o
     <div className="relative group">
       <button onClick={onClick}
         className={`w-full text-left p-3 rounded-lg transition ring-1 ${
-          active ? "ring-fuchsia-400/40 bg-white/5" : "ring-transparent hover:bg-white/5"
+          active ? "ring-white/15 bg-white/5" : "ring-transparent hover:bg-white/5"
         }`}>
         <div className="flex items-center gap-2">
-          {n.pinned && <Pin className="h-3 w-3 text-fuchsia-300" />}
+          {n.pinned && <Pin className="h-3 w-3 text-primary" />}
           <div className="text-sm font-bold truncate flex-1">{n.title}</div>
         </div>
         <div className="text-[11px] text-white/50 truncate mt-0.5">{n.body.split("\n")[0] || "No additional text"}</div>
         <div className="text-[10px] text-white/30 font-mono mt-1 flex items-center gap-2">
           <span>{relTime(n.updatedAt)}</span>
-          {n.tags[0] && <span className="text-fuchsia-300/70">#{n.tags[0]}</span>}
+          {n.tags[0] && <span className="text-primary">#{n.tags[0]}</span>}
         </div>
       </button>
       <button onClick={onDelete}
