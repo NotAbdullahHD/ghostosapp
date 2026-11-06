@@ -14,7 +14,7 @@ interface CalEvent {
 }
 
 const SAMPLE: CalEvent[] = [
-  { id: "1", title: "Ghost sync standup", date: new Date().toISOString(), duration: "30m", color: "from-fuchsia-500 to-violet-600", location: "GhostChat" },
+  { id: "1", title: "Ghost sync standup", date: new Date().toISOString(), duration: "30m", color: "from-zinc-800 to-zinc-950", location: "GhostChat" },
   { id: "2", title: "Design review · Control Center", date: new Date(Date.now() + 3600e3 * 3).toISOString(), duration: "1h", color: "from-cyan-500 to-blue-600", location: "Room 07" },
   { id: "3", title: "GhostFlix screening", date: new Date(Date.now() + 3600e3 * 26).toISOString(), duration: "2h", color: "from-rose-500 to-red-600" },
   { id: "4", title: "Deep work: Notes engine", date: new Date(Date.now() + 3600e3 * 50).toISOString(), duration: "3h", color: "from-emerald-500 to-teal-600" },
@@ -107,7 +107,7 @@ export function CalendarApp() {
         <div className="px-4 mt-2 space-y-1">
           <div className="text-[10px] font-mono tracking-widest text-white/40 mb-2">CALENDARS</div>
           {[
-            { c: "bg-fuchsia-400", l: "Personal" },
+            { c: "bg-white/5", l: "Personal" },
             { c: "bg-cyan-400", l: "Work" },
             { c: "bg-emerald-400", l: "Ghost Team" },
             { c: "bg-rose-400", l: "Events" },
@@ -121,7 +121,7 @@ export function CalendarApp() {
 
         <div className="flex-1" />
         <div className="p-4">
-          <button className="w-full flex items-center justify-center gap-2 rounded-xl gradient-neon py-2.5 text-sm font-bold shadow-lg shadow-fuchsia-500/30 hover:scale-[1.02] transition">
+          <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-bold shadow-lg shadow-black/30 hover:scale-[1.02] transition">
             <Plus className="h-4 w-4" /> New Event
           </button>
         </div>
@@ -257,7 +257,7 @@ function EmptyState({ label }: { label: string }) {
         <CalIcon className="h-7 w-7 text-white/40" />
       </div>
       <div className="text-sm text-white/60">{label}</div>
-      <button className="mt-4 px-4 py-2 rounded-full text-xs font-mono tracking-widest gradient-neon text-white hover:scale-105 transition">
+      <button className="mt-4 px-4 py-2 rounded-full text-xs font-mono tracking-widest bg-primary text-primary-foreground text-white hover:scale-105 transition">
         + ADD EVENT
       </button>
     </div>
