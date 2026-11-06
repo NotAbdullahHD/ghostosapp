@@ -149,6 +149,8 @@ export function SettingsApp() {
               <p className="text-xs text-white/50 mt-1">Tune how much work GhostOS does while you use it.</p>
             </div>
 
+            <StorageCard />
+
             <Card icon={<Zap className="h-4 w-4 text-[#66d9ff]" />} title="Power Mode" subtitle="Balance responsiveness against battery life.">
               <div className="flex items-center gap-2 flex-wrap">
                 {([
@@ -422,6 +424,22 @@ function Slider({ label, value }: { label: string; value: number }) {
       <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
         <div className="h-full gradient-neon" style={{ width: `${value}%` }} />
       </div>
+    </div>
+  );
+}
+
+function StorageCard() {
+  const [st, setSt] = useState<{ used: number; quota: number } | null>(null);
+  useEffect(() => {
+    navigator.storage?.estimate?.().then((e) => { if (e.quota) setSt({ used: e.usage ?? 0, quota: e.quota }); }).catch(() => {});
+  }, []);
+  if (!st) return null;
+  const pct = Math.min(100, (st.used / st.quota) * 100);
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+      <div className="flex items-center justify-between text-sm font-semibold"><span>Storage</span><span className="text-xs text-white/50">{pct.toFixed(1)}%</span></div>
+      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.max(pct, 1)}%` }} /></div>
+      <div className="mt-2 text-xs text-white/50">{(st.used / 1048576).toFixed(1)} MB used of {(st.quota / 1073741824).toFixed(1)} GB available to GhostOS on this device</div>
     </div>
   );
 }

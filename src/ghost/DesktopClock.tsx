@@ -4,7 +4,7 @@ import { usePersonalization } from "./PersonalizationProvider";
 import { CLOCK_COLORS } from "./personalization";
 
 export function DesktopClock() {
-  const { hasFullscreen, locked, windows, showLauncher } = useGhost();
+  const { hasFullscreen, locked, showLauncher } = useGhost();
   const { clock, setShowClockEditor } = usePersonalization();
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {

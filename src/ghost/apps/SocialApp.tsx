@@ -52,7 +52,6 @@ export function SocialApp({ kind }: { kind: "x" | "tiktok" | "pinterest" }) {
     const t = setTimeout(() => setFailed(true), 25000);
     return () => clearTimeout(t);
   }, [loaded, failed, reloadKey]);
-  const openInBrowser = () => window.dispatchEvent(new CustomEvent("ghost:open-url", { detail: cfg.url }));
 
   const retry = () => { setLoaded(false); setFailed(false); setReloadKey((k) => k + 1); };
 
@@ -119,10 +118,9 @@ export function SocialApp({ kind }: { kind: "x" | "tiktok" | "pinterest" }) {
               <AlertTriangle className="h-7 w-7 text-white" />
             </div>
             <div className="mt-5 text-xl font-black neon-text tracking-[0.3em]">SIGNAL LOST</div>
-            <div className="mt-2 text-xs text-white/60 max-w-sm">The relay couldn't reach {cfg.name}. Retry the handshake or open externally.</div>
+            <div className="mt-2 text-xs text-white/60 max-w-sm">{cfg.name} blocks being shown inside other sites, and the proxy couldn't get through on this network. Retry, or open it in a new tab.</div>
             <div className="mt-4 flex items-center gap-2">
               <button onClick={retry} className="px-4 py-1.5 rounded-full gradient-neon text-xs font-mono flex items-center gap-1.5"><RotateCw className="h-3 w-3" /> RETRY</button>
-              <button onClick={openInBrowser} className="px-4 py-1.5 rounded-full glass text-xs font-mono hover:bg-white/10">Open in Browser</button>
               <a href={cfg.url} target="_blank" rel="noreferrer" className="px-4 py-1.5 rounded-full glass text-xs font-mono hover:bg-white/10">New tab</a>
             </div>
           </div>
