@@ -948,7 +948,7 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
                   placeholder="iMessage"
                   className="flex-1 bg-transparent outline-none py-2 text-sm" />
                 <button onClick={send} disabled={!draft.trim()}
-                  className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center disabled:opacity-30 transition">
+                  className="h-8 w-8 rounded-full bg-[#00a884] flex items-center justify-center disabled:opacity-30 transition">
                   <Send className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -1040,8 +1040,8 @@ function MessageBubble({ m, mine, onReact }: { m: Message; mine: boolean; onReac
           onDoubleClick={() => setShowR((s) => !s)}
           className={`px-3.5 py-2 text-[15px] leading-snug break-words shadow-sm ${
             mine
-              ? "bg-gradient-to-br from-[#2f7cf6] to-[#0a5cff] text-white rounded-[20px] rounded-br-[6px]"
-              : "bg-[#26262b] text-white rounded-[20px] rounded-bl-[6px]"
+              ? "bg-[#005c4b] text-white rounded-lg rounded-tr-none shadow-sm"
+              : "bg-[#202c33] text-white rounded-lg rounded-tl-none shadow-sm"
           }`}>
           {m.content}
         </motion.div>
