@@ -147,7 +147,7 @@ function LoginScreen({ onSwitchToCreate }: { onSwitchToCreate: () => void }) {
     <div className="h-full flex items-center justify-center bg-gradient-to-br from-black via-emerald-950/40 to-black text-white p-8 overflow-y-auto">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-6">
-          <div className="h-20 w-20 rounded-[26px] bg-gradient-to-br from-emerald-500 via-emerald-600 to-blue-600 flex items-center justify-center text-4xl shadow-[0_20px_60px_-15px_rgba(168,85,247,0.6)] ring-1 ring-white/10">
+          <div className="h-20 w-20 rounded-[26px] bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 flex items-center justify-center text-4xl shadow-[0_20px_60px_-15px_rgba(16,185,129,0.35)] ring-1 ring-white/10">
             👻
           </div>
           <h1 className="mt-4 text-2xl font-bold tracking-tight">GhostChat</h1>
@@ -1128,7 +1128,7 @@ function CallOverlay({ me, peer, video, onEnd }: { me: Profile; peer: Profile; v
         <div className="absolute top-8 left-0 right-0 text-center">
           <div className="text-2xl font-bold">{peer.display_name}</div>
           <div className="text-sm text-white/60 font-mono mt-1">
-            {connected ? (video ? "FaceTime Video" : "FaceTime Audio") : "Connecting…"}
+            {connected ? (video ? "Video call" : "Voice call") : "Connecting…"}
           </div>
           {connected && <div className="text-xs text-white/40 mt-1 font-mono">{mm}:{ss}</div>}
         </div>
