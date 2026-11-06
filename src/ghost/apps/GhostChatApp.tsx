@@ -906,7 +906,7 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
         ) : (
           <>
             {/* header */}
-            <div className="h-14 border-b border-white/5 px-4 flex items-center gap-3 bg-black/30 backdrop-blur-xl">
+            <div className="h-14 border-b border-white/5 px-4 flex items-center gap-3 bg-[#202c33]">
               <button className="lg:hidden text-white/60" onClick={() => setActiveId(null)}><ChevronLeft className="h-5 w-5" /></button>
               <Avatar p={other} size={34} />
               <div className="flex-1 min-w-0">
