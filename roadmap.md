@@ -6,3 +6,9 @@
 - [ ] Desktop icon selection box (click-drag multi-select).
 - [ ] Minimize-to-dock genie animation polish.
 - [ ] Double-click .txt on desktop opens in editor app.
+- [x] Desktop widgets removed; storage meter moved to Settings → Performance; clock stays put under windows.
+- [x] TikTok/X/Pinterest via Scramjet with 25s failure screen.
+- [x] Games reskinned to Ghost theme, fake "trending" removed.
+- [~] Chat: WhatsApp-style colors/bubbles done; full layout rebuild pending.
+- [ ] Real calling in chat (needs WebRTC; current call screen is simulated).
+- [ ] Reskin remaining apps (Files, Notes, Calendar, Store).
