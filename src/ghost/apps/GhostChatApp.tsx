@@ -37,12 +37,12 @@ interface Message {
 
 // ============ Constants ============
 const GRADIENTS = [
-  "from-fuchsia-500 to-violet-700",
+  "from-emerald-500 to-emerald-700",
   "from-blue-500 to-cyan-600",
-  "from-rose-500 to-pink-700",
+  "from-rose-500 to-emerald-700",
   "from-emerald-500 to-teal-700",
   "from-amber-500 to-orange-700",
-  "from-indigo-500 to-purple-700",
+  "from-indigo-500 to-emerald-700",
   "from-red-500 to-rose-700",
   "from-sky-400 to-blue-700",
 ];
@@ -104,7 +104,7 @@ export function GhostChatApp() {
   }, [session]);
 
   if (checking) {
-    return <div className="h-full flex items-center justify-center bg-gradient-to-br from-black to-violet-950/30 text-white/50 text-xs font-mono">Loading GhostChat…</div>;
+    return <div className="h-full flex items-center justify-center bg-gradient-to-br from-black to-emerald-950/30 text-white/50 text-xs font-mono">Loading GhostChat…</div>;
   }
   if (!session) return <AuthShell />;
   if (!profile) return <div className="h-full flex items-center justify-center bg-black text-white/40 text-xs font-mono">Preparing account…</div>;
@@ -144,10 +144,10 @@ function LoginScreen({ onSwitchToCreate }: { onSwitchToCreate: () => void }) {
   };
 
   return (
-    <div className="h-full flex items-center justify-center bg-gradient-to-br from-black via-violet-950/40 to-black text-white p-8 overflow-y-auto">
+    <div className="h-full flex items-center justify-center bg-gradient-to-br from-black via-emerald-950/40 to-black text-white p-8 overflow-y-auto">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-6">
-          <div className="h-20 w-20 rounded-[26px] bg-gradient-to-br from-fuchsia-500 via-violet-600 to-blue-600 flex items-center justify-center text-4xl shadow-[0_20px_60px_-15px_rgba(168,85,247,0.6)] ring-1 ring-white/10">
+          <div className="h-20 w-20 rounded-[26px] bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 flex items-center justify-center text-4xl shadow-[0_20px_60px_-15px_rgba(16,185,129,0.35)] ring-1 ring-white/10">
             👻
           </div>
           <h1 className="mt-4 text-2xl font-bold tracking-tight">GhostChat</h1>
@@ -159,7 +159,7 @@ function LoginScreen({ onSwitchToCreate }: { onSwitchToCreate: () => void }) {
             <div className="text-[10px] font-mono tracking-widest text-white/40 mb-1.5">USERNAME</div>
             <input autoFocus value={username} onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_.-]/g, "").slice(0, 24))}
               placeholder="ghost_user"
-              className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-fuchsia-400/50 text-sm font-mono" />
+              className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-emerald-400/50 text-sm font-mono" />
           </div>
           <div>
             <div className="text-[10px] font-mono tracking-widest text-white/40 mb-1.5">RECOVERY CODE</div>
@@ -167,7 +167,7 @@ function LoginScreen({ onSwitchToCreate }: { onSwitchToCreate: () => void }) {
               <input type={reveal ? "text" : "password"} value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 32))}
                 placeholder="GS-XXXX-XXXX-XXXX"
-                className="w-full px-3 py-2.5 pr-10 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-fuchsia-400/50 text-sm font-mono tracking-wider" />
+                className="w-full px-3 py-2.5 pr-10 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-emerald-400/50 text-sm font-mono tracking-wider" />
               <button type="button" onClick={() => setReveal((r) => !r)}
                 className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/50">
                 {reveal ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -176,7 +176,7 @@ function LoginScreen({ onSwitchToCreate }: { onSwitchToCreate: () => void }) {
           </div>
           {err && <div className="text-xs text-rose-300 bg-rose-500/10 rounded-lg px-3 py-2">{err}</div>}
           <button onClick={submit} disabled={busy || !username || !code}
-            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 font-semibold text-sm disabled:opacity-40 transition">
+            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 font-semibold text-sm disabled:opacity-40 transition">
             {busy ? "Signing in…" : "Sign In"}
           </button>
           <button onClick={onSwitchToCreate}
@@ -271,12 +271,12 @@ function Onboarding({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
   };
 
   return (
-    <div className="h-full flex items-center justify-center bg-gradient-to-br from-black via-violet-950/40 to-black text-white p-6 overflow-y-auto">
+    <div className="h-full flex items-center justify-center bg-gradient-to-br from-black via-emerald-950/40 to-black text-white p-6 overflow-y-auto">
       <motion.div key={step} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
         <div className="text-center mb-6">
-          <div className="text-[10px] font-mono tracking-[0.4em] text-fuchsia-300/80">STEP {Math.min(step + 1, totalSteps)} OF {totalSteps}</div>
+          <div className="text-[10px] font-mono tracking-[0.4em] text-emerald-300/80">STEP {Math.min(step + 1, totalSteps)} OF {totalSteps}</div>
           <div className="mt-1 h-1 w-full bg-white/5 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-fuchsia-400 to-violet-500 transition-all" style={{ width: `${((Math.min(step + 1, totalSteps)) / totalSteps) * 100}%` }} />
+            <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all" style={{ width: `${((Math.min(step + 1, totalSteps)) / totalSteps) * 100}%` }} />
           </div>
         </div>
 
@@ -288,7 +288,7 @@ function Onboarding({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
                 <h2 className="text-2xl font-bold">Welcome to GhostChat</h2>
                 <p className="text-white/60 text-sm leading-relaxed">The private messaging layer of GhostOS. No email. No phone. Just a username and your Ghost identity.</p>
               </div>
-              <button onClick={() => setStep(1)} className="w-full py-3 rounded-2xl bg-gradient-to-r from-fuchsia-500 to-violet-600 font-semibold">Get Started</button>
+              <button onClick={() => setStep(1)} className="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 font-semibold">Get Started</button>
               <button onClick={onSwitchToLogin} className="w-full py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm text-white/70">I already have an account</button>
             </>
           )}
@@ -301,13 +301,13 @@ function Onboarding({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
               <input autoFocus value={username}
                 onChange={(e) => { setUsernameErr(""); setUsername(e.target.value.replace(/[^a-zA-Z0-9_.-]/g, "").toLowerCase().slice(0, 24)); }}
                 placeholder="ghost_user"
-                className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 outline-none focus:border-fuchsia-400/50 text-lg font-mono" />
+                className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 outline-none focus:border-emerald-400/50 text-lg font-mono" />
               {usernameErr && <div className="text-xs text-rose-300 bg-rose-500/10 rounded-lg px-3 py-2">{usernameErr}</div>}
               <div className="flex gap-2">
                 <button onClick={() => setStep(0)} className="px-4 py-2.5 rounded-xl bg-white/5 text-sm">Back</button>
                 <button disabled={username.trim().length < 3}
                   onClick={async () => { if (await validateUsername()) setStep(2); }}
-                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 font-semibold text-sm disabled:opacity-40">Continue</button>
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 font-semibold text-sm disabled:opacity-40">Continue</button>
               </div>
             </>
           )}
@@ -318,11 +318,11 @@ function Onboarding({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
                 <p className="text-white/50 text-sm">This is how you'll appear to friends.</p>
               </div>
               <input autoFocus value={name} onChange={(e) => setName(e.target.value.slice(0, 32))} placeholder="Your display name"
-                className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 outline-none focus:border-fuchsia-400/50 text-lg" />
+                className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 outline-none focus:border-emerald-400/50 text-lg" />
               <div className="flex gap-2">
                 <button onClick={() => setStep(1)} className="px-4 py-2.5 rounded-xl bg-white/5 text-sm">Back</button>
                 <button disabled={name.trim().length < 2} onClick={() => setStep(3)}
-                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 font-semibold text-sm disabled:opacity-40">Continue</button>
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 font-semibold text-sm disabled:opacity-40">Continue</button>
               </div>
             </>
           )}
@@ -340,7 +340,7 @@ function Onboarding({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
                 <div className="grid grid-cols-6 gap-2">
                   {EMOJIS.map((e) => (
                     <button key={e} onClick={() => setEmoji(e)}
-                      className={`aspect-square rounded-xl text-xl transition ${emoji === e ? "bg-fuchsia-500/20 ring-1 ring-fuchsia-400/60" : "bg-white/5 hover:bg-white/10"}`}>{e}</button>
+                      className={`aspect-square rounded-xl text-xl transition ${emoji === e ? "bg-emerald-500/20 ring-1 ring-emerald-400/60" : "bg-white/5 hover:bg-white/10"}`}>{e}</button>
                   ))}
                 </div>
               </div>
@@ -355,7 +355,7 @@ function Onboarding({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
               </div>
               <div className="flex gap-2">
                 <button onClick={() => setStep(2)} className="px-4 py-2.5 rounded-xl bg-white/5 text-sm">Back</button>
-                <button onClick={() => setStep(4)} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 font-semibold text-sm">Continue</button>
+                <button onClick={() => setStep(4)} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 font-semibold text-sm">Continue</button>
               </div>
             </>
           )}
@@ -372,7 +372,7 @@ function Onboarding({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
                 <div className="font-mono text-2xl tracking-widest bg-white/5 rounded-2xl px-6 py-3 border border-white/10">
                   {ghostId}
                 </div>
-                <button onClick={() => setGhostId(newGhostId())} className="text-xs text-fuchsia-300 hover:text-fuchsia-200 flex items-center gap-1">
+                <button onClick={() => setGhostId(newGhostId())} className="text-xs text-emerald-300 hover:text-emerald-200 flex items-center gap-1">
                   <Sparkles className="h-3 w-3" /> Regenerate
                 </button>
               </div>
@@ -380,7 +380,7 @@ function Onboarding({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
               <div className="flex gap-2">
                 <button onClick={() => setStep(3)} className="px-4 py-2.5 rounded-xl bg-white/5 text-sm">Back</button>
                 <button disabled={busy} onClick={createAccount}
-                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 font-semibold text-sm disabled:opacity-40">
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 font-semibold text-sm disabled:opacity-40">
                   {busy ? "Creating…" : "Create Account"}
                 </button>
               </div>
@@ -403,11 +403,11 @@ function Onboarding({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
               </button>
               <label className="flex items-start gap-2 text-xs text-white/70 cursor-pointer">
                 <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded accent-fuchsia-500" />
+                  className="mt-0.5 h-4 w-4 rounded accent-emerald-500" />
                 <span>I've saved my recovery code somewhere safe.</span>
               </label>
               <button disabled={!ack} onClick={() => { /* session already set — root will render Messenger */ }}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 font-semibold text-sm disabled:opacity-40">
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 font-semibold text-sm disabled:opacity-40">
                 Enter GhostChat
               </button>
               <div className="text-[10px] text-white/40 text-center">You can view this code again in Settings → Account.</div>
@@ -484,7 +484,7 @@ function AccountPanel({ me, onClose }: { me: Profile; onClose: () => void }) {
           <div className="min-w-0">
             <div className="text-base font-semibold truncate">{me.display_name}</div>
             <div className="text-[11px] font-mono text-white/50">@{me.username ?? "—"}</div>
-            <div className="text-[11px] font-mono text-fuchsia-300/70">{me.ghost_id}</div>
+            <div className="text-[11px] font-mono text-emerald-300/70">{me.ghost_id}</div>
           </div>
         </div>
 
@@ -772,14 +772,14 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
             <Avatar p={me} size={30} />
             <div className="min-w-0">
               <div className="text-sm font-semibold truncate">{me.display_name}</div>
-              <div className="text-[10px] font-mono text-fuchsia-300/70 tracking-wider">{me.ghost_id}</div>
+              <div className="text-[10px] font-mono text-emerald-300/70 tracking-wider">{me.ghost_id}</div>
             </div>
           </button>
           <button onClick={() => setShowAccount(true)} className="h-8 w-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center" title="Account settings">
             <SettingsIcon className="h-4 w-4 text-white/70" />
           </button>
-          <button onClick={() => setShowAdd(true)} className="h-8 w-8 rounded-full bg-fuchsia-500/15 hover:bg-fuchsia-500/25 flex items-center justify-center" title="Add friend">
-            <Plus className="h-4 w-4 text-fuchsia-200" />
+          <button onClick={() => setShowAdd(true)} className="h-8 w-8 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 flex items-center justify-center" title="Add friend">
+            <Plus className="h-4 w-4 text-emerald-200" />
           </button>
         </div>
 
@@ -796,7 +796,7 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
           {(["chats", "contacts", "requests"] as const).map((t) => (
             <button key={t} onClick={() => setTab(t)}
               className={`flex-1 py-1.5 rounded-lg font-medium transition capitalize ${tab === t ? "bg-white/10 text-white" : "text-white/50 hover:text-white/80"}`}>
-              {t}{t === "requests" && incoming.length > 0 && <span className="ml-1 text-[10px] text-fuchsia-300">({incoming.length})</span>}
+              {t}{t === "requests" && incoming.length > 0 && <span className="ml-1 text-[10px] text-emerald-300">({incoming.length})</span>}
             </button>
           ))}
         </div>
@@ -812,7 +812,7 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
                 const active = activeId === c.otherId;
                 return (
                   <button key={c.friendship.id} onClick={() => setActiveId(c.otherId)}
-                    className={`w-full flex items-center gap-3 p-2 rounded-xl transition text-left ${active ? "bg-gradient-to-r from-fuchsia-500/20 to-violet-500/10" : "hover:bg-white/5"}`}>
+                    className={`w-full flex items-center gap-3 p-2 rounded-xl transition text-left ${active ? "bg-gradient-to-r from-emerald-500/20 to-emerald-500/10" : "hover:bg-white/5"}`}>
                     <Avatar p={p} size={42} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline gap-2">
@@ -823,7 +823,7 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
                         {c.last ? (c.last.sender_id === me.id ? "You: " : "") + c.last.content : "New conversation"}
                       </div>
                     </div>
-                    {c.unread > 0 && <div className="h-5 min-w-5 px-1.5 rounded-full bg-fuchsia-500 text-[10px] font-bold flex items-center justify-center">{c.unread}</div>}
+                    {c.unread > 0 && <div className="h-5 min-w-5 px-1.5 rounded-full bg-emerald-500 text-[10px] font-bold flex items-center justify-center">{c.unread}</div>}
                   </button>
                 );
               })
@@ -866,7 +866,7 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
                       </div>
                       <div className="flex gap-2 mt-2">
                         <button onClick={() => respond(f, false)} className="flex-1 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs flex items-center justify-center gap-1"><X className="h-3 w-3" />Decline</button>
-                        <button onClick={() => respond(f, true)} className="flex-1 py-1.5 rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-600 text-xs font-semibold flex items-center justify-center gap-1"><Check className="h-3 w-3" />Accept</button>
+                        <button onClick={() => respond(f, true)} className="flex-1 py-1.5 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 text-xs font-semibold flex items-center justify-center gap-1"><Check className="h-3 w-3" />Accept</button>
                       </div>
                     </div>
                   );
@@ -896,25 +896,25 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
       <main className="flex-1 flex flex-col min-w-0">
         {!activeConv || !other ? (
           <div className="flex-1 flex items-center justify-center flex-col text-center p-8">
-            <div className="h-24 w-24 rounded-[28px] bg-gradient-to-br from-fuchsia-500/30 to-violet-700/30 flex items-center justify-center text-5xl ring-1 ring-white/10 mb-4">💬</div>
+            <div className="h-24 w-24 rounded-[28px] bg-gradient-to-br from-emerald-500/30 to-emerald-700/30 flex items-center justify-center text-5xl ring-1 ring-white/10 mb-4">💬</div>
             <div className="text-lg font-semibold">Your messages</div>
             <div className="text-sm text-white/50 max-w-xs mt-1">Pick a conversation, or add a friend with their Ghost ID to start.</div>
-            <button onClick={() => setShowAdd(true)} className="mt-4 px-4 py-2 rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-600 text-sm font-semibold flex items-center gap-2">
+            <button onClick={() => setShowAdd(true)} className="mt-4 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-sm font-semibold flex items-center gap-2">
               <UserPlus className="h-4 w-4" />Add friend
             </button>
           </div>
         ) : (
           <>
             {/* header */}
-            <div className="h-14 border-b border-white/5 px-4 flex items-center gap-3 bg-black/30 backdrop-blur-xl">
+            <div className="h-14 border-b border-white/5 px-4 flex items-center gap-3 bg-[#202c33]">
               <button className="lg:hidden text-white/60" onClick={() => setActiveId(null)}><ChevronLeft className="h-5 w-5" /></button>
               <Avatar p={other} size={34} />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold truncate">{other.display_name}</div>
                 <div className="text-[10px] font-mono text-white/40">{other.ghost_id}</div>
               </div>
-              <button onClick={() => setCall({ withId: other.id, video: false })} className="h-9 w-9 rounded-full hover:bg-white/10 flex items-center justify-center text-fuchsia-200"><Phone className="h-4 w-4" /></button>
-              <button onClick={() => setCall({ withId: other.id, video: true })} className="h-9 w-9 rounded-full hover:bg-white/10 flex items-center justify-center text-fuchsia-200"><Video className="h-4 w-4" /></button>
+              <button onClick={() => setCall({ withId: other.id, video: false })} className="h-9 w-9 rounded-full hover:bg-white/10 flex items-center justify-center text-emerald-200"><Phone className="h-4 w-4" /></button>
+              <button onClick={() => setCall({ withId: other.id, video: true })} className="h-9 w-9 rounded-full hover:bg-white/10 flex items-center justify-center text-emerald-200"><Video className="h-4 w-4" /></button>
               <button onClick={() => setShowInfo((s) => !s)} className={`h-9 w-9 rounded-full flex items-center justify-center ${showInfo ? "bg-white/10 text-white" : "hover:bg-white/10 text-white/60"}`}><Info className="h-4 w-4" /></button>
             </div>
 
@@ -948,7 +948,7 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
                   placeholder="iMessage"
                   className="flex-1 bg-transparent outline-none py-2 text-sm" />
                 <button onClick={send} disabled={!draft.trim()}
-                  className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center disabled:opacity-30 transition">
+                  className="h-8 w-8 rounded-full bg-[#00a884] flex items-center justify-center disabled:opacity-30 transition">
                   <Send className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -966,7 +966,7 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
               <div className="p-6 flex flex-col items-center text-center border-b border-white/5">
                 <Avatar p={other} size={72} />
                 <div className="mt-3 text-lg font-bold">{other.display_name}</div>
-                <div className="text-[10px] font-mono tracking-widest text-fuchsia-300/70">{other.ghost_id}</div>
+                <div className="text-[10px] font-mono tracking-widest text-emerald-300/70">{other.ghost_id}</div>
                 <div className="flex gap-3 mt-4">
                   <RoundBtn icon={<Phone className="h-4 w-4" />} label="audio" onClick={() => setCall({ withId: other.id, video: false })} />
                   <RoundBtn icon={<Video className="h-4 w-4" />} label="video" onClick={() => setCall({ withId: other.id, video: true })} />
@@ -1016,7 +1016,7 @@ function EmptyPanel({ icon, title, body }: { icon: string; title: string; body: 
 function RoundBtn({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
   return (
     <button onClick={onClick} className="flex flex-col items-center gap-1 group">
-      <div className="h-10 w-10 rounded-full bg-white/5 group-hover:bg-white/10 flex items-center justify-center transition text-fuchsia-200">{icon}</div>
+      <div className="h-10 w-10 rounded-full bg-white/5 group-hover:bg-white/10 flex items-center justify-center transition text-emerald-200">{icon}</div>
       <div className="text-[9px] text-white/50 tracking-wider uppercase">{label}</div>
     </button>
   );
@@ -1040,8 +1040,8 @@ function MessageBubble({ m, mine, onReact }: { m: Message; mine: boolean; onReac
           onDoubleClick={() => setShowR((s) => !s)}
           className={`px-3.5 py-2 text-[15px] leading-snug break-words shadow-sm ${
             mine
-              ? "bg-gradient-to-br from-[#2f7cf6] to-[#0a5cff] text-white rounded-[20px] rounded-br-[6px]"
-              : "bg-[#26262b] text-white rounded-[20px] rounded-bl-[6px]"
+              ? "bg-[#005c4b] text-white rounded-lg rounded-tr-none shadow-sm"
+              : "bg-[#202c33] text-white rounded-lg rounded-tl-none shadow-sm"
           }`}>
           {m.content}
         </motion.div>
@@ -1085,13 +1085,13 @@ function AddFriendSheet({ me, onClose, onAdd }: { me: Profile; onClose: () => vo
           <div className="text-lg font-bold">Add a friend</div>
           <button onClick={onClose} className="h-8 w-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center"><X className="h-4 w-4" /></button>
         </div>
-        <div className="text-xs text-white/60 mb-3">Enter your friend's Ghost ID. Share yours: <span className="font-mono text-fuchsia-300">{me.ghost_id}</span></div>
+        <div className="text-xs text-white/60 mb-3">Enter your friend's Ghost ID. Share yours: <span className="font-mono text-emerald-300">{me.ghost_id}</span></div>
         <input autoFocus value={gid} onChange={(e) => setGid(e.target.value.toUpperCase())} placeholder="GH-XXXXXX"
           onKeyDown={(e) => e.key === "Enter" && submit()}
-          className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 outline-none focus:border-fuchsia-400/50 text-lg font-mono tracking-widest text-center" />
+          className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 outline-none focus:border-emerald-400/50 text-lg font-mono tracking-widest text-center" />
         {msg && <div className="mt-3 text-xs text-rose-300 bg-rose-500/10 rounded-lg px-3 py-2 text-center">{msg}</div>}
         {ok && <div className="mt-3 text-xs text-emerald-300 bg-emerald-500/10 rounded-lg px-3 py-2 text-center">Request sent ✓</div>}
-        <button onClick={submit} disabled={!gid.trim()} className="mt-4 w-full py-3 rounded-2xl bg-gradient-to-r from-fuchsia-500 to-violet-600 font-semibold disabled:opacity-40">Send request</button>
+        <button onClick={submit} disabled={!gid.trim()} className="mt-4 w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 font-semibold disabled:opacity-40">Send request</button>
       </motion.div>
     </motion.div>
   );
@@ -1128,7 +1128,7 @@ function CallOverlay({ me, peer, video, onEnd }: { me: Profile; peer: Profile; v
         <div className="absolute top-8 left-0 right-0 text-center">
           <div className="text-2xl font-bold">{peer.display_name}</div>
           <div className="text-sm text-white/60 font-mono mt-1">
-            {connected ? (video ? "FaceTime Video" : "FaceTime Audio") : "Connecting…"}
+            {connected ? (video ? "Video call" : "Voice call") : "Connecting…"}
           </div>
           {connected && <div className="text-xs text-white/40 mt-1 font-mono">{mm}:{ss}</div>}
         </div>

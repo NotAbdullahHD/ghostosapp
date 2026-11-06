@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, ExternalLink, Loader2, Maximize2, RotateCw, Wifi } from "lucide-react";
 
 // Route social apps through the local Spectre (Ultraviolet) relay so they bypass
 // school / network filters the same way the Browser app does.
 const spectreEmbed = (url: string) =>
-  `/spectre/index.html?chrome=mini&url=${encodeURIComponent(url)}`;
+  `/spectre/index.html?chrome=mini&proxy=scramjet&engine=brave&url=${encodeURIComponent(url)}`;
 
 interface SocialConfig {
   id: string;
@@ -46,6 +46,12 @@ export function SocialApp({ kind }: { kind: "x" | "tiktok" | "pinterest" }) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    if (loaded || failed) return;
+    const t = setTimeout(() => setFailed(true), 25000);
+    return () => clearTimeout(t);
+  }, [loaded, failed, reloadKey]);
 
   const retry = () => { setLoaded(false); setFailed(false); setReloadKey((k) => k + 1); };
 
@@ -112,10 +118,10 @@ export function SocialApp({ kind }: { kind: "x" | "tiktok" | "pinterest" }) {
               <AlertTriangle className="h-7 w-7 text-white" />
             </div>
             <div className="mt-5 text-xl font-black neon-text tracking-[0.3em]">SIGNAL LOST</div>
-            <div className="mt-2 text-xs text-white/60 max-w-sm">The relay couldn't reach {cfg.name}. Retry the handshake or open externally.</div>
+            <div className="mt-2 text-xs text-white/60 max-w-sm">{cfg.name} blocks being shown inside other sites, and the proxy couldn't get through on this network. Retry, or open it in a new tab.</div>
             <div className="mt-4 flex items-center gap-2">
               <button onClick={retry} className="px-4 py-1.5 rounded-full gradient-neon text-xs font-mono flex items-center gap-1.5"><RotateCw className="h-3 w-3" /> RETRY</button>
-              <a href={cfg.url} target="_blank" rel="noreferrer" className="px-4 py-1.5 rounded-full glass text-xs font-mono hover:bg-white/10">Open externally</a>
+              <a href={cfg.url} target="_blank" rel="noreferrer" className="px-4 py-1.5 rounded-full glass text-xs font-mono hover:bg-white/10">New tab</a>
             </div>
           </div>
         )}
