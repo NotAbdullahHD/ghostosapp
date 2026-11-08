@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { RealtimeChannel, Session } from "@supabase/supabase-js";
 import {
-  Search, Send, Phone, Video, Info, ChevronLeft, Plus, UserPlus, Check, X,
-  Mic, MicOff, VideoOff, PhoneOff, MonitorUp, MoreHorizontal, Sparkles,
-  Settings as SettingsIcon, Eye, EyeOff, Copy, RefreshCw, ShieldAlert, LogOut, Trash2,
+  Search, Send, Phone, Video, Info, ChevronLeft, Plus, UserPlus, Check, CheckCheck, X,
+  Sparkles, Settings as SettingsIcon, Eye, EyeOff, Copy, RefreshCw, ShieldAlert,
+  LogOut, Trash2, MessageCircle, PhoneOff, Smile,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useGhost } from "@/ghost/store";
+import { CallOverlay } from "@/ghost/CallOverlay";
 
 // ============ Types ============
 interface Profile {
@@ -33,6 +34,15 @@ interface Message {
   reaction: string | null;
   created_at: string;
   read_at: string | null;
+}
+interface IncomingCall {
+  callId: string;
+  fromId: string;
+  video: boolean;
+}
+interface ActiveCall extends IncomingCall {
+  withId: string;
+  direction: "outgoing" | "incoming";
 }
 
 // ============ Constants ============
@@ -108,7 +118,7 @@ export function GhostChatApp() {
   }
   if (!session) return <AuthShell />;
   if (!profile) return <div className="h-full flex items-center justify-center bg-black text-white/40 text-xs font-mono">Preparing account…</div>;
-  return <Messenger me={profile} onProfile={setProfile} />;
+  return <Messenger me={profile} />;
 }
 
 // ============ Auth Shell (Login vs Create) ============
@@ -584,7 +594,7 @@ function Avatar({ p, size = 40 }: { p: Pick<Profile, "avatar_emoji" | "avatar_gr
 type ChatKey = string;
 function chatKey(a: string, b: string): ChatKey { return [a, b].sort().join("|"); }
 
-function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => void }) {
+function Messenger({ me }: { me: Profile }) {
   const { pushNotification } = useGhost();
   const [tab, setTab] = useState<"chats" | "contacts" | "requests">("chats");
   const [friendships, setFriendships] = useState<Friendship[]>([]);
@@ -593,11 +603,14 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
   const [activeId, setActiveId] = useState<string | null>(null); // other user id
   const [draft, setDraft] = useState("");
   const [showAdd, setShowAdd] = useState(false);
-  const [showInfo, setShowInfo] = useState(true);
-  const [call, setCall] = useState<{ withId: string; video: boolean } | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
+  const [call, setCall] = useState<ActiveCall | null>(null);
+  const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const [search, setSearch] = useState("");
   const [showAccount, setShowAccount] = useState(false);
+  const [narrow, setNarrow] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
 
   // Initial load
   const loadAll = useCallback(async () => {
