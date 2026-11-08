@@ -49,6 +49,7 @@
   --color-chat-accent: var(--chat-accent);
   --color-chat-text: var(--chat-text);
   --color-chat-muted: var(--chat-muted);
+  --color-chat-check: var(--chat-check);
   --font-display: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
@@ -267,6 +268,7 @@
   --chat-accent: #00a884;
   --chat-text: #e9edef;
   --chat-muted: #8696a0;
+  --chat-check: #53bdeb;
 }
 .chat-wallpaper {
   background-color: var(--chat-bg);

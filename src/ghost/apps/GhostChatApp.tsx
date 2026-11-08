@@ -1101,29 +1101,20 @@ function Messenger({ me }: { me: Profile }) {
 
 function EmptyPanel({ icon, title, body }: { icon: string; title: string; body: string }) {
   return (
-    <div className="text-center py-10 px-4">
-      <div className="text-3xl mb-2">{icon}</div>
-      <div className="text-sm font-semibold">{title}</div>
-      <div className="text-xs text-white/50 mt-1 leading-relaxed">{body}</div>
+    <div className="px-6 py-12 text-center">
+      <div className="mb-3 text-3xl">{icon}</div>
+      <div className="text-sm font-medium">{title}</div>
+      <div className="mt-1 text-xs leading-relaxed text-chat-muted">{body}</div>
     </div>
   );
 }
 
 function RoundBtn({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
   return (
-    <button onClick={onClick} className="flex flex-col items-center gap-1 group">
-      <div className="h-10 w-10 rounded-full bg-white/5 group-hover:bg-white/10 flex items-center justify-center transition text-emerald-200">{icon}</div>
-      <div className="text-[9px] text-white/50 tracking-wider uppercase">{label}</div>
+    <button onClick={onClick} className="group flex flex-col items-center gap-2">
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-chat-input text-chat-accent transition group-hover:opacity-80">{icon}</div>
+      <div className="text-[11px] text-chat-muted">{label}</div>
     </button>
-  );
-}
-
-function InfoBlock({ title, empty }: { title: string; empty: string }) {
-  return (
-    <div>
-      <div className="text-[10px] tracking-widest font-mono text-white/40 mb-2">{title}</div>
-      <div className="text-xs text-white/40 bg-white/5 rounded-xl p-3 text-center">{empty}</div>
-    </div>
   );
 }
 
@@ -1137,7 +1128,7 @@ function MessageBubble({ m, mine, onReact }: { m: Message; mine: boolean; onReac
           <span className="whitespace-pre-wrap">{m.content}</span>
           <span className="float-right ml-3 mt-2 flex items-center gap-1 text-[10px] leading-none text-chat-muted">
             {fmtTime(m.created_at)}
-            {mine && (m.read_at ? <CheckCheck className="h-3.5 w-3.5 text-[#53bdeb]" /> : <Check className="h-3.5 w-3.5" />)}
+            {mine && (m.read_at ? <CheckCheck className="h-3.5 w-3.5 text-chat-check" /> : <Check className="h-3.5 w-3.5" />)}
           </span>
         </motion.div>
         <button onClick={() => setShowR((s) => !s)} aria-label="React to message"
@@ -1196,70 +1187,3 @@ function AddFriendSheet({ me, onClose, onAdd }: { me: Profile; onClose: () => vo
   );
 }
 
-// ============ Simulated FaceTime Call ============
-function CallOverlay({ me, peer, video, onEnd }: { me: Profile; peer: Profile; video: boolean; onEnd: () => void }) {
-  const [connected, setConnected] = useState(false);
-  const [muted, setMuted] = useState(false);
-  const [cam, setCam] = useState(video);
-  const [share, setShare] = useState(false);
-  const [t, setT] = useState(0);
-  useEffect(() => {
-    const id = setTimeout(() => setConnected(true), 1600);
-    return () => clearTimeout(id);
-  }, []);
-  useEffect(() => {
-    if (!connected) return;
-    const id = setInterval(() => setT((s) => s + 1), 1000);
-    return () => clearInterval(id);
-  }, [connected]);
-  const mm = String(Math.floor(t / 60)).padStart(2, "0");
-  const ss = String(t % 60).padStart(2, "0");
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="absolute inset-0 z-[60] bg-black flex flex-col">
-      <div className="flex-1 relative overflow-hidden bg-gradient-to-br from-[#0b0716] via-[#1a0a2a] to-[#050308]">
-        {/* peer tile */}
-        <div className={`absolute inset-0 flex items-center justify-center transition ${cam && connected ? "opacity-100" : "opacity-70"}`}>
-          <div className={`h-40 w-40 rounded-full bg-gradient-to-br ${peer.avatar_gradient} flex items-center justify-center text-7xl ring-2 ring-white/10 shadow-2xl`}>
-            {peer.avatar_emoji}
-          </div>
-        </div>
-        <div className="absolute top-8 left-0 right-0 text-center">
-          <div className="text-2xl font-bold">{peer.display_name}</div>
-          <div className="text-sm text-white/60 font-mono mt-1">
-            {connected ? (video ? "Video call" : "Voice call") : "Connecting…"}
-          </div>
-          {connected && <div className="text-xs text-white/40 mt-1 font-mono">{mm}:{ss}</div>}
-        </div>
-        {/* self tile */}
-        <motion.div drag dragMomentum={false}
-          initial={{ x: 0, y: 0 }}
-          className="absolute top-6 right-6 h-32 w-24 rounded-2xl bg-gradient-to-br from-black to-zinc-900 ring-1 ring-white/10 flex items-center justify-center cursor-move shadow-xl">
-          <div className={`h-12 w-12 rounded-full bg-gradient-to-br ${me.avatar_gradient} flex items-center justify-center text-2xl`}>{me.avatar_emoji}</div>
-        </motion.div>
-        {share && (
-          <div className="absolute bottom-24 left-6 right-6 h-24 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-xs text-white/50 font-mono">
-            <MonitorUp className="h-4 w-4 mr-2" /> Screen sharing active
-          </div>
-        )}
-      </div>
-      <div className="p-6 flex items-center justify-center gap-4 bg-black/60 backdrop-blur-xl">
-        <CallBtn active={muted} onClick={() => setMuted((s) => !s)} icon={muted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />} />
-        <CallBtn active={!cam} onClick={() => setCam((s) => !s)} icon={cam ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />} />
-        <CallBtn active={share} onClick={() => setShare((s) => !s)} icon={<MonitorUp className="h-5 w-5" />} />
-        <button onClick={onEnd} className="h-14 w-14 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition">
-          <PhoneOff className="h-6 w-6" />
-        </button>
-      </div>
-    </motion.div>
-  );
-}
-
-function CallBtn({ icon, active, onClick }: { icon: React.ReactNode; active?: boolean; onClick?: () => void }) {
-  return (
-    <button onClick={onClick}
-      className={`h-14 w-14 rounded-full flex items-center justify-center transition ${active ? "bg-white text-black" : "bg-white/10 hover:bg-white/20 text-white"}`}>
-      {icon}
-    </button>
-  );
-}
