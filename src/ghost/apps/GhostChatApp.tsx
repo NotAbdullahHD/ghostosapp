@@ -842,44 +842,43 @@ function Messenger({ me }: { me: Profile }) {
   const other = activeId ? profiles[activeId] : null;
 
   return (
-    <div className="h-full flex bg-[#0a0612] text-white">
-      {/* LEFT PANEL */}
-      <aside className="w-72 border-r border-white/5 flex flex-col bg-black/40 backdrop-blur-xl">
-        <div className="p-3 border-b border-white/5 flex items-center gap-2">
-          <button onClick={() => setShowAccount(true)} className="flex-1 min-w-0 flex items-center gap-2 rounded-lg hover:bg-white/5 transition p-1 -m-1 text-left" title="Account">
-            <Avatar p={me} size={30} />
+    <div ref={shellRef} className="relative flex h-full min-h-0 overflow-hidden bg-chat-bg text-chat-text">
+      <aside className={`${narrow && activeId ? "hidden" : "flex"} ${narrow ? "w-full" : "w-[310px] shrink-0"} min-h-0 flex-col border-r border-border bg-chat-sidebar`}>
+        <div className="flex h-[60px] shrink-0 items-center gap-2 bg-chat-panel px-3">
+          <button onClick={() => setShowAccount(true)} className="flex min-w-0 flex-1 items-center gap-2 rounded-lg p-1 text-left transition hover:bg-white/5" title="Account">
+            <Avatar p={me} size={38} />
             <div className="min-w-0">
-              <div className="text-sm font-semibold truncate">{me.display_name}</div>
-              <div className="text-[10px] font-mono text-emerald-300/70 tracking-wider">{me.ghost_id}</div>
+              <div className="truncate text-sm font-medium">{me.display_name}</div>
+              <div className="text-[11px] text-chat-muted">@{me.username ?? me.ghost_id}</div>
             </div>
           </button>
-          <button onClick={() => setShowAccount(true)} className="h-8 w-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center" title="Account settings">
-            <SettingsIcon className="h-4 w-4 text-white/70" />
+          <button onClick={() => setShowAccount(true)} className="flex h-9 w-9 items-center justify-center rounded-full text-chat-muted transition hover:bg-white/5 hover:text-chat-text" title="Account settings" aria-label="Account settings">
+            <SettingsIcon className="h-[18px] w-[18px]" />
           </button>
-          <button onClick={() => setShowAdd(true)} className="h-8 w-8 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 flex items-center justify-center" title="Add friend">
-            <Plus className="h-4 w-4 text-emerald-200" />
+          <button onClick={() => setShowAdd(true)} className="flex h-9 w-9 items-center justify-center rounded-full text-chat-muted transition hover:bg-white/5 hover:text-chat-text" title="Add friend" aria-label="Add friend">
+            <Plus className="h-5 w-5" />
           </button>
         </div>
 
 
-        <div className="px-3 pt-3">
+        <div className="shrink-0 px-3 py-2">
           <div className="relative">
-            <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search"
-              className="w-full pl-9 pr-3 py-2 rounded-xl bg-white/5 border border-white/5 outline-none text-sm focus:border-white/20" />
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-chat-muted" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search or start a new chat" aria-label="Search chats"
+              className="w-full rounded-lg border border-transparent bg-chat-panel py-2 pl-9 pr-3 text-sm text-chat-text outline-none placeholder:text-chat-muted focus:border-chat-muted/30" />
           </div>
         </div>
 
-        <div className="px-3 pt-3 flex gap-1 text-xs">
+        <div className="flex shrink-0 gap-1 px-3 pb-2 text-xs">
           {(["chats", "contacts", "requests"] as const).map((t) => (
             <button key={t} onClick={() => setTab(t)}
-              className={`flex-1 py-1.5 rounded-lg font-medium transition capitalize ${tab === t ? "bg-white/10 text-white" : "text-white/50 hover:text-white/80"}`}>
-              {t}{t === "requests" && incoming.length > 0 && <span className="ml-1 text-[10px] text-emerald-300">({incoming.length})</span>}
+              className={`flex-1 rounded-full py-1.5 font-medium capitalize transition ${tab === t ? "bg-chat-accent/15 text-chat-accent" : "text-chat-muted hover:bg-chat-panel hover:text-chat-text"}`}>
+              {t}{t === "requests" && incoming.length > 0 && <span className="ml-1 text-[10px]">({incoming.length})</span>}
             </button>
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto scrollbar-hide mt-2 px-2 pb-2">
+        <div className="chat-scroll mt-1 flex-1 overflow-y-auto pb-2">
           {tab === "chats" && (
             filtered.length === 0 ? (
               <EmptyPanel icon="💬" title="No conversations" body="Tap + to add a friend by Ghost ID and start messaging." />
@@ -890,18 +889,20 @@ function Messenger({ me }: { me: Profile }) {
                 const active = activeId === c.otherId;
                 return (
                   <button key={c.friendship.id} onClick={() => setActiveId(c.otherId)}
-                    className={`w-full flex items-center gap-3 p-2 rounded-xl transition text-left ${active ? "bg-gradient-to-r from-emerald-500/20 to-emerald-500/10" : "hover:bg-white/5"}`}>
-                    <Avatar p={p} size={42} />
-                    <div className="flex-1 min-w-0">
+                    className={`flex w-full items-center gap-3 px-3 py-3 text-left transition ${active ? "bg-chat-input" : "hover:bg-chat-panel"}`}>
+                    <Avatar p={p} size={48} />
+                    <div className="min-w-0 flex-1 border-b border-border pb-3">
                       <div className="flex items-baseline gap-2">
-                        <div className="text-sm font-semibold truncate flex-1">{p.display_name}</div>
-                        {c.last && <div className="text-[10px] text-white/40">{fmtTime(c.last.created_at)}</div>}
+                        <div className="flex-1 truncate text-[15px] font-normal">{p.display_name}</div>
+                        {c.last && <div className={`text-[11px] ${c.unread ? "text-chat-accent" : "text-chat-muted"}`}>{fmtTime(c.last.created_at)}</div>}
                       </div>
-                      <div className="text-xs text-white/50 truncate">
-                        {c.last ? (c.last.sender_id === me.id ? "You: " : "") + c.last.content : "New conversation"}
+                      <div className="mt-0.5 flex items-center gap-2">
+                        <div className="flex-1 truncate text-[13px] text-chat-muted">
+                          {c.last ? (c.last.sender_id === me.id ? "You: " : "") + c.last.content : "Start a conversation"}
+                        </div>
+                        {c.unread > 0 && <div className="flex h-5 min-w-5 items-center justify-center rounded-full bg-chat-accent px-1.5 text-[10px] font-semibold text-chat-bg">{c.unread}</div>}
                       </div>
                     </div>
-                    {c.unread > 0 && <div className="h-5 min-w-5 px-1.5 rounded-full bg-emerald-500 text-[10px] font-bold flex items-center justify-center">{c.unread}</div>}
                   </button>
                 );
               })
@@ -971,13 +972,15 @@ function Messenger({ me }: { me: Profile }) {
       </aside>
 
       {/* CENTER */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className={`${narrow && !activeId ? "hidden" : "flex"} min-w-0 flex-1 flex-col`}>
         {!activeConv || !other ? (
-          <div className="flex-1 flex items-center justify-center flex-col text-center p-8">
-            <div className="h-24 w-24 rounded-[28px] bg-gradient-to-br from-emerald-500/30 to-emerald-700/30 flex items-center justify-center text-5xl ring-1 ring-white/10 mb-4">💬</div>
-            <div className="text-lg font-semibold">Your messages</div>
-            <div className="text-sm text-white/50 max-w-xs mt-1">Pick a conversation, or add a friend with their Ghost ID to start.</div>
-            <button onClick={() => setShowAdd(true)} className="mt-4 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-sm font-semibold flex items-center gap-2">
+          <div className="chat-wallpaper flex flex-1 flex-col items-center justify-center p-8 text-center">
+            <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-chat-panel text-chat-accent">
+              <MessageCircle className="h-9 w-9" strokeWidth={1.5} />
+            </div>
+            <div className="text-2xl font-light">GhostChat for GhostOS</div>
+            <div className="mt-2 max-w-xs text-sm leading-relaxed text-chat-muted">Choose a conversation, or add a friend with their Ghost ID. Messages and calls stay synced to your account.</div>
+            <button onClick={() => setShowAdd(true)} className="mt-5 flex items-center gap-2 rounded-full bg-chat-accent px-5 py-2.5 text-sm font-medium text-chat-bg transition hover:opacity-90">
               <UserPlus className="h-4 w-4" />Add friend
             </button>
           </div>
