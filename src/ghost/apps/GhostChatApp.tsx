@@ -1064,17 +1064,37 @@ function Messenger({ me }: { me: Profile }) {
       </AnimatePresence>
 
       <AnimatePresence>
-        {call && other && profiles[call.withId] && (
-          <CallOverlay me={me} peer={profiles[call.withId]} video={call.video} onEnd={() => setCall(null)} />
+        {incomingCall && profiles[incomingCall.fromId] && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[65] flex items-center justify-center bg-chat-bg/85 p-6 backdrop-blur-sm">
+            <motion.div initial={{ scale: 0.96, y: 8 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-xs rounded-2xl bg-chat-panel p-6 text-center shadow-2xl">
+              <div className="flex justify-center"><Avatar p={profiles[incomingCall.fromId]} size={82} /></div>
+              <div className="mt-4 text-xl font-medium">{profiles[incomingCall.fromId].display_name}</div>
+              <div className="mt-1 text-sm text-chat-muted">Incoming {incomingCall.video ? "video" : "voice"} call</div>
+              <div className="mt-6 flex items-center justify-center gap-8">
+                <div className="text-center">
+                  <button onClick={() => void declineCall()} className="flex h-13 w-13 items-center justify-center rounded-full bg-destructive p-4 text-destructive-foreground" aria-label="Decline call"><PhoneOff className="h-5 w-5" /></button>
+                  <div className="mt-2 text-xs text-chat-muted">Decline</div>
+                </div>
+                <div className="text-center">
+                  <button onClick={acceptCall} className="flex h-13 w-13 items-center justify-center rounded-full bg-chat-accent p-4 text-chat-bg" aria-label="Accept call"><Phone className="h-5 w-5" /></button>
+                  <div className="mt-2 text-xs text-chat-muted">Accept</div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {call && profiles[call.withId] && (
+          <CallOverlay me={me} peer={profiles[call.withId]} video={call.video} callId={call.callId} direction={call.direction} onEnd={() => setCall(null)} />
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {showAccount && <AccountPanel me={me} onClose={() => setShowAccount(false)} />}
       </AnimatePresence>
-
-      {/* keep onProfile referenced */}
-      <span className="hidden" data-p={me.id} onClick={() => onProfile(me)} />
     </div>
   );
 }
