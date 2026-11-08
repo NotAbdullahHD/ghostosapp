@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { Mic, MicOff, MonitorUp, PhoneOff, Video, VideoOff, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 
 export interface CallProfile {
   id: string;
@@ -67,7 +68,7 @@ export function CallOverlay({ me, peer, video, callId, direction, onEnd }: CallO
       recipient_id: peer.id,
       call_id: callId,
       kind,
-      payload,
+      payload: payload as Json,
     });
     if (signalError) throw signalError;
   }, [callId, me.id, peer.id]);
@@ -147,7 +148,7 @@ export function CallOverlay({ me, peer, video, callId, direction, onEnd }: CallO
             setStatus("connecting");
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
-            if (pc.localDescription) await sendSignal("offer", { sdp: pc.localDescription.toJSON() });
+            await sendSignal("offer", { sdp: offer });
           }
         } else if (signal.kind === "offer" && direction === "incoming") {
           setStatus("connecting");
@@ -155,7 +156,7 @@ export function CallOverlay({ me, peer, video, callId, direction, onEnd }: CallO
           await flushCandidates();
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
-          if (pc.localDescription) await sendSignal("answer", { sdp: pc.localDescription.toJSON() });
+          await sendSignal("answer", { sdp: answer });
         } else if (signal.kind === "answer" && direction === "outgoing") {
           await pc.setRemoteDescription(payload.sdp as RTCSessionDescriptionInit);
           await flushCandidates();

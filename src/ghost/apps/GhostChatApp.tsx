@@ -81,14 +81,6 @@ function fmtTime(ts: string) {
   const d = new Date(ts);
   return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
-function fmtDay(ts: string) {
-  const d = new Date(ts);
-  const today = new Date();
-  const isToday = d.toDateString() === today.toDateString();
-  if (isToday) return `Today ${fmtTime(ts)}`;
-  return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) + " " + fmtTime(ts);
-}
-
 // ============ Root ============
 export function GhostChatApp() {
   const [session, setSession] = useState<Session | null>(null);
@@ -590,9 +582,6 @@ function Avatar({ p, size = 40 }: { p: Pick<Profile, "avatar_emoji" | "avatar_gr
     </div>
   );
 }
-
-type ChatKey = string;
-function chatKey(a: string, b: string): ChatKey { return [a, b].sort().join("|"); }
 
 function Messenger({ me }: { me: Profile }) {
   const { pushNotification } = useGhost();
