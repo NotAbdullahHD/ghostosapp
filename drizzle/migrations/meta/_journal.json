@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1794147093417,
+      "tag": "0000_add_ghostchat_call_signaling",
+      "breakpoints": true
+    }
+  ]
+}

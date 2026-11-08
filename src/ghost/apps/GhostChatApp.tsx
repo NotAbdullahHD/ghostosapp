@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { RealtimeChannel, Session } from "@supabase/supabase-js";
 import {
-  Search, Send, Phone, Video, Info, ChevronLeft, Plus, UserPlus, Check, X,
-  Mic, MicOff, VideoOff, PhoneOff, MonitorUp, MoreHorizontal, Sparkles,
-  Settings as SettingsIcon, Eye, EyeOff, Copy, RefreshCw, ShieldAlert, LogOut, Trash2,
+  Search, Send, Phone, Video, Info, ChevronLeft, Plus, UserPlus, Check, CheckCheck, X,
+  Sparkles, Settings as SettingsIcon, Eye, EyeOff, Copy, RefreshCw, ShieldAlert,
+  LogOut, Trash2, MessageCircle, PhoneOff, Smile,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useGhost } from "@/ghost/store";
+import { CallOverlay } from "@/ghost/CallOverlay";
 
 // ============ Types ============
 interface Profile {
@@ -33,6 +34,15 @@ interface Message {
   reaction: string | null;
   created_at: string;
   read_at: string | null;
+}
+interface IncomingCall {
+  callId: string;
+  fromId: string;
+  video: boolean;
+}
+interface ActiveCall extends IncomingCall {
+  withId: string;
+  direction: "outgoing" | "incoming";
 }
 
 // ============ Constants ============
@@ -71,14 +81,6 @@ function fmtTime(ts: string) {
   const d = new Date(ts);
   return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
-function fmtDay(ts: string) {
-  const d = new Date(ts);
-  const today = new Date();
-  const isToday = d.toDateString() === today.toDateString();
-  if (isToday) return `Today ${fmtTime(ts)}`;
-  return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) + " " + fmtTime(ts);
-}
-
 // ============ Root ============
 export function GhostChatApp() {
   const [session, setSession] = useState<Session | null>(null);
@@ -108,7 +110,7 @@ export function GhostChatApp() {
   }
   if (!session) return <AuthShell />;
   if (!profile) return <div className="h-full flex items-center justify-center bg-black text-white/40 text-xs font-mono">Preparing account…</div>;
-  return <Messenger me={profile} onProfile={setProfile} />;
+  return <Messenger me={profile} />;
 }
 
 // ============ Auth Shell (Login vs Create) ============
@@ -581,10 +583,7 @@ function Avatar({ p, size = 40 }: { p: Pick<Profile, "avatar_emoji" | "avatar_gr
   );
 }
 
-type ChatKey = string;
-function chatKey(a: string, b: string): ChatKey { return [a, b].sort().join("|"); }
-
-function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => void }) {
+function Messenger({ me }: { me: Profile }) {
   const { pushNotification } = useGhost();
   const [tab, setTab] = useState<"chats" | "contacts" | "requests">("chats");
   const [friendships, setFriendships] = useState<Friendship[]>([]);
@@ -593,11 +592,14 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
   const [activeId, setActiveId] = useState<string | null>(null); // other user id
   const [draft, setDraft] = useState("");
   const [showAdd, setShowAdd] = useState(false);
-  const [showInfo, setShowInfo] = useState(true);
-  const [call, setCall] = useState<{ withId: string; video: boolean } | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
+  const [call, setCall] = useState<ActiveCall | null>(null);
+  const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const [search, setSearch] = useState("");
   const [showAccount, setShowAccount] = useState(false);
+  const [narrow, setNarrow] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
 
   // Initial load
   const loadAll = useCallback(async () => {
@@ -622,6 +624,46 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
   }, [me.id]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+
+  useEffect(() => {
+    const shell = shellRef.current;
+    if (!shell) return;
+    const observer = new ResizeObserver(([entry]) => setNarrow(entry.contentRect.width < 680));
+    observer.observe(shell);
+    return () => observer.disconnect();
+  }, []);
+
+  // Incoming calls use the same authenticated realtime channel rules as messages.
+  useEffect(() => {
+    const ch = supabase.channel(`ghostcall-inbox-${me.id}`)
+      .on("postgres_changes", {
+        event: "INSERT", schema: "public", table: "call_signals", filter: `recipient_id=eq.${me.id}`,
+      }, async (payload) => {
+        const signal = payload.new as { id: string; kind: string; sender_id: string; call_id: string; payload: { video?: boolean } };
+        if (signal.kind !== "invite") return;
+        const next = { callId: signal.call_id, fromId: signal.sender_id, video: Boolean(signal.payload?.video) };
+        setIncomingCall((current) => current ?? next);
+        const existing = profiles[signal.sender_id];
+        if (!existing) {
+          const { data: p } = await supabase.from("profiles").select("*").eq("id", signal.sender_id).maybeSingle();
+          if (p) setProfiles((all) => ({ ...all, [p.id]: p as Profile }));
+        }
+        pushNotification({
+          title: `Incoming ${next.video ? "video" : "voice"} call`,
+          body: existing ? `${existing.display_name} is calling you` : "A GhostChat contact is calling you",
+          app: "chat",
+        });
+        await supabase.from("call_signals").delete().eq("id", signal.id);
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
+  }, [me.id, profiles, pushNotification]);
+
+  useEffect(() => {
+    if (!incomingCall) return;
+    const timer = window.setTimeout(() => setIncomingCall(null), 45_000);
+    return () => window.clearTimeout(timer);
+  }, [incomingCall]);
 
   // Realtime
   useEffect(() => {
@@ -755,6 +797,31 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
     }
   };
 
+  const startCall = (withId: string, video: boolean) => {
+    const callId = crypto.randomUUID();
+    setIncomingCall(null);
+    setCall({ callId, fromId: me.id, withId, video, direction: "outgoing" });
+  };
+
+  const acceptCall = () => {
+    if (!incomingCall) return;
+    setActiveId(incomingCall.fromId);
+    setCall({ ...incomingCall, withId: incomingCall.fromId, direction: "incoming" });
+    setIncomingCall(null);
+  };
+
+  const declineCall = async () => {
+    if (!incomingCall) return;
+    await supabase.from("call_signals").insert({
+      sender_id: me.id,
+      recipient_id: incomingCall.fromId,
+      call_id: incomingCall.callId,
+      kind: "decline",
+      payload: {},
+    });
+    setIncomingCall(null);
+  };
+
   const filtered = conversations.filter((c) => {
     if (!search.trim()) return true;
     const p = profiles[c.otherId];
@@ -764,44 +831,43 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
   const other = activeId ? profiles[activeId] : null;
 
   return (
-    <div className="h-full flex bg-[#0a0612] text-white">
-      {/* LEFT PANEL */}
-      <aside className="w-72 border-r border-white/5 flex flex-col bg-black/40 backdrop-blur-xl">
-        <div className="p-3 border-b border-white/5 flex items-center gap-2">
-          <button onClick={() => setShowAccount(true)} className="flex-1 min-w-0 flex items-center gap-2 rounded-lg hover:bg-white/5 transition p-1 -m-1 text-left" title="Account">
-            <Avatar p={me} size={30} />
+    <div ref={shellRef} className="relative flex h-full min-h-0 overflow-hidden bg-chat-bg text-chat-text">
+      <aside className={`${narrow && activeId ? "hidden" : "flex"} ${narrow ? "w-full" : "w-[310px] shrink-0"} min-h-0 flex-col border-r border-border bg-chat-sidebar`}>
+        <div className="flex h-[60px] shrink-0 items-center gap-2 bg-chat-panel px-3">
+          <button onClick={() => setShowAccount(true)} className="flex min-w-0 flex-1 items-center gap-2 rounded-lg p-1 text-left transition hover:bg-white/5" title="Account">
+            <Avatar p={me} size={38} />
             <div className="min-w-0">
-              <div className="text-sm font-semibold truncate">{me.display_name}</div>
-              <div className="text-[10px] font-mono text-emerald-300/70 tracking-wider">{me.ghost_id}</div>
+              <div className="truncate text-sm font-medium">{me.display_name}</div>
+              <div className="text-[11px] text-chat-muted">@{me.username ?? me.ghost_id}</div>
             </div>
           </button>
-          <button onClick={() => setShowAccount(true)} className="h-8 w-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center" title="Account settings">
-            <SettingsIcon className="h-4 w-4 text-white/70" />
+          <button onClick={() => setShowAccount(true)} className="flex h-9 w-9 items-center justify-center rounded-full text-chat-muted transition hover:bg-white/5 hover:text-chat-text" title="Account settings" aria-label="Account settings">
+            <SettingsIcon className="h-[18px] w-[18px]" />
           </button>
-          <button onClick={() => setShowAdd(true)} className="h-8 w-8 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 flex items-center justify-center" title="Add friend">
-            <Plus className="h-4 w-4 text-emerald-200" />
+          <button onClick={() => setShowAdd(true)} className="flex h-9 w-9 items-center justify-center rounded-full text-chat-muted transition hover:bg-white/5 hover:text-chat-text" title="Add friend" aria-label="Add friend">
+            <Plus className="h-5 w-5" />
           </button>
         </div>
 
 
-        <div className="px-3 pt-3">
+        <div className="shrink-0 px-3 py-2">
           <div className="relative">
-            <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search"
-              className="w-full pl-9 pr-3 py-2 rounded-xl bg-white/5 border border-white/5 outline-none text-sm focus:border-white/20" />
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-chat-muted" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search or start a new chat" aria-label="Search chats"
+              className="w-full rounded-lg border border-transparent bg-chat-panel py-2 pl-9 pr-3 text-sm text-chat-text outline-none placeholder:text-chat-muted focus:border-chat-muted/30" />
           </div>
         </div>
 
-        <div className="px-3 pt-3 flex gap-1 text-xs">
+        <div className="flex shrink-0 gap-1 px-3 pb-2 text-xs">
           {(["chats", "contacts", "requests"] as const).map((t) => (
             <button key={t} onClick={() => setTab(t)}
-              className={`flex-1 py-1.5 rounded-lg font-medium transition capitalize ${tab === t ? "bg-white/10 text-white" : "text-white/50 hover:text-white/80"}`}>
-              {t}{t === "requests" && incoming.length > 0 && <span className="ml-1 text-[10px] text-emerald-300">({incoming.length})</span>}
+              className={`flex-1 rounded-full py-1.5 font-medium capitalize transition ${tab === t ? "bg-chat-accent/15 text-chat-accent" : "text-chat-muted hover:bg-chat-panel hover:text-chat-text"}`}>
+              {t}{t === "requests" && incoming.length > 0 && <span className="ml-1 text-[10px]">({incoming.length})</span>}
             </button>
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto scrollbar-hide mt-2 px-2 pb-2">
+        <div className="chat-scroll mt-1 flex-1 overflow-y-auto pb-2">
           {tab === "chats" && (
             filtered.length === 0 ? (
               <EmptyPanel icon="💬" title="No conversations" body="Tap + to add a friend by Ghost ID and start messaging." />
@@ -812,18 +878,20 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
                 const active = activeId === c.otherId;
                 return (
                   <button key={c.friendship.id} onClick={() => setActiveId(c.otherId)}
-                    className={`w-full flex items-center gap-3 p-2 rounded-xl transition text-left ${active ? "bg-gradient-to-r from-emerald-500/20 to-emerald-500/10" : "hover:bg-white/5"}`}>
-                    <Avatar p={p} size={42} />
-                    <div className="flex-1 min-w-0">
+                    className={`flex w-full items-center gap-3 px-3 py-3 text-left transition ${active ? "bg-chat-input" : "hover:bg-chat-panel"}`}>
+                    <Avatar p={p} size={48} />
+                    <div className="min-w-0 flex-1 border-b border-border pb-3">
                       <div className="flex items-baseline gap-2">
-                        <div className="text-sm font-semibold truncate flex-1">{p.display_name}</div>
-                        {c.last && <div className="text-[10px] text-white/40">{fmtTime(c.last.created_at)}</div>}
+                        <div className="flex-1 truncate text-[15px] font-normal">{p.display_name}</div>
+                        {c.last && <div className={`text-[11px] ${c.unread ? "text-chat-accent" : "text-chat-muted"}`}>{fmtTime(c.last.created_at)}</div>}
                       </div>
-                      <div className="text-xs text-white/50 truncate">
-                        {c.last ? (c.last.sender_id === me.id ? "You: " : "") + c.last.content : "New conversation"}
+                      <div className="mt-0.5 flex items-center gap-2">
+                        <div className="flex-1 truncate text-[13px] text-chat-muted">
+                          {c.last ? (c.last.sender_id === me.id ? "You: " : "") + c.last.content : "Start a conversation"}
+                        </div>
+                        {c.unread > 0 && <div className="flex h-5 min-w-5 items-center justify-center rounded-full bg-chat-accent px-1.5 text-[10px] font-semibold text-chat-bg">{c.unread}</div>}
                       </div>
                     </div>
-                    {c.unread > 0 && <div className="h-5 min-w-5 px-1.5 rounded-full bg-emerald-500 text-[10px] font-bold flex items-center justify-center">{c.unread}</div>}
                   </button>
                 );
               })
@@ -893,63 +961,59 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
       </aside>
 
       {/* CENTER */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className={`${narrow && !activeId ? "hidden" : "flex"} min-w-0 flex-1 flex-col`}>
         {!activeConv || !other ? (
-          <div className="flex-1 flex items-center justify-center flex-col text-center p-8">
-            <div className="h-24 w-24 rounded-[28px] bg-gradient-to-br from-emerald-500/30 to-emerald-700/30 flex items-center justify-center text-5xl ring-1 ring-white/10 mb-4">💬</div>
-            <div className="text-lg font-semibold">Your messages</div>
-            <div className="text-sm text-white/50 max-w-xs mt-1">Pick a conversation, or add a friend with their Ghost ID to start.</div>
-            <button onClick={() => setShowAdd(true)} className="mt-4 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-sm font-semibold flex items-center gap-2">
+          <div className="chat-wallpaper flex flex-1 flex-col items-center justify-center p-8 text-center">
+            <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-chat-panel text-chat-accent">
+              <MessageCircle className="h-9 w-9" strokeWidth={1.5} />
+            </div>
+            <div className="text-2xl font-light">GhostChat for GhostOS</div>
+            <div className="mt-2 max-w-xs text-sm leading-relaxed text-chat-muted">Choose a conversation, or add a friend with their Ghost ID. Messages and calls stay synced to your account.</div>
+            <button onClick={() => setShowAdd(true)} className="mt-5 flex items-center gap-2 rounded-full bg-chat-accent px-5 py-2.5 text-sm font-medium text-chat-bg transition hover:opacity-90">
               <UserPlus className="h-4 w-4" />Add friend
             </button>
           </div>
         ) : (
           <>
-            {/* header */}
-            <div className="h-14 border-b border-white/5 px-4 flex items-center gap-3 bg-[#202c33]">
-              <button className="lg:hidden text-white/60" onClick={() => setActiveId(null)}><ChevronLeft className="h-5 w-5" /></button>
-              <Avatar p={other} size={34} />
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold truncate">{other.display_name}</div>
-                <div className="text-[10px] font-mono text-white/40">{other.ghost_id}</div>
+            <div className="flex h-[60px] shrink-0 items-center gap-3 bg-chat-panel px-3">
+              {narrow && <button className="text-chat-muted" onClick={() => setActiveId(null)} aria-label="Back to chats"><ChevronLeft className="h-6 w-6" /></button>}
+              <Avatar p={other} size={38} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[15px] font-medium">{other.display_name}</div>
+                <div className="truncate text-[11px] text-chat-muted">{other.ghost_id}</div>
               </div>
-              <button onClick={() => setCall({ withId: other.id, video: false })} className="h-9 w-9 rounded-full hover:bg-white/10 flex items-center justify-center text-emerald-200"><Phone className="h-4 w-4" /></button>
-              <button onClick={() => setCall({ withId: other.id, video: true })} className="h-9 w-9 rounded-full hover:bg-white/10 flex items-center justify-center text-emerald-200"><Video className="h-4 w-4" /></button>
-              <button onClick={() => setShowInfo((s) => !s)} className={`h-9 w-9 rounded-full flex items-center justify-center ${showInfo ? "bg-white/10 text-white" : "hover:bg-white/10 text-white/60"}`}><Info className="h-4 w-4" /></button>
+              <button onClick={() => startCall(other.id, false)} className="flex h-9 w-9 items-center justify-center rounded-full text-chat-muted transition hover:bg-white/5 hover:text-chat-text" title="Voice call" aria-label={`Voice call ${other.display_name}`}><Phone className="h-[18px] w-[18px]" /></button>
+              <button onClick={() => startCall(other.id, true)} className="flex h-9 w-9 items-center justify-center rounded-full text-chat-muted transition hover:bg-white/5 hover:text-chat-text" title="Video call" aria-label={`Video call ${other.display_name}`}><Video className="h-5 w-5" /></button>
+              {!narrow && <button onClick={() => setShowInfo((s) => !s)} className={`flex h-9 w-9 items-center justify-center rounded-full transition ${showInfo ? "bg-chat-input text-chat-text" : "text-chat-muted hover:bg-white/5 hover:text-chat-text"}`} title="Contact info" aria-label="Contact info"><Info className="h-[18px] w-[18px]" /></button>}
             </div>
 
-            {/* messages */}
-            <div className="flex-1 overflow-y-auto scrollbar-hide px-4 py-4 space-y-1">
+            <div className="chat-wallpaper chat-scroll flex-1 overflow-y-auto px-3 py-4 sm:px-8">
               {activeMsgs.length === 0 && (
-                <div className="text-center text-xs text-white/40 py-8">Say hello 👋</div>
+                <div className="mx-auto mt-8 w-fit rounded-lg bg-chat-panel px-4 py-2 text-center text-xs text-chat-muted">Send a message to start the conversation.</div>
               )}
               {activeMsgs.map((m, i) => {
                 const mine = m.sender_id === me.id;
                 const prev = activeMsgs[i - 1];
-                const showDay = !prev || (new Date(m.created_at).getTime() - new Date(prev.created_at).getTime()) > 15 * 60_000;
-                const isLast = i === activeMsgs.length - 1;
+                const showDay = !prev || new Date(m.created_at).toDateString() !== new Date(prev.created_at).toDateString();
                 return (
                   <div key={m.id}>
-                    {showDay && <div className="text-center text-[10px] text-white/30 font-mono my-3">{fmtDay(m.created_at)}</div>}
+                    {showDay && <div className="my-4 text-center"><span className="rounded-lg bg-chat-panel px-3 py-1.5 text-[11px] text-chat-muted shadow-sm">{new Date(m.created_at).toDateString() === new Date().toDateString() ? "Today" : new Date(m.created_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}</span></div>}
                     <MessageBubble m={m} mine={mine} onReact={(r) => react(m, r)} />
-                    {mine && isLast && m.read_at && <div className="text-[10px] text-white/40 text-right pr-1 mt-0.5">Read {fmtTime(m.read_at)}</div>}
-                    {mine && isLast && !m.read_at && <div className="text-[10px] text-white/30 text-right pr-1 mt-0.5">Delivered</div>}
                   </div>
                 );
               })}
               <div ref={endRef} />
             </div>
 
-            {/* composer */}
-            <div className="p-3 border-t border-white/5 bg-black/30 backdrop-blur-xl">
-              <div className="flex items-end gap-2 bg-white/5 rounded-3xl border border-white/10 px-3 py-1.5">
-                <input value={draft} onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-                  placeholder="iMessage"
-                  className="flex-1 bg-transparent outline-none py-2 text-sm" />
-                <button onClick={send} disabled={!draft.trim()}
-                  className="h-8 w-8 rounded-full bg-[#00a884] flex items-center justify-center disabled:opacity-30 transition">
-                  <Send className="h-3.5 w-3.5" />
+            <div className="shrink-0 bg-chat-panel px-3 py-2">
+              <div className="flex items-end gap-2">
+                <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={1}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
+                  placeholder="Type a message" aria-label="Message"
+                  className="max-h-24 min-h-[42px] flex-1 resize-none rounded-lg border border-transparent bg-chat-input px-4 py-3 text-[15px] text-chat-text outline-none placeholder:text-chat-muted focus:border-chat-muted/30" />
+                <button onClick={() => void send()} disabled={!draft.trim()} aria-label="Send message" title="Send"
+                  className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-chat-accent text-chat-bg transition hover:opacity-90 disabled:opacity-30">
+                  <Send className="h-[18px] w-[18px]" />
                 </button>
               </div>
             </div>
@@ -957,26 +1021,27 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
         )}
       </main>
 
-      {/* RIGHT INFO PANEL */}
       <AnimatePresence>
-        {showInfo && other && (
-          <motion.aside initial={{ width: 0, opacity: 0 }} animate={{ width: 280, opacity: 1 }} exit={{ width: 0, opacity: 0 }}
-            className="border-l border-white/5 overflow-hidden bg-black/40 backdrop-blur-xl">
-            <div className="w-[280px] h-full flex flex-col">
-              <div className="p-6 flex flex-col items-center text-center border-b border-white/5">
-                <Avatar p={other} size={72} />
-                <div className="mt-3 text-lg font-bold">{other.display_name}</div>
-                <div className="text-[10px] font-mono tracking-widest text-emerald-300/70">{other.ghost_id}</div>
-                <div className="flex gap-3 mt-4">
-                  <RoundBtn icon={<Phone className="h-4 w-4" />} label="audio" onClick={() => setCall({ withId: other.id, video: false })} />
-                  <RoundBtn icon={<Video className="h-4 w-4" />} label="video" onClick={() => setCall({ withId: other.id, video: true })} />
-                  <RoundBtn icon={<MoreHorizontal className="h-4 w-4" />} label="more" />
-                </div>
+        {showInfo && other && !narrow && (
+          <motion.aside initial={{ width: 0, opacity: 0 }} animate={{ width: 270, opacity: 1 }} exit={{ width: 0, opacity: 0 }}
+            className="shrink-0 overflow-hidden border-l border-border bg-chat-sidebar">
+            <div className="flex h-full w-[270px] flex-col">
+              <div className="flex h-[60px] shrink-0 items-center gap-5 bg-chat-panel px-5">
+                <button onClick={() => setShowInfo(false)} className="text-chat-muted" aria-label="Close contact info"><X className="h-5 w-5" /></button>
+                <span className="text-sm">Contact info</span>
               </div>
-              <div className="p-4 space-y-4 text-xs flex-1 overflow-y-auto scrollbar-hide">
-                <InfoBlock title="SHARED MEDIA" empty="No photos yet" />
-                <InfoBlock title="FILES" empty="No files shared" />
-                <InfoBlock title="LINKS" empty="No links yet" />
+              <div className="flex flex-col items-center bg-chat-panel px-6 py-7 text-center">
+                <Avatar p={other} size={110} />
+                <div className="mt-4 text-xl font-normal">{other.display_name}</div>
+                <div className="mt-1 text-sm text-chat-muted">@{other.username ?? "ghost"}</div>
+              </div>
+              <div className="mt-3 bg-chat-panel p-5">
+                <div className="text-xs text-chat-accent">Ghost ID</div>
+                <div className="mt-2 font-mono text-sm text-chat-text">{other.ghost_id}</div>
+              </div>
+              <div className="mt-3 flex justify-around bg-chat-panel p-5">
+                <RoundBtn icon={<Phone className="h-4 w-4" />} label="Voice" onClick={() => startCall(other.id, false)} />
+                <RoundBtn icon={<Video className="h-4 w-4" />} label="Video" onClick={() => startCall(other.id, true)} />
               </div>
             </div>
           </motion.aside>
@@ -988,74 +1053,88 @@ function Messenger({ me, onProfile }: { me: Profile; onProfile: (p: Profile) => 
       </AnimatePresence>
 
       <AnimatePresence>
-        {call && other && profiles[call.withId] && (
-          <CallOverlay me={me} peer={profiles[call.withId]} video={call.video} onEnd={() => setCall(null)} />
+        {incomingCall && profiles[incomingCall.fromId] && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[65] flex items-center justify-center bg-chat-bg/85 p-6 backdrop-blur-sm">
+            <motion.div initial={{ scale: 0.96, y: 8 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-xs rounded-2xl bg-chat-panel p-6 text-center shadow-2xl">
+              <div className="flex justify-center"><Avatar p={profiles[incomingCall.fromId]} size={82} /></div>
+              <div className="mt-4 text-xl font-medium">{profiles[incomingCall.fromId].display_name}</div>
+              <div className="mt-1 text-sm text-chat-muted">Incoming {incomingCall.video ? "video" : "voice"} call</div>
+              <div className="mt-6 flex items-center justify-center gap-8">
+                <div className="text-center">
+                  <button onClick={() => void declineCall()} className="flex h-13 w-13 items-center justify-center rounded-full bg-destructive p-4 text-destructive-foreground" aria-label="Decline call"><PhoneOff className="h-5 w-5" /></button>
+                  <div className="mt-2 text-xs text-chat-muted">Decline</div>
+                </div>
+                <div className="text-center">
+                  <button onClick={acceptCall} className="flex h-13 w-13 items-center justify-center rounded-full bg-chat-accent p-4 text-chat-bg" aria-label="Accept call"><Phone className="h-5 w-5" /></button>
+                  <div className="mt-2 text-xs text-chat-muted">Accept</div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {call && profiles[call.withId] && (
+          <CallOverlay me={me} peer={profiles[call.withId]} video={call.video} callId={call.callId} direction={call.direction} onEnd={() => setCall(null)} />
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {showAccount && <AccountPanel me={me} onClose={() => setShowAccount(false)} />}
       </AnimatePresence>
-
-      {/* keep onProfile referenced */}
-      <span className="hidden" data-p={me.id} onClick={() => onProfile(me)} />
     </div>
   );
 }
 
 function EmptyPanel({ icon, title, body }: { icon: string; title: string; body: string }) {
   return (
-    <div className="text-center py-10 px-4">
-      <div className="text-3xl mb-2">{icon}</div>
-      <div className="text-sm font-semibold">{title}</div>
-      <div className="text-xs text-white/50 mt-1 leading-relaxed">{body}</div>
+    <div className="px-6 py-12 text-center">
+      <div className="mb-3 text-3xl">{icon}</div>
+      <div className="text-sm font-medium">{title}</div>
+      <div className="mt-1 text-xs leading-relaxed text-chat-muted">{body}</div>
     </div>
   );
 }
 
 function RoundBtn({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
   return (
-    <button onClick={onClick} className="flex flex-col items-center gap-1 group">
-      <div className="h-10 w-10 rounded-full bg-white/5 group-hover:bg-white/10 flex items-center justify-center transition text-emerald-200">{icon}</div>
-      <div className="text-[9px] text-white/50 tracking-wider uppercase">{label}</div>
+    <button onClick={onClick} className="group flex flex-col items-center gap-2">
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-chat-input text-chat-accent transition group-hover:opacity-80">{icon}</div>
+      <div className="text-[11px] text-chat-muted">{label}</div>
     </button>
-  );
-}
-
-function InfoBlock({ title, empty }: { title: string; empty: string }) {
-  return (
-    <div>
-      <div className="text-[10px] tracking-widest font-mono text-white/40 mb-2">{title}</div>
-      <div className="text-xs text-white/40 bg-white/5 rounded-xl p-3 text-center">{empty}</div>
-    </div>
   );
 }
 
 function MessageBubble({ m, mine, onReact }: { m: Message; mine: boolean; onReact: (r: string) => void }) {
   const [showR, setShowR] = useState(false);
   return (
-    <div className={`flex ${mine ? "justify-end" : "justify-start"} group`}>
-      <div className="relative max-w-[70%]">
-        <motion.div layout initial={{ opacity: 0, y: 4, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-          onDoubleClick={() => setShowR((s) => !s)}
-          className={`px-3.5 py-2 text-[15px] leading-snug break-words shadow-sm ${
-            mine
-              ? "bg-[#005c4b] text-white rounded-lg rounded-tr-none shadow-sm"
-              : "bg-[#202c33] text-white rounded-lg rounded-tl-none shadow-sm"
-          }`}>
-          {m.content}
+    <div className={`group mb-1 flex ${mine ? "justify-end" : "justify-start"}`}>
+      <div className="relative max-w-[82%] sm:max-w-[70%]">
+        <motion.div initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }}
+          className={`relative rounded-lg px-2.5 py-1.5 text-[14px] leading-relaxed break-words shadow-sm ${mine ? "rounded-tr-none bg-chat-outgoing" : "rounded-tl-none bg-chat-incoming"}`}>
+          <span className="whitespace-pre-wrap">{m.content}</span>
+          <span className="float-right ml-3 mt-2 flex items-center gap-1 text-[10px] leading-none text-chat-muted">
+            {fmtTime(m.created_at)}
+            {mine && (m.read_at ? <CheckCheck className="h-3.5 w-3.5 text-chat-check" /> : <Check className="h-3.5 w-3.5" />)}
+          </span>
         </motion.div>
+        <button onClick={() => setShowR((s) => !s)} aria-label="React to message"
+          className={`absolute top-1 ${mine ? "-left-7" : "-right-7"} flex h-6 w-6 items-center justify-center rounded-full text-chat-muted opacity-0 transition hover:bg-chat-panel group-hover:opacity-100 focus:opacity-100`}>
+          <Smile className="h-3.5 w-3.5" />
+        </button>
         {m.reaction && (
-          <div className={`absolute -top-2 ${mine ? "-left-1" : "-right-1"} bg-[#1a1a1f] border border-white/10 rounded-full h-6 w-6 flex items-center justify-center text-xs`}>
+          <div className={`absolute -bottom-3 ${mine ? "right-1" : "left-1"} flex h-6 min-w-6 items-center justify-center rounded-full border border-border bg-chat-panel px-1 text-xs shadow-sm`}>
             {m.reaction}
           </div>
         )}
         <AnimatePresence>
           {showR && (
-            <motion.div initial={{ opacity: 0, y: -4, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-              className={`absolute -top-9 ${mine ? "right-0" : "left-0"} bg-[#1a1a1f] border border-white/10 rounded-full px-2 py-1 flex gap-1 z-10 shadow-lg`}>
+            <motion.div initial={{ opacity: 0, y: -4, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className={`absolute -top-10 ${mine ? "right-0" : "left-0"} z-10 flex gap-0.5 rounded-full border border-border bg-chat-panel px-1.5 py-1 shadow-xl`}>
               {REACTIONS.map((r) => (
-                <button key={r} onClick={() => { onReact(r); setShowR(false); }} className="h-7 w-7 hover:bg-white/10 rounded-full text-sm">{r}</button>
+                <button key={r} onClick={() => { onReact(r); setShowR(false); }} className="h-7 w-7 rounded-full text-sm transition hover:bg-chat-input" aria-label={`React ${r}`}>{r}</button>
               ))}
             </motion.div>
           )}
@@ -1097,70 +1176,3 @@ function AddFriendSheet({ me, onClose, onAdd }: { me: Profile; onClose: () => vo
   );
 }
 
-// ============ Simulated FaceTime Call ============
-function CallOverlay({ me, peer, video, onEnd }: { me: Profile; peer: Profile; video: boolean; onEnd: () => void }) {
-  const [connected, setConnected] = useState(false);
-  const [muted, setMuted] = useState(false);
-  const [cam, setCam] = useState(video);
-  const [share, setShare] = useState(false);
-  const [t, setT] = useState(0);
-  useEffect(() => {
-    const id = setTimeout(() => setConnected(true), 1600);
-    return () => clearTimeout(id);
-  }, []);
-  useEffect(() => {
-    if (!connected) return;
-    const id = setInterval(() => setT((s) => s + 1), 1000);
-    return () => clearInterval(id);
-  }, [connected]);
-  const mm = String(Math.floor(t / 60)).padStart(2, "0");
-  const ss = String(t % 60).padStart(2, "0");
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="absolute inset-0 z-[60] bg-black flex flex-col">
-      <div className="flex-1 relative overflow-hidden bg-gradient-to-br from-[#0b0716] via-[#1a0a2a] to-[#050308]">
-        {/* peer tile */}
-        <div className={`absolute inset-0 flex items-center justify-center transition ${cam && connected ? "opacity-100" : "opacity-70"}`}>
-          <div className={`h-40 w-40 rounded-full bg-gradient-to-br ${peer.avatar_gradient} flex items-center justify-center text-7xl ring-2 ring-white/10 shadow-2xl`}>
-            {peer.avatar_emoji}
-          </div>
-        </div>
-        <div className="absolute top-8 left-0 right-0 text-center">
-          <div className="text-2xl font-bold">{peer.display_name}</div>
-          <div className="text-sm text-white/60 font-mono mt-1">
-            {connected ? (video ? "Video call" : "Voice call") : "Connecting…"}
-          </div>
-          {connected && <div className="text-xs text-white/40 mt-1 font-mono">{mm}:{ss}</div>}
-        </div>
-        {/* self tile */}
-        <motion.div drag dragMomentum={false}
-          initial={{ x: 0, y: 0 }}
-          className="absolute top-6 right-6 h-32 w-24 rounded-2xl bg-gradient-to-br from-black to-zinc-900 ring-1 ring-white/10 flex items-center justify-center cursor-move shadow-xl">
-          <div className={`h-12 w-12 rounded-full bg-gradient-to-br ${me.avatar_gradient} flex items-center justify-center text-2xl`}>{me.avatar_emoji}</div>
-        </motion.div>
-        {share && (
-          <div className="absolute bottom-24 left-6 right-6 h-24 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-xs text-white/50 font-mono">
-            <MonitorUp className="h-4 w-4 mr-2" /> Screen sharing active
-          </div>
-        )}
-      </div>
-      <div className="p-6 flex items-center justify-center gap-4 bg-black/60 backdrop-blur-xl">
-        <CallBtn active={muted} onClick={() => setMuted((s) => !s)} icon={muted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />} />
-        <CallBtn active={!cam} onClick={() => setCam((s) => !s)} icon={cam ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />} />
-        <CallBtn active={share} onClick={() => setShare((s) => !s)} icon={<MonitorUp className="h-5 w-5" />} />
-        <button onClick={onEnd} className="h-14 w-14 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition">
-          <PhoneOff className="h-6 w-6" />
-        </button>
-      </div>
-    </motion.div>
-  );
-}
-
-function CallBtn({ icon, active, onClick }: { icon: React.ReactNode; active?: boolean; onClick?: () => void }) {
-  return (
-    <button onClick={onClick}
-      className={`h-14 w-14 rounded-full flex items-center justify-center transition ${active ? "bg-white text-black" : "bg-white/10 hover:bg-white/20 text-white"}`}>
-      {icon}
-    </button>
-  );
-}
