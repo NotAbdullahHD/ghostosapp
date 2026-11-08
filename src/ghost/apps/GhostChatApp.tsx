@@ -636,6 +636,46 @@ function Messenger({ me }: { me: Profile }) {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
+  useEffect(() => {
+    const shell = shellRef.current;
+    if (!shell) return;
+    const observer = new ResizeObserver(([entry]) => setNarrow(entry.contentRect.width < 680));
+    observer.observe(shell);
+    return () => observer.disconnect();
+  }, []);
+
+  // Incoming calls use the same authenticated realtime channel rules as messages.
+  useEffect(() => {
+    const ch = supabase.channel(`ghostcall-inbox-${me.id}`)
+      .on("postgres_changes", {
+        event: "INSERT", schema: "public", table: "call_signals", filter: `recipient_id=eq.${me.id}`,
+      }, async (payload) => {
+        const signal = payload.new as { id: string; kind: string; sender_id: string; call_id: string; payload: { video?: boolean } };
+        if (signal.kind !== "invite") return;
+        const next = { callId: signal.call_id, fromId: signal.sender_id, video: Boolean(signal.payload?.video) };
+        setIncomingCall((current) => current ?? next);
+        const existing = profiles[signal.sender_id];
+        if (!existing) {
+          const { data: p } = await supabase.from("profiles").select("*").eq("id", signal.sender_id).maybeSingle();
+          if (p) setProfiles((all) => ({ ...all, [p.id]: p as Profile }));
+        }
+        pushNotification({
+          title: `Incoming ${next.video ? "video" : "voice"} call`,
+          body: existing ? `${existing.display_name} is calling you` : "A GhostChat contact is calling you",
+          app: "chat",
+        });
+        await supabase.from("call_signals").delete().eq("id", signal.id);
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
+  }, [me.id, profiles, pushNotification]);
+
+  useEffect(() => {
+    if (!incomingCall) return;
+    const timer = window.setTimeout(() => setIncomingCall(null), 45_000);
+    return () => window.clearTimeout(timer);
+  }, [incomingCall]);
+
   // Realtime
   useEffect(() => {
     const ch: RealtimeChannel = supabase.channel("ghostchat-" + me.id)
