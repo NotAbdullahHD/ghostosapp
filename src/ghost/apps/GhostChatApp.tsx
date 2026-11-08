@@ -808,6 +808,31 @@ function Messenger({ me }: { me: Profile }) {
     }
   };
 
+  const startCall = (withId: string, video: boolean) => {
+    const callId = crypto.randomUUID();
+    setIncomingCall(null);
+    setCall({ callId, fromId: me.id, withId, video, direction: "outgoing" });
+  };
+
+  const acceptCall = () => {
+    if (!incomingCall) return;
+    setActiveId(incomingCall.fromId);
+    setCall({ ...incomingCall, withId: incomingCall.fromId, direction: "incoming" });
+    setIncomingCall(null);
+  };
+
+  const declineCall = async () => {
+    if (!incomingCall) return;
+    await supabase.from("call_signals").insert({
+      sender_id: me.id,
+      recipient_id: incomingCall.fromId,
+      call_id: incomingCall.callId,
+      kind: "decline",
+      payload: {},
+    });
+    setIncomingCall(null);
+  };
+
   const filtered = conversations.filter((c) => {
     if (!search.trim()) return true;
     const p = profiles[c.otherId];
