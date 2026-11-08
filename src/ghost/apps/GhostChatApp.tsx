@@ -1130,28 +1130,31 @@ function InfoBlock({ title, empty }: { title: string; empty: string }) {
 function MessageBubble({ m, mine, onReact }: { m: Message; mine: boolean; onReact: (r: string) => void }) {
   const [showR, setShowR] = useState(false);
   return (
-    <div className={`flex ${mine ? "justify-end" : "justify-start"} group`}>
-      <div className="relative max-w-[70%]">
-        <motion.div layout initial={{ opacity: 0, y: 4, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-          onDoubleClick={() => setShowR((s) => !s)}
-          className={`px-3.5 py-2 text-[15px] leading-snug break-words shadow-sm ${
-            mine
-              ? "bg-[#005c4b] text-white rounded-lg rounded-tr-none shadow-sm"
-              : "bg-[#202c33] text-white rounded-lg rounded-tl-none shadow-sm"
-          }`}>
-          {m.content}
+    <div className={`group mb-1 flex ${mine ? "justify-end" : "justify-start"}`}>
+      <div className="relative max-w-[82%] sm:max-w-[70%]">
+        <motion.div initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }}
+          className={`relative rounded-lg px-2.5 py-1.5 text-[14px] leading-relaxed break-words shadow-sm ${mine ? "rounded-tr-none bg-chat-outgoing" : "rounded-tl-none bg-chat-incoming"}`}>
+          <span className="whitespace-pre-wrap">{m.content}</span>
+          <span className="float-right ml-3 mt-2 flex items-center gap-1 text-[10px] leading-none text-chat-muted">
+            {fmtTime(m.created_at)}
+            {mine && (m.read_at ? <CheckCheck className="h-3.5 w-3.5 text-[#53bdeb]" /> : <Check className="h-3.5 w-3.5" />)}
+          </span>
         </motion.div>
+        <button onClick={() => setShowR((s) => !s)} aria-label="React to message"
+          className={`absolute top-1 ${mine ? "-left-7" : "-right-7"} flex h-6 w-6 items-center justify-center rounded-full text-chat-muted opacity-0 transition hover:bg-chat-panel group-hover:opacity-100 focus:opacity-100`}>
+          <Smile className="h-3.5 w-3.5" />
+        </button>
         {m.reaction && (
-          <div className={`absolute -top-2 ${mine ? "-left-1" : "-right-1"} bg-[#1a1a1f] border border-white/10 rounded-full h-6 w-6 flex items-center justify-center text-xs`}>
+          <div className={`absolute -bottom-3 ${mine ? "right-1" : "left-1"} flex h-6 min-w-6 items-center justify-center rounded-full border border-border bg-chat-panel px-1 text-xs shadow-sm`}>
             {m.reaction}
           </div>
         )}
         <AnimatePresence>
           {showR && (
-            <motion.div initial={{ opacity: 0, y: -4, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-              className={`absolute -top-9 ${mine ? "right-0" : "left-0"} bg-[#1a1a1f] border border-white/10 rounded-full px-2 py-1 flex gap-1 z-10 shadow-lg`}>
+            <motion.div initial={{ opacity: 0, y: -4, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className={`absolute -top-10 ${mine ? "right-0" : "left-0"} z-10 flex gap-0.5 rounded-full border border-border bg-chat-panel px-1.5 py-1 shadow-xl`}>
               {REACTIONS.map((r) => (
-                <button key={r} onClick={() => { onReact(r); setShowR(false); }} className="h-7 w-7 hover:bg-white/10 rounded-full text-sm">{r}</button>
+                <button key={r} onClick={() => { onReact(r); setShowR(false); }} className="h-7 w-7 rounded-full text-sm transition hover:bg-chat-input" aria-label={`React ${r}`}>{r}</button>
               ))}
             </motion.div>
           )}
