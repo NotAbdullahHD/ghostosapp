@@ -50,6 +50,13 @@
   --color-chat-text: var(--chat-text);
   --color-chat-muted: var(--chat-muted);
   --color-chat-check: var(--chat-check);
+  --color-music-base: var(--music-base);
+  --color-music-panel: var(--music-panel);
+  --color-music-card: var(--music-card);
+  --color-music-hover: var(--music-hover);
+  --color-music-text: var(--music-text);
+  --color-music-muted: var(--music-muted);
+  --color-music-accent: var(--music-accent);
   --font-display: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
@@ -57,6 +64,13 @@
 }
 
 :root {
+  --music-base: oklch(0 0 0);
+  --music-panel: oklch(0.18 0 0);
+  --music-card: oklch(0.22 0 0);
+  --music-hover: oklch(0.29 0 0);
+  --music-text: oklch(0.98 0 0);
+  --music-muted: oklch(0.72 0 0);
+  --music-accent: oklch(0.76 0.2 148);
   --chrome-foreground: oklch(0.96 0 0);
   --chrome-muted: oklch(0.77 0 0);
   --chrome-hover: oklch(1 0 0 / 0.14);
