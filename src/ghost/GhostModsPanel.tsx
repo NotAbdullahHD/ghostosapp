@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Wand2, KeyRound, RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { DEFAULT_MODS, OPEN_ANIMATIONS, hasLockPassword, setLockPassword, useMods, writeMods, type OpenAnimation } from "./mods";
 
 const ACCENTS = ["#66d9ff", "#fb542b", "#a78bfa", "#34d399", "#f472b6", "#facc15", "#ffffff"];
@@ -37,6 +38,8 @@ export function GhostModsPanel() {
       <Row label="Corner roundness" hint={`${m.windowRadius}px`}><input type="range" min={0} max={28} value={m.windowRadius} onChange={e => writeMods({ windowRadius: +e.target.value })} className="w-36 accent-[var(--ice)]" /></Row>
       <Row label="Window transparency" hint={`${Math.round(m.windowOpacity * 100)}%`}><input type="range" min={60} max={100} value={m.windowOpacity * 100} onChange={e => writeMods({ windowOpacity: +e.target.value / 100 })} className="w-36 accent-[var(--ice)]" /></Row>
       <Row label="Compact title bars"><Toggle on={m.compactTitlebars} set={v => writeMods({ compactTitlebars: v })} /></Row>
+      <Row label="Dim inactive windows"><Button variant="desktop" role="switch" aria-label="Dim inactive windows" aria-checked={m.dimInactive} onClick={() => writeMods({ dimInactive: !m.dimInactive })}>{m.dimInactive ? "On" : "Off"}</Button></Row>
+      <Row label="Snap layouts"><Button variant="desktop" role="switch" aria-label="Snap layouts" aria-checked={m.snapLayouts} onClick={() => writeMods({ snapLayouts: !m.snapLayouts })}>{m.snapLayouts ? "On" : "Off"}</Button></Row>
     </section>
 
     <section className="space-y-2">

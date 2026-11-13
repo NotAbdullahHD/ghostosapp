@@ -12,10 +12,13 @@ export interface GhostMods {
   compactTitlebars: boolean;
   dockScale: number;         // 0.8 - 1.3
   reduceBlur: boolean;
+  dimInactive: boolean;
+  snapLayouts: boolean;
 }
 export const DEFAULT_MODS: GhostMods = {
   openAnimation: "zoom", windowRadius: 14, windowOpacity: 1, accent: "#66d9ff",
   hideDesktopIcons: false, hideIconLabels: false, compactTitlebars: false, dockScale: 1, reduceBlur: false,
+  dimInactive: true, snapLayouts: true,
 };
 const KEY = "ghost.mods.v1";
 const EVT = "ghost-mods";

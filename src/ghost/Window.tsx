@@ -5,7 +5,7 @@ import { ESCAPE_HOLD_MS } from "./personalization";
 import { AppIcon } from "./AppIcon";
 import { OPEN_ANIMATIONS, useMods } from "./mods";
 import { useGhost, type WindowState } from "./store";
-import { X, Minus, Square, Maximize, Minimize2, Copy } from "lucide-react";
+import { X, Minus, Square, Maximize, Minimize2, Copy, PanelsTopLeft } from "lucide-react";
 
 export function Window({ win, children }: { win: WindowState; children: ReactNode }) {
   const { windows, focusWindow, closeWindow, toggleMinimize, toggleMaximize, toggleFullscreen, updateWindow } = useGhost();
@@ -15,6 +15,12 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
   const resizeStart = useRef<{ mx: number; my: number; w: number; h: number } | null>(null);
   const [snapHint, setSnapHint] = useState<null | "left" | "right" | "top">(null);
   const [dragging, setDragging] = useState(false);
+  const [showLayouts, setShowLayouts] = useState(false);
+  const snapTo = (column: number, columns: number) => {
+    const width = (window.innerWidth - 16) / columns;
+    updateWindow(win.id, { maximized: false, x: 8 + column * width, y: 42, width, height: window.innerHeight - 106 });
+    setShowLayouts(false);
+  };
 
   const [holdingEscape, setHoldingEscape] = useState(false);
   const nativeOwned = useRef(false);
@@ -141,7 +147,7 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
           opacity: win.minimized ? 0 : 1,
           scale: win.minimized ? 0.4 : (dragging ? 1.004 : 1),
           y: win.minimized ? 480 : 0,
-          filter: !isActive && !fullscreen ? "brightness(0.82) saturate(0.9)" : "brightness(1) saturate(1)",
+          filter: mods.dimInactive && !isActive && !fullscreen ? "brightness(0.82) saturate(0.9)" : "brightness(1) saturate(1)",
           transition: dragging
             ? { duration: 0 }
             : mods.openAnimation === "genie" ? { type: "spring", stiffness: 260, damping: 26 } : { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
@@ -170,6 +176,7 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
           >
             <div className="flex min-w-0 items-center gap-2.5"><AppIcon id={win.appId} size={20}/><span className="truncate text-xs font-medium text-chrome-foreground">{win.title}</span></div>
             <div className="flex shrink-0 items-center gap-1">
+              {mods.snapLayouts && <Button variant="desktop" size="icon" aria-label="Snap layouts" title="Snap layouts" aria-expanded={showLayouts} onClick={() => setShowLayouts(!showLayouts)} className="window-control"><PanelsTopLeft /></Button>}
               <Button variant="desktop" size="icon" aria-label="Minimize window" title="Minimize" onClick={() => toggleMinimize(win.id)} className="window-control"><Minus/></Button>
               <Button variant="desktop" size="icon" aria-label={maximized ? "Restore window" : "Maximize window"} title={maximized ? "Restore" : "Maximize"} onClick={() => toggleMaximize(win.id)} className="window-control">{maximized ? <Copy/> : <Square/>}</Button>
               <Button variant="desktop" size="icon" aria-label="Fullscreen" title="Fullscreen" onClick={() => { void enterFullscreen(); }} className="window-control"><Maximize/></Button>
@@ -178,6 +185,11 @@ export function Window({ win, children }: { win: WindowState; children: ReactNod
             </div>
           </div>
         )}
+
+        {showLayouts && !fullscreen && mods.snapLayouts && <div role="dialog" aria-label="Snap layouts" className="absolute right-3 top-11 z-50 rounded-lg border border-chrome-border bg-popover p-3 shadow-lg">
+          <div className="mb-2 flex items-center justify-between gap-6 text-xs text-chrome-muted"><span>Snap layouts</span><Button variant="desktop" size="icon" className="size-6" title="Close layouts" aria-label="Close layouts" onClick={() => setShowLayouts(false)}><X /></Button></div>
+          <div className="flex gap-3">{[2, 3].map(columns => <div key={columns} className="flex h-16 w-28 gap-1">{Array.from({ length: columns }, (_, column) => <Button key={column} variant="desktop" aria-label={`Snap ${columns === 2 ? (column === 0 ? "left half" : "right half") : `column ${column + 1} of 3`}`} title={`Column ${column + 1} of ${columns}`} onClick={() => snapTo(column, columns)} className="h-full min-w-0 flex-1 rounded-sm border border-chrome-border bg-secondary p-0 hover:bg-primary/30" />)}</div>)}</div>
+        </div>}
 
         {fullscreen && (
           <div className="fullscreen-exit fixed top-3 right-3 z-[10001]">
