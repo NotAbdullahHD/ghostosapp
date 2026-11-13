@@ -1,5 +1,10 @@
 # Roadmap
 
+- [ ] Spotify-reference Music layout with real search and playback.
+- [ ] Clean DuckDuckGo-style Browser; remove redundant app header.
+- [ ] Windows-style snap layouts and focus customization.
+- [ ] Verify updated apps and previous Chat work in preview; report call-testing limits.
+
 - [x] Window snapping (drag to top/sides) with snap preview, aligned below top bar.
 - [x] Active-window focus: inactive windows dim, Alt+Tab cycles focus (verified live).
 - [x] Ghost Assistant 100/day quota with sent/left/reset UI (tests pass).
