@@ -7,6 +7,7 @@ import {
   LogOut, Trash2, MessageCircle, PhoneOff, Smile,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import { useGhost } from "@/ghost/store";
 import { CallOverlay } from "@/ghost/CallOverlay";
 
@@ -86,6 +87,8 @@ export function GhostChatApp() {
   const [session, setSession] = useState<Session | null>(null);
   const [checking, setChecking] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileError, setProfileError] = useState("");
+  const [profileAttempt, setProfileAttempt] = useState(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -101,15 +104,24 @@ export function GhostChatApp() {
 
   useEffect(() => {
     if (!session) return;
+    let cancelled = false;
+    setProfileError("");
+    const timeout = window.setTimeout(() => { if (!cancelled) setProfileError("Your account couldn’t be loaded. Check your connection and retry."); }, 15000);
     supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
-      .then(({ data }) => setProfile((data as Profile | null) ?? null));
-  }, [session]);
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        clearTimeout(timeout);
+        setProfile((data as Profile | null) ?? null);
+        if (error || !data) setProfileError(error ? "Your account couldn’t be loaded. Check your connection and retry." : "This signed-in account has no GhostChat profile. Sign out to use or create a GhostChat account.");
+      }).catch(() => { if (!cancelled) setProfileError("Your account couldn’t be loaded. Check your connection and retry."); });
+    return () => { cancelled = true; clearTimeout(timeout); };
+  }, [session, profileAttempt]);
 
   if (checking) {
     return <div className="h-full flex items-center justify-center bg-gradient-to-br from-black to-emerald-950/30 text-white/50 text-xs font-mono">Loading GhostChat…</div>;
   }
   if (!session) return <AuthShell />;
-  if (!profile) return <div className="h-full flex items-center justify-center bg-black text-white/40 text-xs font-mono">Preparing account…</div>;
+  if (!profile) return <div className="flex h-full flex-col items-center justify-center gap-4 bg-chat-bg p-6 text-center text-sm text-chat-muted" role="status"><p className="max-w-sm">{profileError || "Preparing account…"}</p>{profileError && <div className="flex gap-2"><Button variant="secondary" onClick={() => setProfileAttempt(n => n + 1)}><RefreshCw />Retry</Button><Button variant="ghost" onClick={() => void supabase.auth.signOut()}><LogOut />Sign out</Button></div>}</div>;
   return <Messenger me={profile} />;
 }
 
