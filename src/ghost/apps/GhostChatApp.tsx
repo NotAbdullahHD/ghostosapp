@@ -107,7 +107,7 @@ export function GhostChatApp() {
     let cancelled = false;
     setProfileError("");
     const timeout = window.setTimeout(() => { if (!cancelled) setProfileError("Your account couldn’t be loaded. Check your connection and retry."); }, 15000);
-    supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
+    Promise.resolve(supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle())
       .then(({ data, error }) => {
         if (cancelled) return;
         clearTimeout(timeout);
